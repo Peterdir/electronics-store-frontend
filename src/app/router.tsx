@@ -4,21 +4,25 @@ import { HomePage } from "../features/home/pages/HomePage";
 import { AdminLayout } from "./layouts/AdminLayout";
 import { AdminHomePage } from "../features/admin/pages/AdminHomePage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { RouteErrorBoundary } from "./pages/RouteErrorBoundary";
 
 
 export const router = createBrowserRouter([
     {
         path: '/',
         Component: StorefrontLayout,
+        ErrorBoundary: RouteErrorBoundary,
         children: [{ index: true, Component: HomePage }],
     },
     {
         path: "/admin",
         Component: AdminLayout,
+        ErrorBoundary: RouteErrorBoundary,
         children: [{ index: true, Component: AdminHomePage }],
     },
     {
         path: '*',
         Component: NotFoundPage,
+        ErrorBoundary: RouteErrorBoundary
     },
 ])

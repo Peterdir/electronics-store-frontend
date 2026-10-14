@@ -145,7 +145,7 @@ Một số endpoint trả **plain text** thay vì JSON (`String`): `PUT /admin/u
 | HTTP | **Axios** | Interceptor (token, 401, error normalize), `responseType: 'blob'` cho export |
 | Client state | **Zustand** (+ `persist`) | Session, guest cart, compare list, UI prefs — nhẹ hơn Redux, đủ cho quy mô này |
 | Form | **React Hook Form + Zod** (`@hookform/resolvers`) | Mirror Bean Validation; map `validationErrors` → `setError` |
-| UI | **Tailwind CSS v4 + shadcn/ui** (Base UI) | Chọn Base UI theo mặc định hiện tại của shadcn/ui cho dự án mới; dùng chung cho storefront và admin |
+| UI | **Tailwind CSS v4 + shadcn/ui** (Base UI, style `base-nova`) | Chọn Base UI theo mặc định hiện tại của shadcn/ui cho dự án mới; style đến từ preset shadcn và token CSS; dùng chung cho storefront và admin |
 | Table (admin) | **TanStack Table v8** | Server-side pagination/sort |
 | Chart | **Recharts** | Revenue line chart, order-status pie |
 | Date | **date-fns** + `date-fns-tz` | Hiển thị `Asia/Ho_Chi_Minh`, format `yyyy-MM-dd` cho query |
@@ -164,14 +164,23 @@ Một số endpoint trả **plain text** thay vì JSON (`String`): `PUT /admin/u
 
 ```
 src/
+├── main.tsx                     # Vite entrypoint: imports global CSS and mounts App
+├── App.tsx                      # Root component: providers + router
 ├── app/
-│   ├── main.tsx
 │   ├── providers.tsx              # QueryClientProvider, Toaster, ThemeProvider
 │   ├── router.tsx                 # createBrowserRouter: storefront + admin trees
+│   ├── pages/
+│   │   ├── NotFoundPage.tsx       # URL không khớp route
+│   │   ├── ForbiddenPage.tsx      # route hợp lệ nhưng user không đủ quyền
+│   │   └── RouteErrorBoundary.tsx # fallback cho lỗi trong route tree
 │   └── layouts/
 │       ├── StorefrontLayout.tsx   # Header (search, cart badge, user menu), Footer
-│       ├── AccountLayout.tsx      # Sidebar tài khoản
+│       ├── AccountLayout.tsx      # Sidebar tài khoản (thêm khi bắt đầu feature account)
 │       └── AdminLayout.tsx        # Sidebar theo quyền, Topbar
+├── components/
+│   └── ui/                        # shadcn primitives (Base UI) + shared UI như StatusBadge
+├── hooks/                         # useDebounce, usePagination(searchParams), useConfirm
+├── lib/                           # utils.ts (cn), format.ts (VND, date), helpers dùng chung
 ├── shared/
 │   ├── api/
 │   │   ├── client.ts              # axios instance + interceptors
@@ -185,9 +194,6 @@ src/
 │   │   ├── permissions.ts         # ma trận RBAC
 │   │   └── guards.tsx             # RequireAuth, RequireRole, GuestOnly
 │   ├── types/                     # common.ts, enums.ts, (generated) openapi.d.ts
-│   ├── ui/                        # shadcn components + Money, StatusBadge, DataTable, EmptyState
-│   ├── hooks/                     # useDebounce, usePagination(searchParams), useConfirm
-│   ├── lib/                       # format.ts (VND, date), cn.ts
 │   └── config/env.ts
 ├── features/
 │   ├── auth/        { api.ts, queries.ts, schemas.ts, types.ts, components/, pages/ }
@@ -203,10 +209,10 @@ src/
 │   └── admin/
 │       ├── dashboard/  orders/  products/  categories/  brands/
 │       ├── inventory/  coupons/  reviews/  returns/  users/  reports/
-└── styles/index.css               # Tailwind v4 @theme tokens
+└── index.css                      # Tailwind v4 imports, theme tokens, global styles
 ```
 
-Quy tắc: `features/*` chỉ import từ `shared/*` và public `index.ts` của feature khác; `shared/*` không import `features/*`.
+Quy tắc: `features/*` được import từ `shared/*`, `components/ui`, `hooks`, `lib` và public `index.ts` của feature khác. Các lớp dùng chung (`shared/*`, `components/*`, `hooks/*`, `lib/*`) không import ngược từ `features/*`. Đường dẫn alias `@/*` trỏ tới `src/*`.
 
 ### 2.3 Env & Vite config
 
@@ -458,7 +464,7 @@ export const ORDER_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
 };
 ```
 
-Kèm `shared/ui/StatusBadge` với map label tiếng Việt + màu cho từng enum.
+Kèm `components/ui/StatusBadge` với map label tiếng Việt + màu cho từng enum.
 
 ### 2.7 Query key factory
 
@@ -527,8 +533,8 @@ graph LR
 | Hạng mục | Deliverable |
 |---|---|
 | Scaffold | `npx create-vite@latest ./ --template react-ts`, Tailwind v4, shadcn init, alias `@/` |
-| Design system | Tokens (màu brand, dark mode cho admin), typography (Inter/Be Vietnam Pro hỗ trợ tiếng Việt) |
-| Layouts | `StorefrontLayout`, `AccountLayout`, `AdminLayout`, `ErrorBoundary`, `NotFoundPage`, `ForbiddenPage` |
+| Design system | Tokens trong `src/index.css` (nền trung tính + xanh dương làm màu brand, dark mode cho admin), typography Geist Variable (đã cài qua `@fontsource-variable/geist`) |
+| Layouts & route errors | `StorefrontLayout`, `AccountLayout`, `AdminLayout`, `NotFoundPage`, `ForbiddenPage`, `RouteErrorBoundary` (React Router route boundary dùng `useRouteError`) |
 | Shared UI | `DataTable` (server pagination), `Pagination` (0-based ⇄ URL 1-based), `Money`, `DateTime`, `StatusBadge`, `ConfirmDialog`, `ImageDropzone` (jpg/png/webp ≤ 5MB, mirror `FileValidator`), `EmptyState`, `Skeleton*` |
 | Infra | Mục 2.3 → 2.7, `useUrlState` (đồng bộ filter/page với search params) |
 | Type-gen | Script `npm run gen:api` → `openapi-typescript http://localhost:8080/v3/api-docs -o src/shared/types/openapi.d.ts` |
