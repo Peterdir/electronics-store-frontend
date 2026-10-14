@@ -145,7 +145,7 @@ Một số endpoint trả **plain text** thay vì JSON (`String`): `PUT /admin/u
 | HTTP | **Axios** | Interceptor (token, 401, error normalize), `responseType: 'blob'` cho export |
 | Client state | **Zustand** (+ `persist`) | Session, guest cart, compare list, UI prefs — nhẹ hơn Redux, đủ cho quy mô này |
 | Form | **React Hook Form + Zod** (`@hookform/resolvers`) | Mirror Bean Validation; map `validationErrors` → `setError` |
-| UI | **Tailwind CSS v4 + shadcn/ui** (Radix) | Storefront cần tùy biến thẩm mỹ cao; admin tái dùng cùng design tokens |
+| UI | **Tailwind CSS v4 + shadcn/ui** (Base UI) | Chọn Base UI theo mặc định hiện tại của shadcn/ui cho dự án mới; dùng chung cho storefront và admin |
 | Table (admin) | **TanStack Table v8** | Server-side pagination/sort |
 | Chart | **Recharts** | Revenue line chart, order-status pie |
 | Date | **date-fns** + `date-fns-tz` | Hiển thị `Asia/Ho_Chi_Minh`, format `yyyy-MM-dd` cho query |
@@ -1066,7 +1066,7 @@ export interface RevenueReportResponse { startDate: ISODate; endDate: ISODate; t
 | Empty / Error | `EmptyState` có CTA; `QueryErrorBoundary` + nút "Thử lại" |
 | Format | `formatVND` (`Intl.NumberFormat('vi-VN',{style:'currency',currency:'VND'})`), ngày giờ theo `Asia/Ho_Chi_Minh` |
 | i18n | Map message backend (tiếng Anh) → tiếng Việt qua bảng `messageMap` theo chuỗi; fallback hiển thị nguyên văn |
-| Accessibility | Radix primitives, focus ring, `aria-live` cho toast |
+| Accessibility | Base UI primitives, focus ring, `aria-live` cho toast |
 | SEO (storefront) | `<title>`/meta theo trang (React 19 hỗ trợ `<title>` trong component), một `h1`/trang |
 | Performance | Route-level `lazy()`, admin chunk riêng, ảnh `loading="lazy"`, prefetch PDP khi hover ProductCard |
 | Testing | Unit: utils, schemas, `normalizePage`, `normalizeError`; Integration (MSW): login, cart merge, checkout guest/user, VNPay result, admin order transition; E2E (Playwright) cho happy path checkout |
@@ -1107,7 +1107,7 @@ export interface RevenueReportResponse { startDate: ISODate; endDate: ISODate; t
 ---
 
 ## 8. Câu hỏi mở cần chốt
-1. **UI library**: Tailwind v4 + shadcn/ui cho cả 2 phân hệ (đề xuất), hay Ant Design cho Admin để tăng tốc?
+1. **UI library**: Đã chọn Tailwind v4 + shadcn/ui với Base UI cho cả storefront và admin.
 2. **Lưu token**: `localStorage` (đơn giản, phù hợp khi chưa có refresh cookie) — chấp nhận rủi ro XSS kèm CSP?
 3. Team backend có thể xử lý nhóm Gap High còn lại (#1 review công khai, #2 preview coupon) trong sprint đầu không? Nếu không, FE sẽ tạm thời ẩn đánh giá/preview coupon.
 4. Một repo FE với 2 layout (đề xuất) hay tách 2 app (storefront / admin)?
