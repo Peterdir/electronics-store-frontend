@@ -5,6 +5,7 @@ import { AdminLayout } from "./layouts/AdminLayout";
 import { AdminHomePage } from "../features/admin/pages/AdminHomePage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { RouteErrorBoundary } from "./pages/RouteErrorBoundary";
+import { ForbiddenPage } from "./pages/ForbiddenPage"
 
 
 export const router = createBrowserRouter([
@@ -21,8 +22,13 @@ export const router = createBrowserRouter([
         children: [{ index: true, Component: AdminHomePage }],
     },
     {
+        path: '/forbidden',
+        Component: ForbiddenPage,
+        ErrorBoundary: RouteErrorBoundary,
+    },
+    {
         path: '*',
         Component: NotFoundPage,
-        ErrorBoundary: RouteErrorBoundary
+        ErrorBoundary: RouteErrorBoundary,
     },
 ])

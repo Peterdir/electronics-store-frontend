@@ -171,8 +171,8 @@ src/
 │   ├── router.tsx                 # createBrowserRouter: storefront + admin trees
 │   ├── pages/
 │   │   ├── NotFoundPage.tsx       # URL không khớp route
-│   │   ├── ForbiddenPage.tsx      # route hợp lệ nhưng user không đủ quyền
-│   │   └── RouteErrorBoundary.tsx # fallback cho lỗi trong route tree
+│   │   ├── ForbiddenPage.tsx      # trang 403 dùng trực tiếp hoặc được route boundary tái sử dụng
+│   │   └── RouteErrorBoundary.tsx # fallback route; 403 render ForbiddenPage
 │   └── layouts/
 │       ├── StorefrontLayout.tsx   # Header (search, cart badge, user menu), Footer
 │       ├── AccountLayout.tsx      # Sidebar tài khoản (thêm khi bắt đầu feature account)
@@ -534,7 +534,7 @@ graph LR
 |---|---|
 | Scaffold | `npx create-vite@latest ./ --template react-ts`, Tailwind v4, shadcn init, alias `@/` |
 | Design system | Tokens trong `src/index.css` (nền trung tính + xanh dương làm màu brand, dark mode cho admin), typography Geist Variable (đã cài qua `@fontsource-variable/geist`) |
-| Layouts & route errors | `StorefrontLayout`, `AccountLayout`, `AdminLayout`, `NotFoundPage`, `ForbiddenPage`, `RouteErrorBoundary` (React Router route boundary dùng `useRouteError`) |
+| Layouts & route errors | `StorefrontLayout`, `AccountLayout`, `AdminLayout`, `NotFoundPage`, `ForbiddenPage`, `RouteErrorBoundary` (React Router route boundary dùng `useRouteError`; 403 tái sử dụng `ForbiddenPage`) |
 | Shared UI | `DataTable` (server pagination), `Pagination` (0-based ⇄ URL 1-based), `Money`, `DateTime`, `StatusBadge`, `ConfirmDialog`, `ImageDropzone` (jpg/png/webp ≤ 5MB, mirror `FileValidator`), `EmptyState`, `Skeleton*` |
 | Infra | Mục 2.3 → 2.7, `useUrlState` (đồng bộ filter/page với search params) |
 | Type-gen | Script `npm run gen:api` → `openapi-typescript http://localhost:8080/v3/api-docs -o src/shared/types/openapi.d.ts` |

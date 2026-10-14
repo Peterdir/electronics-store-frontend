@@ -1,4 +1,5 @@
 import { isRouteErrorResponse, Link, useRouteError } from "react-router"
+import { ForbiddenPage } from "./ForbiddenPage"
 
 export function RouteErrorBoundary() {
     const error = useRouteError();
@@ -8,8 +9,7 @@ export function RouteErrorBoundary() {
 
     if (isRouteErrorResponse(error)) {
         if (error.status === 403) {
-            title = "Không có quyền truy cập"
-            message = "Tài khoản hiện tại không được phép xem nội dung này"
+            return <ForbiddenPage />
         }
         else if (error.status === 404) {
             title = "Không tìm thấy nội dung"
