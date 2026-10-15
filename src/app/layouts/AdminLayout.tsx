@@ -2,7 +2,7 @@ import {Link, NavLink, Outlet} from 'react-router'
 
 export function  AdminLayout() {
     return (
-        <div className="min-h-screen bg-muted/30">
+        <div className="dark min-h-screen bg-muted/30 text-foreground">
             <header className="border-b bg-background">
                 <div className="mx-auto flex items-center h-16 max-w-screen-2xl justify-between px-4 sm:px-6">
                     <Link to="/admin" className="rounded-sm font-semibold tracking-tight text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
