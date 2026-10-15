@@ -1,30 +1,36 @@
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
 import { fileURLToPath } from 'node:url'
 
+
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
+export default defineConfig(({ mode }) => {
+  const fileEnv = loadEnv(mode, process.cwd(), "VITE_");
+  const backendOrigin = fileEnv.VITE_BACKEND_ORIGIN || "http://localhost:8080";
 
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-    }
-  },
+  return {
+    plugins: [react(), tailwindcss()],
 
-  server: {
-    port: 3000,
-    strictPort: true,
-    proxy: {
-      "/api": {
-        target: "http://localhost:8080",
-        changeOrigin: true,
-      },
-      "/uploads": {
-        target: "http://localhost:8080",
-        changeOrigin: true,
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+      }
+    },
+
+    server: {
+      port: 3000,
+      strictPort: true,
+      proxy: {
+        "/api": {
+          target: backendOrigin,
+          changeOrigin: true,
+        },
+        "/uploads": {
+          target: backendOrigin,
+          changeOrigin: true,
+        },
       },
     },
-  },
+  };
 })
