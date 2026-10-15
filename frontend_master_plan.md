@@ -540,23 +540,23 @@ graph LR
 | Type-gen | Script `npm run gen:api` → `openapi-typescript http://localhost:8080/v3/api-docs -o src/shared/types/openapi.d.ts` |
 | Quality | ESLint boundaries, Vitest + MSW handlers khởi tạo, CI lint/typecheck |
 
-#### Trạng thái Phase 0 & điểm tiếp tục (cập nhật 2026-10-14)
+#### Trạng thái Phase 0 & điểm tiếp tục (cập nhật 2026-10-15)
 
 | Nhóm | Trạng thái | Ghi chú |
 |---|---|---|
 | Scaffold | ✅ Hoàn thành | Vite + React + TypeScript, Tailwind v4, shadcn/ui với Base UI, alias `@/*`. |
-| Design system | 🟡 Đang làm | Geist Variable và token sáng/tối trong `src/index.css` đã có. Token `.dark` đã khai báo nhưng chưa có cơ chế bật/tắt hoặc áp class theme lúc chạy. |
-| Layouts & route errors | 🟡 Đang làm | `StorefrontLayout`, `AdminLayout`, `NotFoundPage`, `ForbiddenPage`, `RouteErrorBoundary` và các route cơ bản đã có. Storefront shell vừa được hoàn thiện; `AdminLayout` hiện vẫn là khung tối giản. `AccountLayout` để lại đến khi bắt đầu feature tài khoản. |
-| Shared UI | 🟡 Đang làm | shadcn `Button` đã có. Các thành phần còn lại như `DataTable`, `Pagination`, `Money`, `DateTime`, `StatusBadge`, `ConfirmDialog`, `ImageDropzone`, `EmptyState`, `Skeleton*` chưa làm. |
-| Infra | 🟡 Đang làm | `QueryClient` và `AppProviders` đã cấu hình. Axios client, chuẩn hóa lỗi API, pagination helpers và `useUrlState` còn thiếu. |
+| Design system | ✅ Hoàn thành phần nền | Geist Variable và token sáng/tối trong `src/index.css` đã có; `AdminLayout` áp dụng class `.dark` khi chạy. |
+| Layouts & route errors | ✅ Hoàn thành phần P0 | `StorefrontLayout`, `AdminLayout`, `NotFoundPage`, `ForbiddenPage`, `RouteErrorBoundary` và route cơ bản đã có. `AccountLayout` được hoãn đến khi bắt đầu feature tài khoản theo quyết định trước đó. |
+| Shared UI | 🟡 Đang làm | shadcn `Button` đã có. Còn `DataTable`, `Pagination`, `Money`, `DateTime`, `StatusBadge`, `ConfirmDialog`, `ImageDropzone`, `EmptyState` và `Skeleton*`. |
+| Infra | 🟡 Đang làm | Port 3000, alias, proxy, `.env.example`, `.env.development`, `src/vite-env.d.ts` và `src/shared/config/env.ts` đã có. Axios đã cài; `ApiError`/`normalizeError`, common types, enums, Zustand session store và JWT helper (`decodeJwt`/`isExpired`) đã được thêm. Còn auth events/session lifecycle (đồng bộ logout giữa tab, cảnh báo/hết hạn phiên), permissions/guards, Axios client/interceptors, pagination/download helpers, query key factory, `useUrlState` và hoàn thiện QueryClient/providers. Cài Axios báo 7 cảnh báo high severity; cần xem chi tiết `npm audit` trước khi quyết định xử lý. |
 | Type-gen | ⬜ Chưa bắt đầu | Chưa có script `gen:api` và file OpenAPI types được sinh. |
 | Quality | 🟡 Đang làm | Có lệnh `build` và `lint`; ESLint boundaries, Vitest/MSW setup và CI lint/typecheck còn thiếu. |
 
-**Kiểm tra gần nhất sau StorefrontLayout:** ngày 2026-10-14, `npm run build` và `git diff --check` đều thành công. Trước lần cập nhật tài liệu này, `git status` không có thay đổi; hiện thay đổi duy nhất là mục handoff trong `frontend_master_plan.md`.
+  **Kiểm tra gần nhất:** `npm run build` thành công sau khi hoàn thành `src/shared/auth/jwt.ts` và `src/shared/auth/session.store.ts` (2026-10-15). Build gồm `tsc -b` và Vite production build. Lệnh `npm run lint` trước đó không trả kết quả trong khoảng 30 giây và đã được dừng, nên lint chưa được xác nhận.
 
-**Việc tiếp theo đề xuất:** tiếp tục hoàn thiện `AdminLayout` thành khung quản trị cơ bản (header, điều hướng/sidebar và vùng nội dung), rồi kiểm tra lại trước khi chuyển sang các hạng mục API/shared infrastructure.
+  **Việc tiếp theo đề xuất:** bổ sung auth events và các phần session lifecycle (đồng bộ logout giữa tab, nhắc phiên sắp hết hạn và xử lý khi token hết hạn); tiếp đó làm permissions/route guards để Axios client có thể dùng trạng thái đăng nhập.
 
-**Cách phối hợp ở phiên tiếp theo:** người dùng tự sửa source code. Trợ lý chỉ kiểm tra và cung cấp code/hướng dẫn; cần giải thích mục đích từng file, hướng dẫn đọc trước nếu sắp giới thiệu khái niệm React mới, và đưa câu lệnh commit khi mỗi mục nhỏ hoàn tất. Cập nhật master plan khi có thay đổi phạm vi hoặc quyết định kiến trúc.
+**Cách phối hợp:** người dùng tự sửa source code. Trợ lý chỉ kiểm tra và cung cấp code/hướng dẫn; cần giải thích mục đích từng file, hướng dẫn trước khi giới thiệu khái niệm mới, và đưa gợi ý commit/push khi từng mục nhỏ hoàn tất. Không tự sửa source code.
 
 ---
 
