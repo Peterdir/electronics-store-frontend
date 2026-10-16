@@ -8,6 +8,7 @@ import type { ID } from "../types/common";
 import type { Role as RoleValue, UserStatus } from "../types/enums";
 import { Role } from "../types/enums";
 import { decodeJwt } from "./jwt";
+import { authEvents } from "./auth.events";
 
 
 export interface SessionUser {
@@ -53,7 +54,7 @@ function getUserFromToken(token: string): SessionUser | null {
 
 export const useSession = create<SessionState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       token: null,
       user: null,
 
@@ -68,9 +69,16 @@ export const useSession = create<SessionState>()(
         set({ token });
       },
 
-      clear: (_options?: { reason?: "logout" | "expired" }) => {
+      clear: (options) => {
+        const reason = options?.reason ?? "logout";
+        const hadSession = Boolean(get().token || get().user);
+
         queryClient.clear();
         set({ token: null, user: null });
+
+        if (hadSession) {
+          authEvents.emit({ type: "session-cleared", reason });
+        }
       },
     }),
     {
