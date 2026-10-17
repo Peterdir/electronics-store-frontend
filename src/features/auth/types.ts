@@ -18,3 +18,10 @@ export interface AuthResponse {
     tokenType: "Bearer"
     user: UserResponse
 }
+
+export interface UserProfileResponse {
+    id: ID
+    fullName: string | null
+    email: string
+    phone: string | null
+}

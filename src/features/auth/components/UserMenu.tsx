@@ -16,11 +16,20 @@ export function UserMenu() {
     }
 
     return (
-        <span
-            title={user.email}
-            className="max-w-48 truncate text-sm font-medium"
-        >
-            {user.email}
-        </span>
+        <div className="flex min-w-0 items-center gap-3">
+            <span
+                title={user.email}
+                className="max-w-48 truncate text-sm font-medium"
+            >
+                {user.email}
+            </span>
+
+            <Link
+                to="/account/profile"
+                className="shrink-0 rounded-sm text-sm text-muted-foreground transition-colors hover:text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+                Tài khoản
+            </Link>
+        </div>
     )
 }

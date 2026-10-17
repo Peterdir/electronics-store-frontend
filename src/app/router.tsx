@@ -7,6 +7,7 @@ import { NotFoundPage } from "./pages/NotFoundPage";
 import { RouteErrorBoundary } from "./pages/RouteErrorBoundary";
 import { ForbiddenPage } from "./pages/ForbiddenPage"
 import { LoginPage } from "@/features/auth/pages/LoginPage";
+import { ProfilePage } from "@/features/auth/pages/ProfilePage"
 
 
 export const router = createBrowserRouter([
@@ -17,6 +18,7 @@ export const router = createBrowserRouter([
         children: [
             { index: true, Component: HomePage },
             { path: "login", Component: LoginPage},
+            { path: "account/profile", Component: ProfilePage },
         ],
     },
     {

@@ -1,5 +1,5 @@
 import { api } from "@/shared/api/client";
-import type { AuthResponse, LoginRequest } from "./types";
+import type { AuthResponse, LoginRequest, UserProfileResponse } from "./types";
 
 export async function login(
     payload: LoginRequest,
@@ -15,4 +15,12 @@ export async function login(
     )
 
     return response.data;
+}
+
+export async function getMyProfile(): Promise<UserProfileResponse> {
+    const response = await api.get<UserProfileResponse>(
+        "/api/users/me",
+    )
+
+    return response.data
 }
