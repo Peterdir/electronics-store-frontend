@@ -6,12 +6,39 @@ import {
     loginSchema,
     type LoginFormValues,
 } from "@/features/auth/schemas"
+import { useLogin } from "@/features/auth/queries"
+import { ApiError } from "@/shared/api/errors"
+
+function getLoginErrorMessage(error: Error): string {
+    if (error instanceof ApiError) {
+        if (error.message.includes("not verified yet")) {
+            return "Tài khoản chưa xác thực. Vui lòng kiểm tra email."
+        }
+
+        if (error.message.includes("locked")) {
+            return "Tài khoản đã bị khóa. Vui lòng liên hệ hỗ trợ."
+        }
+
+        if (
+            error.status === 404 ||
+            (
+                error.status === 400 &&
+                error.message === "Invalid email or password."
+            )
+        ) {
+            return "Email hoặc mật khẩu không đúng."
+        }
+    }
+
+    return error.message || "Đăng nhập thất bại. Vui lòng thử lại."
+}
 
 export function LoginForm() {
+    const loginMutation = useLogin()
     const {
         register,
         handleSubmit,
-        formState: { errors, isSubmitSuccessful },
+        formState: { errors },
     } = useForm<LoginFormValues>({
         resolver: zodResolver(loginSchema),
         defaultValues: {
@@ -20,8 +47,10 @@ export function LoginForm() {
         },
     })
 
-    function handleValidSubmit() {
-        // A4 sẽ nối request đăng nhập tại đây.
+    function handleValidSubmit(values: LoginFormValues) {
+        if (loginMutation.isPending) return
+
+        loginMutation.mutate(values)
     }
 
     return (
@@ -91,20 +120,26 @@ export function LoginForm() {
                 )}
             </div>
 
-            <Button type="submit" className="w-full">
-                Đăng nhập
+            <Button 
+                type="submit" 
+                className="w-full"
+                disabled={loginMutation.isPending}
+            >
+                {loginMutation.isPending ? "Đang đăng nhập..." : "Đăng nhập"}
             </Button>
 
-            {isSubmitSuccessful && (
-                <p role="status" className="text-sm text-muted-foreground">
-                    Lần kiểm tra gần nhất: dữ liệu hợp lệ.
-                    Chưa gửi yêu cầu đăng nhập.
+            {loginMutation.error && (
+                <p role="alert" className="text-sm text-destructive">
+                    {getLoginErrorMessage(loginMutation.error)}
                 </p>
             )}
 
-            <p className="text-sm text-muted-foreground">
-                Form hiện chỉ kiểm tra dữ liệu, chưa kết nối máy chủ.
-            </p>
+            {loginMutation.isSuccess && (
+                <p role="status" className="text-sm text-muted-foreground">
+                    Backend đã xác thực tài khoản {loginMutation.data.user.email}.
+                    Bước này chưa lưu phiên đăng nhập.
+                </p>
+            )}
         </form>
     )
 }
