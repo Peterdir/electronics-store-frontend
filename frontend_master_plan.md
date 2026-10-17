@@ -1,7 +1,11 @@
 # Frontend Master Implementation Plan — Electronics E-commerce
 
 > Nguồn: khảo sát toàn bộ `ecommerce-backend` (Spring Boot **4.1.1**, Java 21, Jackson 3, OAuth2 Resource Server JWT, Redis, MySQL, VNPay, springdoc-openapi).
-> 16 module nghiệp vụ · 22 controller · ~75 endpoint.
+> Đối chiếu source backend ngày 2026-10-17: 16 module nghiệp vụ · 24 controller · 85 handler mapping (86 cặp HTTP method + URL vì hủy đơn hỗ trợ cả PUT và POST).
+
+> **Cách triển khai hiện tại — cập nhật 2026-10-17:** học React bằng giao diện và luồng Auth chạy với backend thật. Đọc [Mục 3](#3-lộ-trình-triển-khai-roadmap--dependency-rationale), sau đó làm từng mốc A1 → A16 trong Phase 1. Phần nền tảng đã có được giữ lại; hạ tầng còn thiếu được bổ sung ngay khi màn hình cần đến. Không cần hoàn thành toàn bộ shared infrastructure trước khi làm `/login`.
+
+> **Ưu tiên người dùng đã chốt:** làm Auth trước. Bắt đầu A1, tiến tới A4 để thấy đăng nhập backend thật; tiếp tục hồ sơ, logout/guards, register/verify và khôi phục mật khẩu. Chưa mở công việc Catalog/Cart/Admin nghiệp vụ trong lúc hướng dẫn Auth. Hạ tầng và kiểm thử chỉ bổ sung để phục vụ luồng đang làm; từng nhiệm vụ vẫn có giải thích, flow, cách kiểm tra và commit. Không tự sửa source code.
 
 ---
 
@@ -12,7 +16,7 @@
 | 1 | **Không có refresh token**. Access token HS256, sống **24h**, logout = blacklist trên Redis | Interceptor "auto refresh 401" phải thiết kế dạng *pluggable*; hiện tại 401 ⇒ logout + redirect |
 | 2 | **Mọi ID là TSID 64-bit** (vượt `Number.MAX_SAFE_INTEGER`) | Bắt buộc `type ID = string` toàn bộ FE. Backend đã format đầy đủ `@JsonFormat(STRING)` cho các DTO (kể cả `AdminReviewResponse.id` và `OrderDetailAdminResponse.userId`) |
 | 3 | **CORS** đã được cấu hình trong `SecurityConfig` | Cho phép origin Frontend (`http://localhost:3000`, `http://localhost:5173`), hỗ trợ credentials & headers chuẩn |
-| 4 | Endpoint `permitAll` **vẫn trả 401** nếu gửi Bearer token hết hạn/bị blacklist | Interceptor phải retry request public *không kèm token* |
+| 4 | Public API còn đi qua JWT filter có thể trả 401 khi gửi Bearer hết hạn/blacklist; riêng `/api/auth/**`, Swagger và `/uploads/` đã được Bearer resolver bỏ qua | Retry public tối đa một lần theo chính sách client; không áp nhận định này cho mọi Auth API. Logout tự đọc header trong controller/service |
 | 5 | VNPay `return-url = http://localhost:3000/payment/result` | Vite dev server chạy **port 3000**; FE có route `/payment/result` |
 | 6 | **Link email verify/reset** trỏ sang Frontend | Backend đã cấu hình `app.frontend-url` (port 3000), link trỏ đúng tới FE `/verify-email` và `/reset-password` |
 | 7 | Guest checkout bắt buộc gửi `directItems` (server cart chỉ dành cho user) | FE phải có **guest cart local** (Zustand persist) + merge khi login |
@@ -68,6 +72,7 @@ sequenceDiagram
 | Logout | `POST /api/auth/logout` — đưa token vào blacklist Redis |
 | Session | Stateless, CSRF disabled ⇒ lưu token phía client |
 | Public routes | `/api/products/**`, `/api/categories/**`, `/api/brands/**`, `/api/policies/**`, `/api/auth/**`, `/api/orders/checkout`, `/api/payments/vnpay/**`, `/uploads/**` |
+| Bearer resolver | Bỏ qua JWT filter cho `/api/auth/**`, Swagger và `/uploads/`; logout vẫn nhận header Authorization rồi tự decode/blacklist trong service |
 | RBAC | Prefix `ROLE_` từ claim `role`; `@PreAuthorize` ở class + override ở method |
 | User status | `PENDING` (chưa verify, không login được) → `ACTIVE` → `INACTIVE` (bị khóa) |
 
@@ -135,6 +140,8 @@ Một số endpoint trả **plain text** thay vì JSON (`String`): `PUT /admin/u
 
 ## 2. Kiến trúc nền tảng (Foundation & Core Setup)
 
+**Đây là kiến trúc đích và tài liệu tra cứu, không phải danh sách phải code trước giao diện.** Chỉ tạo file, cài thư viện hoặc thêm config khi mốc chức năng hiện tại sử dụng nó và có cách quan sát tác dụng. Những phần đã có trong repo được giải thích lại tại điểm dùng, không yêu cầu làm lại từ đầu. Ví dụ: hiểu proxy khi thấy request đăng nhập trong Network; hiểu cache khi trang hồ sơ tải dữ liệu; hiểu pagination khi chuyển trang sản phẩm.
+
 ### 2.1 Tech stack đề xuất
 
 | Hạng mục | Lựa chọn | Lý do |
@@ -175,7 +182,7 @@ src/
 │   │   └── RouteErrorBoundary.tsx # fallback route; 403 render ForbiddenPage
 │   └── layouts/
 │       ├── StorefrontLayout.tsx   # Header (search, cart badge, user menu), Footer
-│       ├── AccountLayout.tsx      # Sidebar tài khoản (thêm khi bắt đầu feature account)
+│       ├── AccountLayout.tsx      # Thêm ở P4 khi có nhiều trang tài khoản; P1 dùng storefront
 │       └── AdminLayout.tsx        # Sidebar theo quyền, Topbar
 ├── components/
 │   └── ui/                        # shadcn primitives (Base UI) + shared UI như StatusBadge
@@ -238,146 +245,37 @@ export default defineConfig({
 });
 ```
 
-### 2.4 Base API Client
+### 2.4 HTTP client & helpers — tra cứu tại bước sử dụng
 
-```ts
-// shared/api/errors.ts
-export interface ApiErrorBody {
-  timestamp?: string; status: number; error?: string; message?: string;
-  validationErrors?: Record<string, string>;
-}
+**Nguồn để đối chiếu là source hiện có, không chép lại một bộ interceptor song song.** `src/shared/api/client.ts` đã xuất hiện khi kiểm tra ngày 2026-10-17; việc có file chưa đồng nghĩa đã kiểm thử đăng nhập với backend.
 
-export class ApiError extends Error {
-  constructor(
-    public status: number,
-    message: string,
-    public code?: string,                         // body.error
-    public fieldErrors?: Record<string, string>,  // body.validationErrors
-  ) { super(message); }
-  get isValidation() { return !!this.fieldErrors && Object.keys(this.fieldErrors).length > 0; }
-}
+| Thành phần | Tác dụng thực tế | Lúc giải thích/hoàn thiện |
+|---|---|---|
+| `shared/config/env.ts`, proxy `/api` | Form gọi `/api/auth/login` qua frontend port 3000 tới backend port 8080 | A4: xem URL, payload, status và response trong Network |
+| `shared/api/client.ts` | Một Axios instance dùng chung, token header, xử lý 401 | A4: đăng nhập; A6: logout; A13: hết hạn phiên |
+| `shared/api/errors.ts` | Chuyển lỗi JSON/plain text/Blob thành `ApiError { status, message, code?, fieldErrors? }` | A4: sai thông tin đăng nhập; A8: lỗi field đăng ký |
+| `shared/api/queryClient.ts`, providers | Trạng thái request, cache và retry có thể quan sát từ màn hình | A4: mutation đăng nhập; A5: query hồ sơ |
+| Query keys | Phân biệt dữ liệu đã cache, invalidate đúng dữ liệu | A5 chỉ cần key hồ sơ; mở rộng từng key khi có feature dùng |
+| `shared/api/pagination.ts` | Hai dạng Spring Page cùng thành một `Page<T>` | P2: danh sách sản phẩm đầu tiên |
+| `shared/api/download.ts` | Tải Blob và tên file từ `Content-Disposition` | P5: nút export báo cáo đầu tiên |
 
-export async function normalizeError(err: unknown): Promise<ApiError> {
-  if (!axios.isAxiosError(err)) return new ApiError(0, 'Unexpected error');
-  if (!err.response) return new ApiError(0, 'Không thể kết nối máy chủ. Vui lòng thử lại.');
-  const { status } = err.response;
-  let data: unknown = err.response.data;
-  if (data instanceof Blob) {                       // export CSV lỗi → body JSON nằm trong Blob
-    try { data = JSON.parse(await data.text()); } catch { data = undefined; }
-  }
-  const body = (typeof data === 'object' && data) ? (data as ApiErrorBody) : undefined;
-  const fallback: Record<number, string> = {
-    401: 'Phiên đăng nhập đã hết hạn.', 403: 'Bạn không có quyền thực hiện thao tác này.',
-    404: 'Không tìm thấy dữ liệu.', 500: 'Đã có lỗi xảy ra. Vui lòng thử lại sau.',
-  };
-  return new ApiError(status, body?.message || (typeof data === 'string' && data) || fallback[status] || 'Request failed',
-    body?.error, body?.validationErrors);
-}
-```
+**Hợp đồng client phải kiểm tra bằng chức năng thật:**
 
-```ts
-// shared/api/client.ts
-export const api = axios.create({ baseURL: env.API_BASE_URL, timeout: 20_000 });
+- Chỉ gắn Bearer của session hiện tại còn hạn; `X-Skip-Auth: 1` bỏ auth và bị xóa trước khi gửi request.
+- Login, register, resend, verify, forgot/reset password dùng skip-auth theo quy ước client để không mang session vào request xác thực; backend hiện cũng bỏ qua Bearer resolver cho `/api/auth/**`. Logout là ngoại lệ cần header Bearer vì service tự decode/blacklist; dùng `meta: { noPublicRetry: true }`.
+- 401 không có Bearer đã gửi: trả lỗi cho màn hình, không tự xóa session mới. Với Bearer đã gửi, chỉ xóa session nếu token đó vẫn trùng session hiện tại, kể cả sau khi chờ bất đồng bộ.
+- Backend chưa có refresh endpoint; hàm refresh hiện chỉ là chỗ mở rộng trả `null`. Không thêm request refresh chưa tồn tại để hoàn thành Auth.
+- Public request bị 401 do Bearer cũ có thể retry một lần không token; `_retry` chặn lặp, `meta.noPublicRetry` chặn replay. Checkout của user sẽ dùng tùy chọn này ở P3.
+- `useSession.clear({ reason: 'expired' })` đã xóa cache và phát `{ type: 'session-cleared', reason: 'expired' }`. Không phát thêm `session-expired`, không clear cache lần hai.
+- Request bị hủy giữ nguyên cancellation. 400/403/404 và lỗi validation không mặc nhiên logout.
+- Định tuyến nằm ở router/guards hoặc thành phần điều hướng có ngữ cảnh Router; HTTP client chỉ xử lý HTTP/session. Tích hợp sau khi có `/login`.
+- Lỗi field hiển thị cạnh input; lỗi đăng nhập hiển thị trong form; lifecycle chịu toast hết hạn. Không bật toast lỗi toàn cục gây trùng thông báo. Nếu bổ sung default error policy, phải có cơ chế để form tự xử lý lỗi.
 
-// 1) Gắn token (bỏ qua nếu token đã hết hạn theo claim exp)
-api.interceptors.request.use((config) => {
-  const { token } = useSession.getState();
-  if (token && !isExpired(token) && !config.headers['X-Skip-Auth']) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  delete config.headers['X-Skip-Auth'];
-  return config;
-});
+**Các helper bổ sung khi có màn hình dùng:**
 
-// 2) Xử lý 401 + chuẩn hóa lỗi
-let refreshPromise: Promise<string | null> | null = null;
-
-/** Hiện backend KHÔNG có refresh endpoint ⇒ trả null. Khi BE bổ sung
- *  POST /api/auth/refresh (httpOnly cookie), chỉ cần implement hàm này. */
-async function refreshAccessToken(): Promise<string | null> { return null; }
-
-api.interceptors.response.use(
-  (res) => res,
-  async (error) => {
-    const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean; _public?: boolean };
-    const status = error.response?.status;
-
-    if (status === 401 && original && !original._retry) {
-      original._retry = true;
-
-      // a) Thử refresh (single-flight: các request 401 đồng thời chờ chung 1 promise)
-      refreshPromise ??= refreshAccessToken().finally(() => { refreshPromise = null; });
-      const newToken = await refreshPromise;
-      if (newToken) {
-        useSession.getState().setToken(newToken);
-        original.headers.Authorization = `Bearer ${newToken}`;
-        return api(original);
-      }
-
-      // b) Không refresh được ⇒ xóa session
-      const hadToken = !!original.headers.Authorization;
-      useSession.getState().clear({ reason: 'expired' });
-
-      // c) Endpoint public bị 401 chỉ vì token cũ ⇒ retry KHÔNG kèm token
-      if (hadToken && isPublicEndpoint(original)) {
-        delete original.headers.Authorization;
-        original.headers['X-Skip-Auth'] = '1';
-        return api(original);
-      }
-      // d) Protected ⇒ AuthEvents phát 'session-expired' → router redirect /login?redirect=...
-      authEvents.emit('session-expired');
-    }
-    return Promise.reject(await normalizeError(error));
-  },
-);
-
-const PUBLIC_PREFIXES = ['/api/products', '/api/categories', '/api/brands', '/api/policies',
-  '/api/auth', '/api/orders/checkout', '/api/payments/vnpay'];
-const isPublicEndpoint = (c: InternalAxiosRequestConfig) =>
-  PUBLIC_PREFIXES.some((p) => (c.url ?? '').startsWith(p));
-```
-
-```ts
-// shared/api/pagination.ts — chịu được cả 2 kiểu serialize Page của Spring Data
-export interface Page<T> { content: T[]; page: number; size: number; totalElements: number; totalPages: number }
-export function normalizePage<T>(raw: any): Page<T> {
-  if (raw?.page && typeof raw.page === 'object') {             // VIA_DTO: { content, page:{...} }
-    const { number, size, totalElements, totalPages } = raw.page;
-    return { content: raw.content, page: number, size, totalElements, totalPages };
-  }
-  return { content: raw.content, page: raw.number, size: raw.size,  // DIRECT: PageImpl
-           totalElements: raw.totalElements, totalPages: raw.totalPages };
-}
-```
-
-```ts
-// shared/api/download.ts
-export async function downloadBlob(url: string, params: object, fallbackName: string) {
-  const res = await api.get<Blob>(url, { params, responseType: 'blob' });
-  const cd = res.headers['content-disposition'] ?? '';
-  const name = decodeURIComponent(/filename\*=UTF-8''([^;]+)/i.exec(cd)?.[1]
-             ?? /filename="?([^";]+)"?/i.exec(cd)?.[1] ?? fallbackName);
-  const href = URL.createObjectURL(res.data);
-  Object.assign(document.createElement('a'), { href, download: name }).click();
-  URL.revokeObjectURL(href);
-}
-```
-
-```ts
-// shared/api/queryClient.ts
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30_000,
-      retry: (count, err) => !(err instanceof ApiError && [400, 401, 403, 404].includes(err.status)) && count < 2,
-      refetchOnWindowFocus: false,
-    },
-    mutations: { onError: (err) => toast.error((err as ApiError).message) },  // override per-mutation khi cần
-  },
-});
-```
-
-**Helper form**: `applyServerErrors(form, apiError)` → lặp `fieldErrors` gọi `form.setError(field, { message })`; nếu không có field thì hiển thị `message` ở `<FormAlert/>`.
+- `normalizePage`: nhận DIRECT `{ content, number, size, totalElements, totalPages }` hoặc VIA_DTO `{ content, page: { number, size, totalElements, totalPages } }`, trả `Page<T> { content, page, size, totalElements, totalPages }`; page nội bộ/API bắt đầu từ 0. Dùng type guard/kiểu DTO thay cho `any` khi triển khai.
+- `downloadBlob`: request `responseType: 'blob'`, ưu tiên `filename*` UTF-8 rồi `filename`/fallback; xử lý tên không decode được; tạo và thu hồi object URL. Lỗi JSON nằm trong Blob vẫn qua `normalizeError`.
+- `applyServerErrors`: ánh xạ `fieldErrors` vào `form.setError`; lỗi không khớp field đặt ở lỗi chung của form. Giới thiệu khi gặp lỗi validation thật, không tạo một framework form trước màn hình đầu tiên.
 
 ### 2.5 Session store & Guards
 
@@ -385,10 +283,10 @@ export const queryClient = new QueryClient({
 // shared/auth/session.store.ts
 interface SessionState {
   token: string | null;
-  user: { id: ID; email: string; role: Role; status: UserStatus } | null;
+  user: { id: ID; email: string; role: Role; status?: UserStatus } | null;
   setSession(token: string, user?: SessionState['user']): void;  // nếu thiếu user → decode JWT (sub, email, role)
   setToken(token: string): void;
-  clear(opts?: { reason?: 'logout' | 'expired' }): void;          // + queryClient.clear()
+  clear(opts?: { reason?: 'logout' | 'expired' }): void;          // bên trong đã clear QueryClient và phát event
 }
 // persist → localStorage key 'ec.session'; lắng nghe 'storage' event để đồng bộ logout giữa các tab.
 // Timer: setTimeout tới exp − 60s → toast "Phiên sắp hết hạn" → clear() khi tới exp.
@@ -396,8 +294,8 @@ interface SessionState {
 
 ```tsx
 // shared/auth/guards.tsx
-<RequireAuth />                       // chưa login → /login?redirect=<current>
-<RequireRole roles={['ADMIN','MANAGER','STAFF']} />   // sai role → /403
+<RequireAuth />                       // chưa login → /login, giữ location.state.from
+<RequireRole roles={['ADMIN','MANAGER','STAFF']} />   // sai role → /forbidden
 <GuestOnly />                         // đã login → redirect về trang trước / theo role
 ```
 
@@ -468,6 +366,8 @@ Kèm `components/ui/StatusBadge` với map label tiếng Việt + màu cho từn
 
 ### 2.7 Query key factory
 
+Mẫu kiến trúc đích để tra cứu: A5 chỉ thêm key `me` đang dùng; thêm từng nhánh khác khi có query tương ứng, không tạo toàn bộ factory trước giao diện.
+
 ```ts
 export const qk = {
   me:          ['me'] as const,
@@ -488,100 +388,303 @@ export const qk = {
 
 ## 3. Lộ trình triển khai (Roadmap) & Dependency Rationale
 
+**Ưu tiên hiện tại: giao diện Auth → backend Auth thật → hoàn thiện từng luồng; hạ tầng đi cùng nơi sử dụng.** P0 là phần nền tối thiểu và danh sách hạ tầng dùng chung phát triển dần, không còn là cổng yêu cầu hoàn tất mọi helper/config rồi mới được làm P1.
+
 ```mermaid
 graph LR
-  P0["P0 Foundation"] --> P1["P1 Auth & Session"]
-  P1 --> P2["P2 Catalog"]
+  P0["P0 Nền tối thiểu đã có"] --> UI["P1.A1–A3 Login UI và validation"]
+  UI --> LOGIN["P1.A4–A7 Login thật, hồ sơ, logout, guards"]
+  LOGIN --> AUTH["P1.A8–A16 Register, verify, recovery và kiểm thử"]
+  AUTH --> P2["P2 Catalog"]
   P2 --> P3["P3 Cart · Address · Checkout · VNPay"]
-  P1 --> P3
+  AUTH --> P3
   P3 --> P4["P4 Account · Orders · Reviews · Wishlist · Returns"]
-  P1 --> P5a["P5.1 Admin Shell + RBAC"]
+  AUTH --> P5a["P5.1 Admin Shell + RBAC"]
   P5a --> P5b["P5.2 Admin Orders"]
   P5a --> P5c["P5.3 Category/Brand → Product → Inventory"]
   P5b --> P5d["P5.4 Returns · Reviews"]
   P5c --> P5e["P5.5 Coupons · Users"]
   P5d --> P5f["P5.6 Dashboard · Reports"]
   P5e --> P5f
+  INFRA["Shared infrastructure bổ sung khi dùng"] -.-> LOGIN
+  INFRA -.-> P2
+  INFRA -.-> P3
+  INFRA -.-> P4
+  INFRA -.-> P5c
+  INFRA -.-> P5f
 ```
 
-| Phase | Nội dung | Phụ thuộc & lý do | Ước lượng |
-|---|---|---|---|
-| **P0** | Scaffold, design tokens, layouts, API client, error/page normalize, QueryClient, shared UI (DataTable, Money, StatusBadge, ConfirmDialog, ImageUpload), MSW, type-gen | Mọi module dùng chung client/types/UI. Làm sai ở đây (ví dụ ID kiểu `number`) sẽ phải sửa toàn bộ về sau | 3–4 ngày |
-| **P1** | Login, Register, Verify email, Resend, Forgot/Reset password, Logout, session store, guards, header user menu, `GET /users/me` | Cart, Address, Orders, Wishlist, Reviews, Returns và toàn bộ Admin đều **yêu cầu JWT**. Thêm nữa: quirk "public endpoint 401 khi token hết hạn" khiến **ngay cả Catalog** cũng cần interceptor auth hoàn chỉnh | 3 ngày |
-| **P2** | Home, Product listing/search, Suggest, PDP + chọn variant, Compare, Category/Brand nav, Policy pages | Public, nhưng cung cấp **`productVariantId`** — đầu vào bắt buộc của Cart/Checkout. Category/Brand là dữ liệu tham chiếu cho cả filter lẫn admin form | 4–5 ngày |
-| **P3** | Server cart + guest cart + merge, Address book, Checkout (user & guest, Buy Now), coupon, VNPay redirect + result page, Order success | Cần variant (P2) + auth (P1). **Address được kéo vào P3** (thay vì P4) vì checkout của user dùng `addressId` | 5–6 ngày |
-| **P4** | Profile, Change password, Order history/detail/cancel/pay again/buy again, Reviews (pending/history/CRUD), Wishlist, Return request | Cần đơn hàng thật từ P3. Review & Return chỉ áp dụng cho đơn **DELIVERED** ⇒ trong lúc chưa có Admin Orders, dùng **Swagger UI** đẩy trạng thái đơn (hoặc kéo P5.2 lên song song) | 4–5 ngày |
-| **P5** | Admin portal (thứ tự bên dưới) | Khung admin chỉ cần P1 (role) — có thể chạy **song song** với P2–P4 nếu có 2 dev | 8–10 ngày |
+| Phase | Kết quả nhìn thấy được | Hạ tầng được bổ sung cùng tính năng |
+|---|---|---|
+| **P0 — nền phát triển dần** | App chạy, có layout và có chỗ gắn màn hình mới | Tận dụng scaffold, tokens, proxy, client/session hiện có; các phần còn lại theo bảng phân bổ bên dưới |
+| **P1 — Auth trước** | Đăng nhập, hồ sơ đọc từ backend, đăng xuất, bảo vệ route, đăng ký/xác thực và khôi phục mật khẩu | Form validation, API types, mutation/query, session, guards, kiểm thử và config chất lượng có ví dụ thật |
+| **P2 — Catalog** | Xem/tìm/lọc sản phẩm, mở chi tiết, chọn variant, so sánh | Money/DateTime, Skeleton/EmptyState, normalizePage, Pagination, URL state, query keys catalog |
+| **P3 — Transaction** | Giỏ guest/user, địa chỉ, checkout và kết quả VNPay | Guest cart persist/merge, form địa chỉ, kiểm soát session checkout, payment callback |
+| **P4 — Account & hậu mãi** | Sửa hồ sơ, đơn hàng, đánh giá, wishlist và trả hàng | AccountLayout khi có nhiều trang, ConfirmDialog, ImageDropzone ở form đầu tiên cần ảnh |
+| **P5 — Admin** | Vận hành đơn, catalog, kho, đổi trả, users, dashboard và reports | DataTable ở bảng đầu tiên, upload ở sản phẩm, chart ở dashboard, Blob download ở reports |
 
-**Thứ tự nội bộ P5 & lý do:**
+Không dùng ước lượng 3–4 ngày P0 / 3 ngày P1 làm thời hạn cho người mới. Tiến độ đo bằng từng màn hình và flow đã tự chạy, giải thích được, kiểm tra được và có commit.
 
-1. **Admin shell + RBAC sidebar** — mọi trang admin dựa vào nó.
-2. **Orders** — giá trị vận hành cao nhất; mở khóa test P4 (DELIVERED → review/return).
-3. **Category → Brand → Product → Inventory** — Product form cần `categoryId/brandId`; Inventory cần variant đã tồn tại.
-4. **Return requests → Reviews** — phát sinh từ đơn hàng đã giao.
-5. **Coupons → Users** — độc lập, CRUD đơn giản.
-6. **Dashboard → Reports** — chỉ đọc số liệu tổng hợp; làm cuối để có dữ liệu thật từ mọi module.
+### 3.1 Cách học trong mỗi nhiệm vụ
 
----
+1. **Xác định kết quả trước:** sau bước này mở URL nào, bấm gì, màn hình thay đổi ra sao.
+2. **Giải thích kiến thức ngay trước khi dùng:** khái niệm mới là gì, vì sao cần ở màn hình hiện tại, đoạn nào trong flow sử dụng nó. Nếu có cú pháp JS/TS mới như destructuring, spread, import/export hay async/await thì giải thích tại chỗ.
+3. **Người dùng tự sửa một phần nhỏ:** nói rõ từng file và vai trò; chỉ thêm package/config đang cần. Một mốc lớn được chia thành vài lượt hướng dẫn nếu có quá nhiều khái niệm mới.
+4. **Chạy ngay trên trình duyệt:** kiểm tra giao diện; khi có API thì mở Network xem method, payload, response và status. Chỉ rõ thao tác nào chứng minh tính năng chạy thật.
+5. **Giải thích sau khi chạy:** vẽ flow và mô tả dữ liệu đi từ input → form → API → backend → state/cache → giao diện. Phân biệt phần React làm và phần thư viện làm.
+6. **Chốt nhiệm vụ:** ghi kết quả kiểm tra, điều còn thiếu và nội dung commit; chỉ đánh dấu hoàn thành sau khi kiểm tra đạt. Nếu chia thêm nhiệm vụ nhỏ thì mỗi nhiệm vụ đó cũng có commit riêng.
+
+UI trước nghĩa là làm một màn hình rồi nối chức năng của chính màn hình đó sớm. Không dựng tất cả trang Auth tĩnh xong mới bắt đầu nối backend. Không dùng token/đăng nhập giả để kết luận chức năng đã chạy.
+
+### 3.2 Bản đồ kiến thức gắn với kết quả
+
+| Kiến thức | Gặp lần đầu | Tác dụng có thể thấy ngay |
+|---|---|---|
+| Component, JSX, import/export, className | A1 | Viết hàm component thì form xuất hiện trong layout |
+| Route, Link, Outlet | A1 | Bấm Đăng nhập thay nội dung trang mà vẫn giữ header/footer |
+| Props, event handler, useState, render theo điều kiện | A2 | Cùng PasswordInput tái sử dụng được; bấm hiện/ẩn làm UI đổi |
+| React Hook Form + Zod | A3 | Nhập sai có lỗi cạnh input, dữ liệu hợp lệ mới submit; không viết hai bộ state cho cùng form |
+| HTTP, Promise/async-await, useMutation | A4 | Nút chuyển sang đang gửi; Network có POST thật; sai mật khẩu hiện lỗi |
+| Zustand và persist | A4 | Đăng nhập xong header đổi; reload vẫn có session |
+| useQuery, query key, enabled, cache | A5 | Trang hồ sơ có loading/error/retry và dữ liệu backend |
+| Guard, navigate, location.state | A7 | Guest bị chuyển sang login và quay lại trang hợp lệ sau đăng nhập |
+| Search params, token dùng một lần | A10/A12 | Link email đưa đúng token vào xác thực/reset |
+| useEffect và cleanup | A9/A13 | Cooldown đếm lùi, timer/subscription được dọn, hai tab đồng bộ logout |
+| Type generation, strict types, test mock, CI | A14–A16 | Phát hiện sai DTO và kiểm tra lại đúng các nhánh đã nhìn thấy ở Auth |
+
+`useState` giữ trạng thái UI như hiện/ẩn mật khẩu; React Hook Form giữ dữ liệu/lỗi form; Zustand giữ token và danh tính phiên; TanStack Query giữ hồ sơ/dữ liệu server. Không sao chép cùng một dữ liệu sang nhiều bộ state. Chưa giới thiệu tối ưu hóa hoặc abstraction mới khi chưa có nhu cầu cụ thể.
+
+### 3.3 Phân bổ hạ tầng còn lại và commit tại nơi sử dụng
+
+| Hạng mục | Thời điểm và bài kiểm tra thực tiễn | Commit khi hoàn thành |
+|---|---|---|
+| Hoàn thiện client/error policy Auth | A4/A6/A13: sai credentials, logout, 401, toast không trùng | Theo commit của mốc Auth tương ứng; nếu tách riêng: `fix(api): align auth errors with session lifecycle` |
+| Query key hồ sơ và retry policy | A5: hồ sơ tải/retry đúng; logout xóa cache qua store hiện có | `feat(auth): display authenticated user profile` |
+| OpenAPI type-gen và TS strict | A14: đối chiếu DTO Auth đang dùng, bắt lỗi field/type thật | `chore(types): validate auth contracts with OpenAPI and strict types` |
+| Vitest + Testing Library + MSW | A15: tái hiện thành công/lỗi đã thử với backend | `test(auth): cover authentication and session flows` |
+| ESLint boundaries, Prettier, CI | A16: kiểm tra quan hệ import Auth đang có; CI chạy đúng lệnh local | `chore(quality): enforce auth checks in CI` |
+| Money/DateTime/StatusBadge/Skeleton/EmptyState | P2: giá, trạng thái, loading và danh sách rỗng có dữ liệu minh họa | `feat(ui): add catalog display and feedback components` |
+| normalizePage + Pagination | P2: đổi trang listing và đối chiếu response backend | `feat(catalog): integrate paginated product listings` |
+| useUrlState + query keys catalog | P2: lọc sản phẩm, refresh và Back/Forward giữ đúng bộ lọc | `feat(catalog): synchronize filters and pagination with URL` |
+| ConfirmDialog | P4 hủy đơn hoặc P5 hành động quản trị đầu tiên cần xác nhận | `feat(ui): add confirmation dialog for order actions` |
+| ImageDropzone | P4 trả hàng hoặc P5 upload sản phẩm: file hợp lệ hiện preview, sai loại/dung lượng bị chặn | `feat(ui): add validated image dropzone` |
+| DataTable | P5 bảng quản trị đầu tiên: sort/page tác động request thật | `feat(admin): add server-paginated data table` |
+| Blob download | P5 Reports: bấm export có file đúng tên, lỗi vẫn hiển thị được | `feat(reports): add authenticated CSV downloads` |
+
+Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helper/component dùng chung có thể bắt đầu trong feature; tách ra shared khi phạm vi dùng đã rõ. Mỗi phần trong các phase sau vẫn áp dụng mẫu kết quả → kiến thức → file → flow → kiểm tra → commit ở Mục 3.1.
+
+**Thứ tự nội bộ P5:** admin shell/RBAC → orders → category/brand/product/inventory → returns/reviews → coupons/users → dashboard/reports. Orders mở khóa kiểm tra đơn DELIVERED cho review/return; catalog cung cấp variant cho kho. Có thể song song P2–P4 nếu có thêm người làm, sau khi Auth dùng được.
 
 ## 4. Kế hoạch chi tiết từng Module
 
 > Ký hiệu quyền: 🌐 Public · 🔒 Authenticated · 🛡️ Admin (kèm role).
 
-### PHASE 0 — Project Foundation & Shared Infrastructure
+### PHASE 0 — Nền tối thiểu & hạ tầng phát triển cùng tính năng
 
-| Hạng mục | Deliverable |
-|---|---|
-| Scaffold | `npx create-vite@latest ./ --template react-ts`, Tailwind v4, shadcn init, alias `@/` |
-| Design system | Tokens trong `src/index.css` (nền trung tính + xanh dương làm màu brand, dark mode cho admin), typography Geist Variable (đã cài qua `@fontsource-variable/geist`) |
-| Layouts & route errors | `StorefrontLayout`, `AccountLayout`, `AdminLayout`, `NotFoundPage`, `ForbiddenPage`, `RouteErrorBoundary` (React Router route boundary dùng `useRouteError`; 403 tái sử dụng `ForbiddenPage`) |
-| Shared UI | `DataTable` (server pagination), `Pagination` (0-based ⇄ URL 1-based), `Money`, `DateTime`, `StatusBadge`, `ConfirmDialog`, `ImageDropzone` (jpg/png/webp ≤ 5MB, mirror `FileValidator`), `EmptyState`, `Skeleton*` |
-| Infra | Mục 2.3 → 2.7, `useUrlState` (đồng bộ filter/page với search params) |
-| Type-gen | Script `npm run gen:api` → `openapi-typescript http://localhost:8080/v3/api-docs -o src/shared/types/openapi.d.ts` |
-| Quality | ESLint boundaries, Vitest + MSW handlers khởi tạo, CI lint/typecheck |
+**Quyết định ngày 2026-10-17:** tiếp tục thẳng sang giao diện Auth. Không chờ hoàn tất pagination, download, DataTable, upload, toàn bộ query keys hay toàn bộ config chất lượng để bắt đầu `/login`.
 
-#### Trạng thái Phase 0 & điểm tiếp tục (cập nhật 2026-10-15)
+#### Trạng thái hiện tại và điểm tiếp tục
 
-| Nhóm | Trạng thái | Ghi chú |
+| Nhóm | Quan sát source ngày 2026-10-17 | Việc tiếp theo có tác dụng thực tế |
 |---|---|---|
-| Scaffold | ✅ Hoàn thành | Vite + React + TypeScript, Tailwind v4, shadcn/ui với Base UI, alias `@/*`. |
-| Design system | ✅ Hoàn thành phần nền | Geist Variable và token sáng/tối trong `src/index.css` đã có; `AdminLayout` áp dụng class `.dark` khi chạy. |
-| Layouts & route errors | ✅ Hoàn thành phần P0 | `StorefrontLayout`, `AdminLayout`, `NotFoundPage`, `ForbiddenPage`, `RouteErrorBoundary` và route cơ bản đã có. `AccountLayout` được hoãn đến khi bắt đầu feature tài khoản theo quyết định trước đó. |
-| Shared UI | 🟡 Đang làm | shadcn `Button` đã có. Còn `DataTable`, `Pagination`, `Money`, `DateTime`, `StatusBadge`, `ConfirmDialog`, `ImageDropzone`, `EmptyState` và `Skeleton*`. |
-| Infra | 🟡 Đang làm — các mục còn lại tạm để sau | Port 3000, alias, proxy, `.env.example`, `.env.development`, `src/vite-env.d.ts` và `src/shared/config/env.ts` đã có. Axios đã cài; `ApiError`/`normalizeError`, common types, enums, Zustand session store (bao gồm `clear({ reason })`) và JWT helper (`decodeJwt`/`isExpired`) đã được thêm. Còn auth events/session lifecycle (đồng bộ logout giữa tab, cảnh báo/hết hạn phiên), permissions/guards, Axios client/interceptors, pagination/download helpers, query key factory, `useUrlState` và hoàn thiện QueryClient/providers. Cài Axios báo 7 cảnh báo high severity; cần xem chi tiết `npm audit` trước khi quyết định xử lý. |
-| Type-gen | ⬜ Chưa bắt đầu | Chưa có script `gen:api` và file OpenAPI types được sinh. |
-| Quality | 🟡 Đang làm | Có lệnh `build` và `lint`; ESLint boundaries, Vitest/MSW setup và CI lint/typecheck còn thiếu. |
+| Scaffold/design/layout | Đã có Vite/React/TS, Tailwind/shadcn Base UI, alias, Geist/tokens, StorefrontLayout, AdminLayout và route errors | Tái sử dụng để dựng LoginPage ở A1; không scaffold lại |
+| Env/proxy | Đã có port 3000, proxy `/api` và `/uploads`, env example/development, env helper | A4 quan sát request login đi qua proxy |
+| HTTP/error | Axios đã cài; `client.ts` và `errors.ts` hiện có. `client.ts` là file mới chưa được Git theo dõi lúc kiểm tra | A4 kiểm thử login thật; A6/A13 kiểm tra logout/401. Chưa đánh dấu integration thành công chỉ vì file đã tồn tại |
+| Session/RBAC | Đã có store/JWT/events/lifecycle/permissions/guards; providers đã start lifecycle và hiển thị toast | A4 dùng session ở header; A7 nối guards khi đã có login; A13 quan sát vòng đời |
+| QueryClient | Đã có provider, staleTime 30 giây, tắt refetch khi focus | A5 thêm query hồ sơ/key/retry theo nhu cầu; không tạo client/provider thứ hai |
+| Shared UI | Có Button; các component khác chưa làm | Chỉ thêm input/label/alert cần cho Auth; component còn lại theo Mục 3.3 |
+| Type-gen/quality | Chưa có gen:api, test/MSW/CI/boundaries; app/node TS config hiện chưa bật strict | A14–A16 thực hiện bằng DTO và flow Auth đã chạy |
 
-  **Kiểm tra gần nhất:** `npm run build` thành công sau khi hoàn thành `src/shared/auth/jwt.ts` và `src/shared/auth/session.store.ts`, bao gồm chữ ký `clear({ reason })` (2026-10-15). Build gồm `tsc -b` và Vite production build. Lệnh `npm run lint` trước đó không trả kết quả trong khoảng 30 giây và đã được dừng, nên lint chưa được xác nhận.
+**Lịch sử kiểm tra:** kế hoạch cũ ghi build thành công ngày 2026-10-16, lint chưa xác nhận sau khi chờ hơn 30 giây. Đây là kết quả lịch sử, không phải xác nhận cho source hoặc thay đổi mới ngày 2026-10-17. Sau từng nhiệm vụ cần ghi lại lần kiểm tra thực tế.
 
-  **Tạm hoãn theo yêu cầu:** các hạng mục Phase 0 chưa hoàn tất sẽ được tiếp tục sau. Khi quay lại, bắt đầu với auth events/session lifecycle, sau đó permissions/guards và các phần Infra còn lại; Shared UI, Type-gen và Quality cũng vẫn đang chờ thực hiện.
+**Nền đủ để bắt đầu A1:** dùng app/layout hiện có và chạy `npm run dev` để xem trang. Trước A4 mới cần backend chạy ở port 8080 và tài khoản ACTIVE có thể đăng nhập; có thể chuẩn bị tài khoản bằng Swagger trong khi chưa làm giao diện đăng ký. Các dịch vụ phụ thuộc của backend chạy theo hướng dẫn backend.
 
-**Cách phối hợp:** người dùng tự sửa source code. Trợ lý chỉ kiểm tra và cung cấp code/hướng dẫn; cần giải thích mục đích từng file, hướng dẫn trước khi giới thiệu khái niệm mới, và đưa gợi ý commit/push khi từng mục nhỏ hoàn tất. Không tự sửa source code.
+**Điểm tiếp tục chính thức: A1 — LoginPage và đường dẫn `/login`.** Không tiếp tục tuyến cũ “làm hết infra P0 rồi mới làm Auth”. `AccountLayout` vẫn hoãn đến P4; trang hồ sơ đọc ở P1 dùng StorefrontLayout hiện có.
+
+**Cách phối hợp:** người dùng tự sửa source code; trợ lý chỉ đọc/kiểm tra, giải thích và cung cấp hướng dẫn/code theo từng phần. Trước code phải nêu mục đích từng file và kiến thức mới; sau khi chạy phải có flow, kết quả kiểm tra và gợi ý commit/push. Không tự sửa source code. Chỉ sửa tài liệu kế hoạch khi người dùng cho phép, như lần cập nhật này.
 
 ---
 
-### PHASE 1 — Core Blockers: Auth & Session
+### PHASE 1 — Học React qua giao diện & backend Auth thật
+
+**Mục tiêu:** mỗi mốc có thay đổi nhìn thấy được trên trình duyệt hoặc một phép kiểm tra trực tiếp trên chức năng đã chạy. Làm A1 → A16 theo thứ tự; các mốc là bài học nhỏ, không phải 16 ngày cố định. Chưa cần dựng giao diện catalog/admin đầy đủ.
+
+**Chuẩn bị backend trước A4:** chạy backend/các dịch vụ phụ thuộc, mở Swagger và có một tài khoản ACTIVE. Đối chiếu payload/response của các endpoint Auth bên dưới. Kiểm tra email verify/reset cần backend gửi email hoạt động; nếu chưa có email thì ghi rõ phần chưa xác nhận, tiếp tục các luồng độc lập như login/profile/logout. Không gọi mock là kiểm thử backend thật.
+
+#### A1 — Nhìn thấy màn hình đăng nhập
+
+- **Kết quả:** mở `/login` có form email/mật khẩu trong StorefrontLayout; header có link Đăng nhập.
+- **Học và áp dụng:** component là hàm trả JSX; `className` tạo giao diện; import/export nối file; `Link`, route và `Outlet` đặt trang vào layout. Giải thích từng khái niệm trên chính form đang hiển thị.
+- **Phạm vi tự sửa:** `features/auth/pages/LoginPage.tsx`, router và link trong StorefrontLayout. Dùng Button/tokens hiện có; chưa tạo AuthLayout hoặc component form tổng quát. Chỉ thêm link sang register/forgot khi route tương ứng được tạo.
+- **Flow:** bấm Đăng nhập → router khớp `/login` → StorefrontLayout giữ header/footer → Outlet render LoginPage.
+- **Kiểm tra/hoàn thành:** link hoạt động, reload trực tiếp `/login` vẫn có trang, label gắn đúng input, giao diện dùng được trên màn hình hẹp. Chưa hiển thị thành công đăng nhập giả.
+- **Commit:** `feat(auth): add login page and navigation`.
+
+#### A2 — Tương tác đầu tiên: hiện/ẩn mật khẩu
+
+- **Kết quả:** bấm nút hiện/ẩn làm input đổi giữa password/text; dữ liệu đang gõ không mất.
+- **Học và áp dụng:** props truyền cấu hình vào PasswordInput; event handler nhận thao tác; `useState` giữ trạng thái hiển thị; React render lại khi state đổi. Hook gọi ở đầu component.
+- **Phạm vi tự sửa:** PasswordInput trong `features/auth/components` và LoginPage; nút toggle dùng `type='button'`, có nhãn truy cập. State ở bước này chỉ quản lý hiện/ẩn, không dựng thêm bộ state email/password rồi bỏ đi khi dùng form library.
+- **Flow:** click → handler → cập nhật showPassword → render lại → type của input đổi.
+- **Kiểm tra/hoàn thành:** toggle không submit form, thao tác bằng bàn phím được, giải thích được khác nhau giữa props và state.
+- **Commit:** `feat(auth): add reusable password input`.
+
+#### A3 — Validation có kết quả ngay trên form
+
+- **Kết quả:** email sai hoặc thiếu mật khẩu có lỗi cạnh ô nhập; nhập hợp lệ mới đi vào submit handler.
+- **Học và áp dụng:** React Hook Form quản lý giá trị/lỗi/submit; Zod kiểm tra cấu trúc dữ liệu. Giới thiệu `register`, `handleSubmit` và form errors bằng input thật, không tự làm thêm một bộ validation song song.
+- **Phạm vi tự sửa:** cài `react-hook-form`, `zod`, `@hookform/resolvers` lúc này; thêm schema Login và LoginForm, nối PasswordInput với form. Login chỉ yêu cầu email hợp lệ và password không rỗng; regex mật khẩu mạnh dùng cho register/reset.
+- **Flow:** input → form → resolver/schema → lỗi cạnh input hoặc dữ liệu hợp lệ vào handler. Bước này chưa gọi backend và chưa lưu session.
+- **Kiểm tra/hoàn thành:** email sai, password rỗng, sửa từ sai thành đúng; lỗi có thể đọc được, không in password ra giao diện/log. Không có request login khi validation chưa đạt.
+- **Commit:** `feat(auth): validate login form inputs`.
+
+#### A4 — Đăng nhập backend thật và thấy header đổi
+
+- **Kết quả:** nhập tài khoản ACTIVE → backend xác thực → header hiện email; reload vẫn có session. Sai thông tin có lỗi trong form, nút có trạng thái đang gửi.
+- **Học và áp dụng:** request/response type, Promise/async-await, API function, mutation và trạng thái pending/error/success; dùng store session hiện có để nhiều component cùng thấy trạng thái đăng nhập. Giải thích từng đoạn trước khi nối, có thể chia vài lượt hướng dẫn.
+- **Phạm vi tự sửa:** `features/auth/types.ts`, `api.ts`, `queries.ts` với hook login, LoginForm và UserMenu/header. Tận dụng client/QueryClient/providers/store đã có; không tạo HTTP client hay store thứ hai. Public auth request dùng `X-Skip-Auth: 1`; mutation login không auto-retry.
+- **Flow:** form hợp lệ → mutation → `api.post('/api/auth/login')` → Vite proxy → backend → AuthResponse → `setSession` → header render theo store → điều hướng. Tạm dùng CUSTOMER về `/`, ADMIN/MANAGER/STAFF về `/admin` vì đây là route đã có.
+- **Kiểm tra/hoàn thành:** Network có đúng method/payload/status; thành công lưu token/user theo store; sai email 404 và sai password 400 cùng hiển thị “Email hoặc mật khẩu không đúng”; tài khoản pending/locked có thông báo phù hợp; tắt backend có lỗi kết nối; pending chặn submit lặp.
+- **Commit:** `feat(auth): connect login to backend session`.
+
+#### A5 — Trang hồ sơ lấy dữ liệu thật
+
+- **Kết quả:** link Tài khoản mở `/account/profile`, hiển thị email/họ tên/số điện thoại từ `GET /api/users/me` với loading/error/nút thử lại.
+- **Học và áp dụng:** phân biệt session ở Zustand với dữ liệu server ở Query; `useQuery`, query key, `enabled` và cache có tác dụng trên một màn hình thật. Chỉ thêm key hồ sơ theo quy ước `qk.me`, chưa tạo keys cho mọi module.
+- **Phạm vi tự sửa:** API/hook me, trang hồ sơ chỉ đọc, route và UserMenu. Dùng StorefrontLayout; chưa tạo AccountLayout hoặc form chỉnh sửa. Query chỉ chạy khi session hợp lệ; khi chưa có session hiển thị CTA đăng nhập, A7 bổ sung chuyển hướng tự động.
+- **Flow:** có token → query me → client gắn Bearer → backend → cache profile → UI. `UserProfileResponse` không có role/status; không ghi đè SessionUser bằng profile DTO làm mất quyền của session.
+- **Kiểm tra/hoàn thành:** họ tên null có lời nhắc phù hợp; loading/error/retry quan sát được; không gửi query me khi không có session; request có Bearer; query không retry tự động 400/401/403/404. Dùng placeholder/loading đơn giản trước, chỉ tách Skeleton chung khi có nơi dùng tiếp.
+- **Commit:** `feat(auth): display authenticated user profile`.
+
+#### A6 — Đăng xuất thật
+
+- **Kết quả:** bấm Đăng xuất → header trở về trạng thái guest, hồ sơ/cache của phiên cũ được xóa.
+- **Học và áp dụng:** mutation từ sự kiện, `try/finally` và cleanup phiên ở client; phân biệt backend blacklist token với xóa session phía trình duyệt.
+- **Phạm vi tự sửa:** API/hook logout và UserMenu. Logout gửi Bearer, `meta: { noPublicRetry: true }`; không skip-auth. Chụp token khi bắt đầu; trong finally chỉ gọi clear nếu token đó vẫn là session hiện tại. Nếu interceptor đã clear hoặc phiên mới đã được tạo thì không clear lại. Store đã xóa QueryClient và phát event.
+- **Flow:** click → chụp token của phiên cần logout → POST logout → backend blacklist → finally kiểm tra token còn khớp rồi clear → header/profile cập nhật. Backend lỗi vẫn kết thúc phiên cần logout; không xóa phiên đăng nhập mới trong lúc chờ.
+- **Kiểm tra/hoàn thành:** logout khi bình thường và khi backend lỗi; reload không khôi phục phiên cũ; không có replay logout anonymous, không còn dữ liệu profile cache của phiên cũ.
+- **Commit:** `feat(auth): integrate backend logout and session cleanup`.
+
+#### A7 — Bảo vệ route và quay lại trang ban đầu
+
+- **Kết quả:** guest vào hồ sơ/admin bị đưa tới login; login đúng quay lại trang hợp lệ; CUSTOMER vào admin thấy `/forbidden`.
+- **Học và áp dụng:** nested routes/Outlet, guard render theo session, navigate và location; UI thay đổi do cùng một store mà header đang dùng.
+- **Phạm vi tự sửa:** gắn RequireAuth/RequireRole/GuestOnly hiện có, không viết bộ guard mới. Login/register dùng GuestOnly; profile dùng RequireAuth; admin dùng RequireRole cho ADMIN/MANAGER/STAFF. Kiểm tra auth là trước kiểm tra role.
+- **Flow:** truy cập private → guard giữ `location.state.from` → `/login` → login thành công → đọc đích → kiểm tra route/quyền → navigate. Có thể hỗ trợ `?redirect=` cho link ngoài, ưu tiên query hợp lệ rồi state; giữ pathname + search + hash.
+- **Kiểm tra/hoàn thành:** không nhận URL ngoài origin hoặc `//...`; tránh quay lại login/register và vòng lặp; không chọn trang sai quyền. Fallback hiện tại CUSTOMER `/`, role quản trị `/admin`; chỉ dùng `/admin/dashboard` hoặc `/admin/orders` sau khi P5 tạo chúng. Reload/private/Back đều đúng.
+- **Commit:** `feat(auth): protect routes and restore valid login destinations`.
+
+#### A8 — Đăng ký rồi nhìn thấy bước kiểm tra email
+
+- **Kết quả:** `/register` có email/password/confirm; submit thật thành công chuyển `/register/check-email`, hiển thị email đã nhập và hướng dẫn.
+- **Học và áp dụng:** tái sử dụng PasswordInput, schema có confirm, mutation và ánh xạ lỗi server vào form; mở rộng kiến thức đã dùng ở login.
+- **Phạm vi tự sửa:** RegisterPage/Form/schema/types/API/hook và CheckEmailPage tối thiểu; thêm route/link từ login. Chưa làm resend ở mốc này; không lưu password vào session, query key hoặc URL.
+- **Flow:** form → Zod → POST register → MessageResponse → trang check-email. Không tạo session/hiển thị đã đăng nhập từ response đăng ký.
+- **Kiểm tra/hoàn thành:** confirm lệch, email sai, password yếu, email đã tồn tại, đăng ký lại email PENDING, validationErrors; lỗi không khớp field hiện ở lỗi chung. Refresh check-email có fallback nếu mất navigation state.
+- **Commit:** `feat(auth): add registration and check-email page`.
+
+#### A9 — Gửi lại email và hiểu useEffect qua bộ đếm
+
+- **Kết quả:** bấm Gửi lại → gọi backend → nút chờ 60 giây rồi dùng lại được.
+- **Học và áp dụng:** state đếm lùi, effect đồng bộ timer với màn hình, cleanup khi unmount. Request gửi lại nằm trong click handler/mutation; effect chỉ quản lý timer.
+- **Phạm vi tự sửa:** ResendVerificationButton/API/hook và CheckEmailPage; skip-auth, chặn double-submit/pending. Cooldown là UX phía client, không thay thế kiểm soát của backend.
+- **Flow:** click → POST resend-verification → thành công → bắt đầu cooldown → timer cập nhật UI → cleanup khi rời trang.
+- **Kiểm tra/hoàn thành:** có email thật hoặc ghi rõ môi trường email chưa xác nhận; lỗi request không giả báo đã gửi; rời/quay lại trang không tạo nhiều timer; StrictMode không gửi email tự động hai lần.
+- **Commit:** `feat(auth): add verification resend with cooldown`.
+
+#### A10 — Xác thực email và tự đăng nhập sau thành công
+
+- **Kết quả:** link `/verify-email?token=...` mở trang có nút Xác thực email; bấm nút → xác thực backend → lưu session → header đổi và điều hướng.
+- **Học và áp dụng:** đọc search params, mutation do thao tác người dùng, token dùng một lần; tách đọc URL khỏi tác dụng phụ gọi API.
+- **Phạm vi tự sửa:** VerifyEmailPage/handler/API/hook, dùng skip-auth và `retry: false`, disable nút khi pending/đã thành công. Thiết kế ban đầu cần một lần bấm xác nhận để flow dễ quan sát; sau xác thực thành công vẫn auto-login.
+- **Flow:** đọc token → kiểm tra có token → click → GET verify → AuthResponse có accessToken và user → `setSession(accessToken, user)` → đánh dấu xác thực thành công → query me/điều hướng theo đích hợp lệ. Decode JWT chỉ là fallback của store, không phải bước bắt buộc để bù user thiếu. Nếu query me lỗi thì retry query me, không gọi lại verify với token đã tiêu thụ; 401 của me vẫn theo chính sách session chung.
+- **Kiểm tra/hoàn thành:** token thiếu/sai/hết hạn/đã dùng; bấm hai lần khi pending; chạy trong StrictMode; reload link đã tiêu thụ có thông báo phù hợp. Không hứa `useRef` bảo đảm gọi đúng một lần qua remount/reload; không auto-call API từ render/effect ở phiên bản học đầu tiên.
+- **Commit:** `feat(auth): complete email verification and automatic sign-in`.
+
+#### A11 — Quên mật khẩu
+
+- **Kết quả:** `/forgot-password` nhập email và gửi request thật; màn hình hiển thị kết quả và hướng dẫn tiếp theo.
+- **Học và áp dụng:** áp dụng lại schema/form/mutation và trạng thái request đã hiểu, không thêm abstraction mới cho form một ô.
+- **Phạm vi tự sửa:** ForgotPasswordPage/form/schema/API/hook, thêm route/link từ login; skip-auth và không retry POST tự động.
+- **Flow:** email → validation → POST forgot-password → MessageResponse hoặc ApiError → thông báo trên trang.
+- **Kiểm tra/hoàn thành:** email sai, backend lỗi, pending, response thành công và link email thực tế; chỉ xác nhận đã gửi khi API trả thành công. Ghi rõ nếu dịch vụ email chưa hoạt động.
+- **Commit:** `feat(auth): add forgot-password flow`.
+
+#### A12 — Đặt lại mật khẩu rồi đăng nhập bằng mật khẩu mới
+
+- **Kết quả:** link `/reset-password?token=...` mở form mật khẩu mới/confirm; reset thật thành công → login bằng mật khẩu mới.
+- **Học và áp dụng:** kết hợp search params, schema confirm/password và mutation đã gặp; tự giải thích toàn bộ flow mà không thêm thư viện.
+- **Phạm vi tự sửa:** ResetPasswordPage/form/schema/types/API/hook và route; skip-auth. Thiếu token thì hiển thị hướng dẫn xin link mới; không gửi request reset thiếu token.
+- **Flow:** link email → token + form → POST reset-password → thành công → nếu guest thì tới `/login` để đăng nhập bằng mật khẩu mới. Nếu đang có session, hiển thị CTA “Đăng xuất và đăng nhập lại” dùng flow A6 rồi mới tới login; không hứa GuestOnly sẽ hiển thị login khi vẫn có phiên. Reset không mặc định tạo session mới hoặc thu hồi mọi token cũ.
+- **Kiểm tra/hoàn thành:** password yếu/confirm lệch/token hết hạn/đã dùng; mật khẩu mới đăng nhập được, mật khẩu cũ bị từ chối; pending chặn submit lặp; cả trường hợp guest và đang đăng nhập đều có đường đi tiếp đúng.
+- **Commit:** `feat(auth): complete password reset and re-login`.
+
+#### A13 — Thấy vòng đời phiên và hiểu effect/cleanup đang có
+
+- **Kết quả:** logout ở tab A cập nhật tab B; phiên hết hạn có một thông báo và protected route chuyển sang login; trang public tiếp tục dùng được.
+- **Học và áp dụng:** đọc lại effect/subscription/timer của providers và session.lifecycle bằng tác dụng đã nhìn thấy; phân biệt session UI, cache và HTTP 401.
+- **Phạm vi tự sửa:** kiểm tra/tích hợp lifecycle và guards hiện có; không tạo SessionExpiryWatcher khác. Guard render lại theo session để chuyển protected route; nếu cần listener điều hướng thì đặt trong ngữ cảnh Router, không gọi useNavigate trong provider đang nằm ngoài RouterProvider.
+- **Flow:** timer/storage/401 → clear session tương ứng → QueryClient clear + session-cleared → header cập nhật + một toast → guard điều hướng nếu trang cần auth. Token A trả lỗi muộn không được xóa session B vừa đăng nhập.
+- **Kiểm tra/hoàn thành:** hai tab, cảnh báo trước hạn, hết hạn, token bị blacklist qua backend, anonymous 401, 403 không logout, public retry tối đa một lần, cancellation và không toast lỗi trùng. Token hết hạn ngắn được mô phỏng ở test A15, không đổi TTL backend để phục vụ UI.
+- **Commit:** `fix(auth): align session lifecycle and expiration behavior`.
+
+#### A14 — Sinh types và bật strict bằng DTO Auth đang dùng
+
+- **Kết quả:** `npm run gen:api` sinh `shared/types/openapi.d.ts`; typecheck bắt được tên field/type sai của form/API thật.
+- **Học và áp dụng:** type chỉ tồn tại lúc kiểm tra code; schema Zod và backend validation kiểm tra dữ liệu lúc chạy. Type generation giảm lệch DTO, không tự xác thực JSON runtime.
+- **Phạm vi tự sửa:** lúc này cài openapi-typescript, thêm gen:api/typecheck script, đối chiếu types Auth hiện có; bật strict ở app/node TS project và xử lý lỗi có giải thích. Không sửa generated file bằng tay; kiểm tra ID string và nullable fields.
+- **Flow:** backend OpenAPI → gen:api → types → form/API/hook → typecheck. Thử sai field trong ví dụ hướng dẫn để thấy compiler báo lỗi, sau đó khôi phục code đúng trước commit.
+- **Kiểm tra/hoàn thành:** gen:api với backend chạy, typecheck và build đạt; response Auth khớp Swagger. Không bắt buộc chuẩn hóa DTO của tất cả module chưa sử dụng ở bước này.
+- **Commit:** `chore(types): validate auth contracts with OpenAPI and strict types`.
+
+#### A15 — Biến thao tác đã test thật thành kiểm thử lặp lại
+
+- **Kết quả:** Vitest/Testing Library/MSW chạy lại được các nhánh Auth quan trọng mà không cần thao tác tay mỗi lần.
+- **Học và áp dụng:** test kiểm tra hành vi người dùng; MSW giả lập các response đã thấy để kiểm tra ổn định. Test mock không thay thế xác nhận với backend thật.
+- **Phạm vi tự sửa:** cài/setup test lúc này, thêm Auth MSW handlers; kiểm tra login thành công/thất bại, server validation, profile, logout, redirect theo quyền, verify/reset và hết hạn phiên. Dùng clock/token fixture trong test cho cảnh báo/hết hạn.
+- **Flow:** thao tác giống trình duyệt → request bị MSW trả response đã định → form/header/route thay đổi → assertion. Mỗi test phải chứng minh một hành vi hoặc nhánh lỗi cụ thể.
+- **Kiểm tra/hoàn thành:** test đạt, không dùng token/password thật làm fixture; chạy lại thủ công register → verify → login → profile → logout và forgot → reset → login với backend thật, ghi rõ phần môi trường chưa kiểm tra được.
+- **Commit:** `test(auth): cover authentication and session flows`.
+
+#### A16 — Config chất lượng với lỗi có ví dụ thật
+
+- **Kết quả:** lệnh local và CI phát hiện lỗi import/type/test trên chính module Auth đã chạy.
+- **Học và áp dụng:** ESLint boundaries chặn lớp shared import ngược feature; formatter giữ code nhất quán; CI chạy lại kiểm tra khi push.
+- **Phạm vi tự sửa:** cấu hình boundaries/Prettier và CI theo quan hệ import thật; không đổi kiến trúc chỉ để dùng một config. Không tạo workflow bắt buộc backend live hoặc gọi gen:api localhost trên runner CI.
+- **Flow:** sửa file → lint/typecheck/test/build local → commit/push → CI chạy cùng kiểm tra. Generated types được commit; tái sinh khi contract backend đổi trong môi trường có backend.
+- **Kiểm tra/hoàn thành:** chứng minh một ví dụ import sai bị chặn rồi sửa lại; lint/typecheck/test/build đạt. Nếu chưa xác nhận CI remote thì ghi “cấu hình đã có, chưa xác nhận runner”, không tự ghi xanh.
+- **Commit:** `chore(quality): enforce auth checks in CI`.
+
+#### Tài liệu học đúng lúc
+
+- A1–A2: [React Quick Start](https://react.dev/learn) — component, JSX, props, event và render theo điều kiện.
+- A2: [State: A Component's Memory](https://react.dev/learn/state-a-components-memory) — thay đổi state làm UI cập nhật.
+- A4: [TanStack Query — Mutations](https://tanstack.com/query/latest/docs/framework/react/guides/mutations) — thao tác gửi request và pending/error/success.
+- A9–A10/A13: [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect) — tách request do click khỏi effect đồng bộ timer/subscription.
+
+Đọc phần phục vụ mốc đang làm, rồi quay lại màn hình để áp dụng; không yêu cầu học hết tài liệu hay toàn bộ React trước A1.
 
 #### Pages & Routes
 
 | Path | Quyền | Mô tả |
 |---|---|---|
-| `/login` | 🌐 GuestOnly | Đăng nhập; hỗ trợ `?redirect=` |
+| `/login` | 🌐 GuestOnly | Đăng nhập; đọc `location.state.from` và `?redirect=` hợp lệ theo A7 |
 | `/register` | 🌐 GuestOnly | Email, password, confirm |
 | `/register/check-email` | 🌐 | Hướng dẫn kiểm tra email + nút **Gửi lại** (cooldown 60s) |
-| `/verify-email?token=` | 🌐 | Gọi verify → auto-login → điều hướng |
+| `/verify-email?token=` | 🌐 | Hiện trang xác nhận; bấm nút gọi verify → auto-login → điều hướng |
 | `/forgot-password` | 🌐 | Nhập email |
 | `/reset-password?token=` | 🌐 | Mật khẩu mới + confirm |
+| `/account/profile` | 🔒 | P1: xem hồ sơ qua GET /users/me; P4: thêm chỉnh sửa và AccountLayout |
 
 #### Components
-`LoginForm`, `RegisterForm`, `PasswordInput` (toggle + strength meter), `ResendVerificationButton`, `VerifyEmailHandler`, `UserMenu` (header), `SessionExpiryWatcher`.
+`LoginForm`, `RegisterForm`, `PasswordInput` (toggle trước, strength meter khi có nhu cầu ở register/reset), `ResendVerificationButton`, `VerifyEmailHandler`, `UserMenu` (header), trang hồ sơ chỉ đọc. Tái sử dụng `session.lifecycle.ts` đã chạy trong AppProviders; không tạo SessionExpiryWatcher thứ hai.
 
 #### API Endpoints
 
 | Method | Endpoint | Request | Response |
 |---|---|---|---|
 | POST | `/api/auth/register` | `RegisterRequest` | `201 MessageResponse` |
-| GET | `/api/auth/verify?token=` | — | `AuthResponse` *(không có `user`)* |
+| GET | `/api/auth/verify?token=` | — | `AuthResponse` gồm accessToken, tokenType và user |
 | POST | `/api/auth/resend-verification` | `{ email }` | `MessageResponse` |
 | POST | `/api/auth/login` | `LoginRequest` | `AuthResponse` |
 | POST | `/api/auth/logout` | header `Authorization` | `MessageResponse` |
@@ -596,17 +699,17 @@ export interface LoginRequest { email: string; password: string }
 export interface RegisterRequest { email: string; password: string; confirmPassword: string }
 export interface ResetPasswordRequest { token: string; newPassword: string; confirmPassword: string }
 export interface UserResponse { id: ID; email: string; status: UserStatus; role: Role }
-export interface AuthResponse { accessToken: string; tokenType: 'Bearer'; user?: UserResponse }
+export interface AuthResponse { accessToken: string; tokenType: 'Bearer'; user: UserResponse }
 export interface UserProfileResponse { id: ID; fullName: string | null; email: string; phone: string | null }
 ```
 
 #### Logic & Edge cases
 - **Password policy**: `ResetPassword`/`ChangePassword` dùng regex `^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=]).{8,}$`; Register đang **comment** regex ⇒ FE vẫn áp policy này cho đồng nhất. Zod `.refine` confirm === password.
 - **Login**: email không tồn tại trả **404**, sai mật khẩu trả **400** ⇒ cả hai hiển thị "Email hoặc mật khẩu không đúng". Message `"not verified yet"` ⇒ hiện CTA gửi lại email; `"locked"` ⇒ thông báo liên hệ hỗ trợ.
-- **Sau login**: điều hướng theo role — `CUSTOMER` → `redirect` hoặc `/`; `ADMIN/MANAGER` → `/admin/dashboard`; `STAFF` → `/admin/orders`. Sau đó **merge guest cart** (P3).
-- **Verify**: response không có `user` ⇒ decode JWT (`sub/email/role`) rồi `GET /users/me`. Dùng `useRef` guard chống gọi 2 lần do React StrictMode (token chỉ dùng 1 lần ⇒ lần 2 sẽ báo "link expired").
+- **Sau login**: A7 kiểm tra destination và quyền; fallback hiện tại `CUSTOMER` → `/`, `ADMIN/MANAGER/STAFF` → `/admin`. Khi P5 tạo route thật mới đổi ADMIN/MANAGER → `/admin/dashboard`, STAFF → `/admin/orders`. Merge guest cart bắt đầu ở P3, không là điều kiện hoàn thành Auth.
+- **Verify**: source hiện tại đã trả `user` ⇒ dùng `setSession(accessToken, user)`; query `GET /users/me` bổ sung hồ sơ, không thay thế role/status trong session. Phiên bản học ở A10 gọi verify từ nút xác nhận, mutation không retry, nút disable khi pending; giữ StrictMode. `useRef` không bảo đảm một request qua remount/reload; không dùng nó làm cam kết token chỉ được gửi đúng một lần.
 - **Register lại với email PENDING**: backend cập nhật mật khẩu và gửi lại mail (message khác) ⇒ hiển thị nguyên message.
-- **Logout**: gọi API *best-effort* (có thể 401 nếu token đã hết hạn) ⇒ luôn `clear()` + `queryClient.clear()` + giữ guest cart rỗng.
+- **Logout**: gọi API best-effort có Bearer và `meta.noPublicRetry: true` (có thể 401 nếu token hết hạn) ⇒ kết thúc phiên tương ứng bằng `clear()`; store đã clear QueryClient và phát event. Không clear lần hai; xử lý guest cart khi có cart ở P3.
 - **Profile chưa đủ**: Register không có `fullName` ⇒ nếu `/users/me` trả `fullName == null`, hiện banner "Hoàn thiện hồ sơ".
 
 ---
@@ -664,7 +767,7 @@ export interface PolicyResponse { id: ID; title: string; slug: string; content: 
 - **Variant selection client-side**: `ProductDetailsResponse.variants` đã đủ dữ liệu ⇒ dựng ma trận thuộc tính từ `attributes` của tất cả variant, disable option không tồn tại / hết hàng; **không cần** gọi `/variants` mỗi lần click (dùng endpoint đó làm fallback/deeplink `?color=…`). So khớp bằng `String(value)` giống backend.
 - Khi chưa chọn đủ thuộc tính ⇒ disable "Thêm vào giỏ"; giá hiển thị `basePrice` hoặc khoảng `min–max` của variants.
 - `quantity` ≤ `variant.stock`; stock = 0 ⇒ "Hết hàng", vẫn cho thêm wishlist.
-- **Listing**: backend chỉ hỗ trợ `keyword` + phân trang (không filter category/brand/giá, không sort) ⇒ UI filter category/brand tạm thời điều hướng sang search theo keyword hoặc **ẩn** cho tới khi BE bổ sung (Gap #8). Không lọc client-side trên dữ liệu đã phân trang.
+- **Listing**: theo API contract ở bảng trên, backend đã hỗ trợ `keyword`, `categoryId`, `brandId`, `minPrice`, `maxPrice`, phân trang và `sort`. Thêm từng control rồi đối chiếu query params/response thật; không lọc client-side trên dữ liệu đã phân trang. Nếu Swagger thực tế khác contract thì ghi nhận chênh lệch trước khi triển khai.
 - URL là nguồn sự thật: `?q=&page=` (URL 1-based → API 0-based). `placeholderData: keepPreviousData` khi chuyển trang.
 - **Suggest**: bỏ qua khi `q.trim()` rỗng; `AbortSignal` hủy request cũ; Enter ⇒ `/products?q=`.
 - **Compare**: Zustand persist `compareIds` (max 4, toast khi vượt). `ids` truyền dạng lặp (`paramsSerializer: { indexes: null }`).
@@ -788,7 +891,7 @@ if (res.paymentMethod === 'VNPAY' && res.paymentUrl) {
 
 | Path | Mô tả |
 |---|---|
-| `/account/profile` | Xem/sửa họ tên, SĐT |
+| `/account/profile` | Mở rộng trang chỉ đọc đã làm ở P1: thêm sửa họ tên, SĐT và chuyển vào AccountLayout |
 | `/account/password` | Đổi mật khẩu |
 | `/account/orders?status=&page=` | Lịch sử đơn, tab theo `OrderStatus` |
 | `/account/orders/:id` | Chi tiết + timeline + hành động (hủy / thanh toán / mua lại / đánh giá / trả hàng) |
@@ -874,8 +977,8 @@ export interface ReturnRequestResponse { id: ID; orderId: ID; orderItemId: ID; q
 
 | Path | Quyền | Ghi chú |
 |---|---|---|
-| `/admin` | 🛡️ A/M/S | Redirect: A/M → `/admin/dashboard`, S → `/admin/orders` |
-| `/403` | — | Trang không đủ quyền |
+| `/admin` | 🛡️ A/M/S | Giữ landing hiện có trong lúc chưa tạo route đích; khi đã có dashboard/orders mới redirect A/M → `/admin/dashboard`, S → `/admin/orders` |
+| `/forbidden` | — | Trang không đủ quyền, dùng lại route đã có ở P0/P1 |
 
 `AdminSidebar` sinh menu từ config `{ path, label, icon, perm }` lọc bằng `useCan`. Breadcrumb, `AdminPageHeader`, `FilterBar`, `DataTable` server-side. Theme tối mặc định cho admin.
 
@@ -1097,12 +1200,24 @@ export interface RevenueReportResponse { startDate: ISODate; endDate: ISODate; t
 
 ---
 
-## 6. Definition of Done mỗi module
-1. Types khớp OpenAPI (chạy `gen:api` + `tsc` không lỗi).
-2. Mọi query/mutation qua `features/<m>/api.ts` + hook trong `queries.ts`.
-3. Form có Zod schema mirror Bean Validation + map `validationErrors`.
-4. Có loading / empty / error state; nút có guard quyền.
-5. MSW handler + ít nhất 1 integration test cho luồng chính.
+## 6. Definition of Done — phân biệt mốc học và module hoàn chỉnh
+
+### 6.1 Sau mỗi mốc học
+
+1. Có kết quả quan sát được: URL/màn hình/thao tác cụ thể hoặc phép kiểm tra trên chức năng đang chạy. Mốc UI tĩnh được ghi rõ chưa nối API; không yêu cầu MSW/type-gen trước khi mới học JSX.
+2. Người dùng giải thích được khái niệm mới dùng ở đâu và flow dữ liệu của chính mốc đó; chỉ rõ file chịu trách nhiệm.
+3. Có checklist đã thử và kết quả thật. Với mốc gọi API, ghi method/endpoint/status và phản hồi UI; phân biệt backend thật với test mock.
+4. Chạy kiểm tra hiện có phù hợp phạm vi như build/lint; nếu lỗi hoặc chưa kiểm tra thì ghi rõ, không đánh dấu hoàn tất giả. Chỉ thêm test khi có hành vi cần bảo vệ.
+5. Có nội dung commit cho phần vừa hoàn thành; chỉ stage file của nhiệm vụ, không gom thay đổi chưa liên quan. Nếu push khi nhánh có upstream thì dùng `git push`; nếu chưa có, xác định remote/nhánh rồi mới hướng dẫn lệnh.
+
+### 6.2 Khi kết thúc một module để chuyển sang module tiếp theo
+
+1. Types của API đang dùng khớp OpenAPI; gen:api/typecheck/build đạt sau khi công cụ được đưa vào ở A14.
+2. Query/mutation đi qua `features/<m>/api.ts` và hook trong `queries.ts`; chỉ tạo query keys đang có người dùng.
+3. Form có schema phù hợp validation backend, map validationErrors và thông báo lỗi chung; không toast trùng lỗi form/session.
+4. Có pending/loading, empty khi có ý nghĩa, error/retry và guard quyền theo chức năng thực tế.
+5. Có handler/test cho luồng chính và nhánh lỗi quan trọng; Auth áp dụng A15 rồi CI ở A16 trước khi kết thúc P1. Backend flow chính được kiểm tra riêng; test mock không thay kết quả này.
+6. Có flow tổng kết, giới hạn/môi trường chưa xác nhận và danh sách commit từng mốc. Hạ tầng chuyển sang P2–P5 theo Mục 3.3 không bị coi là thiếu sót của Auth.
 
 ---
 
@@ -1119,7 +1234,7 @@ export interface RevenueReportResponse { startDate: ISODate; endDate: ISODate; t
 | 7 | 🟡 Medium | Inventory & Coupon list không phân trang | admin | Thêm `Pageable` |
 | 8 | 🟡 Medium | STAFF có thể chuyển đơn sang `CANCELLED` qua `/status` (bỏ qua lý do & phân quyền cancel) | `OrderAdminServiceImpl` | Chặn `CANCELLED` trong `updateOrderStatus` |
 | 9 | 🟢 Low | Login sai email trả 404 (lộ thông tin tài khoản tồn tại) | `AuthServiceImpl` | Trả 400 thống nhất |
-| 10 | 🟢 Low | `verifyEmail` không trả `user`; Register không có `fullName` | auth | Bổ sung `user` vào `AuthResponse` |
+| 10 | 🟢 Low | Register chưa có `fullName`; verifyEmail đã trả user theo source ngày 2026-10-17 | auth | Giữ bước hoàn thiện hồ sơ sau đăng ký; không còn yêu cầu bổ sung user cho verifyEmail |
 | 11 | 🟢 Low | Nhiều endpoint trả plain text thay vì `MessageResponse` | users/products/coupons | Thống nhất `MessageResponse` |
 | 12 | 🟢 Low | Category có `logo` trong request nhưng không có trong response / không upload | category | Đồng bộ với Brand |
 | 13 | 🟢 Low | Shipping method/phí hard-code (30k/55k), không có endpoint | checkout | `GET /api/shipping-methods` |
