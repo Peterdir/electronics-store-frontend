@@ -5,7 +5,9 @@
 
 > **Cách triển khai hiện tại — cập nhật 2026-10-17:** học React bằng giao diện và luồng Auth chạy với backend thật. Đọc [Mục 3](#3-lộ-trình-triển-khai-roadmap--dependency-rationale), sau đó làm từng mốc A1 → A16 trong Phase 1. Phần nền tảng đã có được giữ lại; hạ tầng còn thiếu được bổ sung ngay khi màn hình cần đến. Không cần hoàn thành toàn bộ shared infrastructure trước khi làm `/login`.
 
-> **Ưu tiên người dùng đã chốt:** làm Auth trước. Bắt đầu A1, tiến tới A4 để thấy đăng nhập backend thật; tiếp tục hồ sơ, logout/guards, register/verify và khôi phục mật khẩu. Chưa mở công việc Catalog/Cart/Admin nghiệp vụ trong lúc hướng dẫn Auth. Hạ tầng và kiểm thử chỉ bổ sung để phục vụ luồng đang làm; từng nhiệm vụ vẫn có giải thích, flow, cách kiểm tra và commit. Không tự sửa source code.
+> **Tiến độ cập nhật 2026-10-17:** đã hoàn thành **A1–A3** (LoginPage, hiện/ẩn mật khẩu, validation bằng React Hook Form + Zod). **Điểm tiếp tục: A4 — đăng nhập backend thật và thấy header đổi.** Chưa có request login, chưa lưu session từ form và chưa kiểm thử tích hợp Auth với backend. Xem bảng tiến độ ở đầu Phase 1; không làm lại A1–A3.
+
+> **Ưu tiên người dùng đã chốt:** làm Auth trước. Tiếp tục A4 sau khi đã hoàn thành A1–A3 để thấy đăng nhập backend thật; tiếp tục hồ sơ, logout/guards, register/verify và khôi phục mật khẩu. Chưa mở công việc Catalog/Cart/Admin nghiệp vụ trong lúc hướng dẫn Auth. Hạ tầng và kiểm thử chỉ bổ sung để phục vụ luồng đang làm; từng nhiệm vụ vẫn có giải thích, flow, cách kiểm tra và commit. Không tự sửa source code nếu người dùng chưa yêu cầu cụ thể.
 
 ---
 
@@ -487,19 +489,19 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 
 | Nhóm | Quan sát source ngày 2026-10-17 | Việc tiếp theo có tác dụng thực tế |
 |---|---|---|
-| Scaffold/design/layout | Đã có Vite/React/TS, Tailwind/shadcn Base UI, alias, Geist/tokens, StorefrontLayout, AdminLayout và route errors | Tái sử dụng để dựng LoginPage ở A1; không scaffold lại |
+| Scaffold/design/layout | Đã có Vite/React/TS, Tailwind/shadcn Base UI, alias, Geist/tokens, StorefrontLayout, AdminLayout và route errors; A1 đã thêm LoginPage, route `/login` và link header | Tiếp tục từ form hiện có ở A4; không scaffold hoặc dựng lại LoginPage |
 | Env/proxy | Đã có port 3000, proxy `/api` và `/uploads`, env example/development, env helper | A4 quan sát request login đi qua proxy |
-| HTTP/error | Axios đã cài; `client.ts` và `errors.ts` hiện có. `client.ts` là file mới chưa được Git theo dõi lúc kiểm tra | A4 kiểm thử login thật; A6/A13 kiểm tra logout/401. Chưa đánh dấu integration thành công chỉ vì file đã tồn tại |
+| HTTP/error | Axios đã cài; `client.ts` và `errors.ts` hiện có và được Git theo dõi; chưa nối request login vào form | A4 kiểm thử login thật; A6/A13 kiểm tra logout/401. Chưa đánh dấu integration thành công chỉ vì file đã tồn tại |
 | Session/RBAC | Đã có store/JWT/events/lifecycle/permissions/guards; providers đã start lifecycle và hiển thị toast | A4 dùng session ở header; A7 nối guards khi đã có login; A13 quan sát vòng đời |
 | QueryClient | Đã có provider, staleTime 30 giây, tắt refetch khi focus | A5 thêm query hồ sơ/key/retry theo nhu cầu; không tạo client/provider thứ hai |
-| Shared UI | Có Button; các component khác chưa làm | Chỉ thêm input/label/alert cần cho Auth; component còn lại theo Mục 3.3 |
+| Shared UI/form | Có Button; Auth đã có PasswordInput, LoginForm và loginSchema. Đã cài React Hook Form, Zod, resolvers; có lỗi cạnh input và thuộc tính hỗ trợ truy cập | A4 giữ validation và toggle hiện có, nối submit với API; component còn lại theo Mục 3.3 |
 | Type-gen/quality | Chưa có gen:api, test/MSW/CI/boundaries; app/node TS config hiện chưa bật strict | A14–A16 thực hiện bằng DTO và flow Auth đã chạy |
 
-**Lịch sử kiểm tra:** kế hoạch cũ ghi build thành công ngày 2026-10-16, lint chưa xác nhận sau khi chờ hơn 30 giây. Đây là kết quả lịch sử, không phải xác nhận cho source hoặc thay đổi mới ngày 2026-10-17. Sau từng nhiệm vụ cần ghi lại lần kiểm tra thực tế.
+**Kết quả kiểm tra gần nhất — sau A3, ngày 2026-10-17:** trợ lý đã đối chiếu source và chạy `npm run build`, `npm run lint`, `git diff --check`: đều đạt. Build có cảnh báo chunk khoảng 536 kB sau minify, không làm build thất bại; chưa thêm config tối ưu ở mốc này. Người dùng xác nhận đã test A3 đầy đủ trên giao diện; trợ lý chưa kiểm tra trực tiếp bằng trình duyệt. Lỗi lint cũ tại `button.tsx` đã được sửa bằng cách chỉ export `Button` (commit `c90cc7b`). Đây chưa phải kết quả kiểm thử backend Auth.
 
-**Nền đủ để bắt đầu A1:** dùng app/layout hiện có và chạy `npm run dev` để xem trang. Trước A4 mới cần backend chạy ở port 8080 và tài khoản ACTIVE có thể đăng nhập; có thể chuẩn bị tài khoản bằng Swagger trong khi chưa làm giao diện đăng ký. Các dịch vụ phụ thuộc của backend chạy theo hướng dẫn backend.
+**Nền và UI A1–A3 đã đủ để bắt đầu A4:** dùng app/layout/form hiện có và chạy `npm run dev` để xem `/login`; `/` vẫn là HomePage. Trước khi gọi API cần backend chạy ở port 8080 và tài khoản ACTIVE có thể đăng nhập; có thể chuẩn bị tài khoản bằng Swagger trong khi chưa làm giao diện đăng ký. Các dịch vụ phụ thuộc của backend chạy theo hướng dẫn backend. Chưa xác nhận backend/tài khoản đã sẵn sàng trong lần kiểm tra A3.
 
-**Điểm tiếp tục chính thức: A1 — LoginPage và đường dẫn `/login`.** Không tiếp tục tuyến cũ “làm hết infra P0 rồi mới làm Auth”. `AccountLayout` vẫn hoãn đến P4; trang hồ sơ đọc ở P1 dùng StorefrontLayout hiện có.
+**Điểm tiếp tục chính thức: A4 — Đăng nhập backend thật và thấy header đổi.** Không làm lại A1–A3 hoặc tiếp tục tuyến cũ “làm hết infra P0 rồi mới làm Auth”. `AccountLayout` vẫn hoãn đến P4; trang hồ sơ đọc ở P1 dùng StorefrontLayout hiện có.
 
 **Cách phối hợp:** người dùng tự sửa source code; trợ lý chỉ đọc/kiểm tra, giải thích và cung cấp hướng dẫn/code theo từng phần. Trước code phải nêu mục đích từng file và kiến thức mới; sau khi chạy phải có flow, kết quả kiểm tra và gợi ý commit/push. Không tự sửa source code. Chỉ sửa tài liệu kế hoạch khi người dùng cho phép, như lần cập nhật này.
 
@@ -511,7 +513,23 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 
 **Chuẩn bị backend trước A4:** chạy backend/các dịch vụ phụ thuộc, mở Swagger và có một tài khoản ACTIVE. Đối chiếu payload/response của các endpoint Auth bên dưới. Kiểm tra email verify/reset cần backend gửi email hoạt động; nếu chưa có email thì ghi rõ phần chưa xác nhận, tiếp tục các luồng độc lập như login/profile/logout. Không gọi mock là kiểm thử backend thật.
 
+#### Tiến độ thực tế — cập nhật 2026-10-17
+
+| Mốc | Trạng thái | Kết quả và bằng chứng |
+|---|---|---|
+| A1 | ✅ Hoàn thành | Có LoginPage trong StorefrontLayout, route `/login`, link Đăng nhập trên header; `/` giữ HomePage. Commit `dd96410` — `feat(auth): add login page and navigation`. |
+| A2 | ✅ Hoàn thành | Có PasswordInput dùng props/useState, nút hiện/ẩn `type="button"`, giữ nội dung khi đổi type; đã kiểm tra source/build. Phần code A2 hiện nằm cùng snapshot commit A3 `aded89e`; không tạo lại nhiệm vụ hoặc commit giả cho A2. |
+| A3 | ✅ Hoàn thành | Có loginSchema, LoginForm, resolver, register/handleSubmit, lỗi cạnh input; PasswordInput chuyển tiếp props xuống input. Người dùng đã xác nhận test giao diện đầy đủ; trợ lý review source, build/lint đạt. Commit `aded89e` — `feat(auth): validate login form inputs`. |
+| A4 | ⏭ Tiếp theo — chưa triển khai | `handleValidSubmit` mới có comment chờ nối API; chưa có `features/auth/types.ts`, `api.ts`, `queries.ts`, chưa dùng response login để lưu phiên/đổi header/điều hướng. |
+| A5–A16 | ⬜ Chưa hoàn thành | Làm lần lượt sau A4 theo các mục bên dưới; hạ tầng đã có không đồng nghĩa các flow này đã được nối và kiểm thử. |
+
+**Ghi nhớ để hướng dẫn tiếp:** người dùng mới học React, tự code theo từng bước nhỏ; chỉ giới thiệu kiến thức cần ngay tại bước dùng, giải thích cú pháp và tác dụng thực tế. Đã giải thích destructuring của useForm, register/spread, resolver/schema/errors, noValidate, render lỗi có điều kiện và vai trò của aria-invalid/aria-describedby/role="alert". Giữ Zod để phản hồi lỗi đầu vào nhanh; backend vẫn kiểm tra lại. Login chỉ kiểm tra email hợp lệ và password không rỗng; không áp password mạnh cho login.
+
+**Bắt đầu A4 từ source hiện có:** xác nhận backend và tài khoản ACTIVE → thêm types/API/hook login → nối LoginForm, pending/error → lưu session bằng store hiện có, đổi header và điều hướng. Tái sử dụng client/proxy/QueryClient/providers; không cài lại hoặc tạo bộ thứ hai. Thay thông báo kiểm tra form của A3 bằng trạng thái request thật; chỉ kết luận A4 hoàn thành sau khi kiểm tra Network và kết quả backend. Tiếp tục hướng dẫn từng phần, chờ người dùng thực hiện/gửi kết quả trước phần tiếp theo.
+
 #### A1 — Nhìn thấy màn hình đăng nhập
+
+**Trạng thái: ✅ Đã hoàn thành.** Giữ nội dung dưới đây làm tiêu chí tra cứu, không giao lại nhiệm vụ.
 
 - **Kết quả:** mở `/login` có form email/mật khẩu trong StorefrontLayout; header có link Đăng nhập.
 - **Học và áp dụng:** component là hàm trả JSX; `className` tạo giao diện; import/export nối file; `Link`, route và `Outlet` đặt trang vào layout. Giải thích từng khái niệm trên chính form đang hiển thị.
@@ -522,6 +540,8 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 
 #### A2 — Tương tác đầu tiên: hiện/ẩn mật khẩu
 
+**Trạng thái: ✅ Đã hoàn thành.** PasswordInput tiếp tục được dùng trong LoginForm của A3.
+
 - **Kết quả:** bấm nút hiện/ẩn làm input đổi giữa password/text; dữ liệu đang gõ không mất.
 - **Học và áp dụng:** props truyền cấu hình vào PasswordInput; event handler nhận thao tác; `useState` giữ trạng thái hiển thị; React render lại khi state đổi. Hook gọi ở đầu component.
 - **Phạm vi tự sửa:** PasswordInput trong `features/auth/components` và LoginPage; nút toggle dùng `type='button'`, có nhãn truy cập. State ở bước này chỉ quản lý hiện/ẩn, không dựng thêm bộ state email/password rồi bỏ đi khi dùng form library.
@@ -531,6 +551,8 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 
 #### A3 — Validation có kết quả ngay trên form
 
+**Trạng thái: ✅ Đã hoàn thành.** Người dùng đã test giao diện; review source/build/lint đạt, xem bằng chứng ở bảng tiến độ.
+
 - **Kết quả:** email sai hoặc thiếu mật khẩu có lỗi cạnh ô nhập; nhập hợp lệ mới đi vào submit handler.
 - **Học và áp dụng:** React Hook Form quản lý giá trị/lỗi/submit; Zod kiểm tra cấu trúc dữ liệu. Giới thiệu `register`, `handleSubmit` và form errors bằng input thật, không tự làm thêm một bộ validation song song.
 - **Phạm vi tự sửa:** cài `react-hook-form`, `zod`, `@hookform/resolvers` lúc này; thêm schema Login và LoginForm, nối PasswordInput với form. Login chỉ yêu cầu email hợp lệ và password không rỗng; regex mật khẩu mạnh dùng cho register/reset.
@@ -539,6 +561,8 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 - **Commit:** `feat(auth): validate login form inputs`.
 
 #### A4 — Đăng nhập backend thật và thấy header đổi
+
+**Trạng thái: ⏭ Điểm tiếp tục — chưa triển khai, chưa kiểm thử backend login.**
 
 - **Kết quả:** nhập tài khoản ACTIVE → backend xác thực → header hiện email; reload vẫn có session. Sai thông tin có lỗi trong form, nút có trạng thái đang gửi.
 - **Học và áp dụng:** request/response type, Promise/async-await, API function, mutation và trạng thái pending/error/success; dùng store session hiện có để nhiều component cùng thấy trạng thái đăng nhập. Giải thích từng đoạn trước khi nối, có thể chia vài lượt hướng dẫn.
