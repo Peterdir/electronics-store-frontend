@@ -8,6 +8,8 @@ import {
 } from "@/features/auth/schemas"
 import { useLogin } from "@/features/auth/queries"
 import { ApiError } from "@/shared/api/errors"
+import { useNavigate } from "react-router"
+import { Role } from "@/shared/types/enums"
 
 function getLoginErrorMessage(error: Error): string {
     if (error instanceof ApiError) {
@@ -34,7 +36,9 @@ function getLoginErrorMessage(error: Error): string {
 }
 
 export function LoginForm() {
+    const navigate = useNavigate()
     const loginMutation = useLogin()
+
     const {
         register,
         handleSubmit,
@@ -50,7 +54,13 @@ export function LoginForm() {
     function handleValidSubmit(values: LoginFormValues) {
         if (loginMutation.isPending) return
 
-        loginMutation.mutate(values)
+        loginMutation.mutate(values, {
+            onSuccess: (data) => {
+                const destination = data.user.role === Role.CUSTOMER ? "/" : "/admin"
+
+                navigate(destination, { replace: true })
+            },
+        })
     }
 
     return (
@@ -131,13 +141,6 @@ export function LoginForm() {
             {loginMutation.error && (
                 <p role="alert" className="text-sm text-destructive">
                     {getLoginErrorMessage(loginMutation.error)}
-                </p>
-            )}
-
-            {loginMutation.isSuccess && (
-                <p role="status" className="text-sm text-muted-foreground">
-                    Backend đã xác thực tài khoản {loginMutation.data.user.email}.
-                    Bước này chưa lưu phiên đăng nhập.
                 </p>
             )}
         </form>

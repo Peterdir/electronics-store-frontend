@@ -1,4 +1,5 @@
 import { Link, Outlet } from "react-router"
+import { UserMenu } from "@/features/auth/components/UserMenu"
 
 export function StorefrontLayout() {
     return (
@@ -22,9 +23,7 @@ export function StorefrontLayout() {
                             Khu vực quản trị
                         </Link>
 
-                        <Link to="/login" className="rounded-sm text-muted-foreground transition-colors hover:text-primary outline-none  focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                            Đăng nhập
-                        </Link>
+                        <UserMenu />
                     </nav>
                 </div>
             </header>
