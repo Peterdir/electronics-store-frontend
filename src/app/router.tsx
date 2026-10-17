@@ -8,6 +8,12 @@ import { RouteErrorBoundary } from "./pages/RouteErrorBoundary";
 import { ForbiddenPage } from "./pages/ForbiddenPage"
 import { LoginPage } from "@/features/auth/pages/LoginPage";
 import { ProfilePage } from "@/features/auth/pages/ProfilePage"
+import {
+    GuestOnly,
+    RequireAuth,
+    RequireRole,
+} from "@/shared/auth/guards"
+import { Role } from "@/shared/types/enums"
 
 
 export const router = createBrowserRouter([
@@ -17,15 +23,40 @@ export const router = createBrowserRouter([
         ErrorBoundary: RouteErrorBoundary,
         children: [
             { index: true, Component: HomePage },
-            { path: "login", Component: LoginPage},
-            { path: "account/profile", Component: ProfilePage },
+            {
+                path: "login",
+                element: (
+                    <GuestOnly>
+                        <LoginPage />
+                    </GuestOnly>
+                ),
+            },
+            {
+                path: "account/profile",
+                element: (
+                    <RequireAuth>
+                        <ProfilePage />
+                    </RequireAuth>
+                ),
+            },
         ],
     },
     {
         path: "/admin",
-        Component: AdminLayout,
+        element: (
+            <RequireRole
+                roles={[Role.ADMIN, Role.MANAGER, Role.STAFF]}
+            >
+                <AdminLayout />
+            </RequireRole>
+        ),
         ErrorBoundary: RouteErrorBoundary,
-        children: [{ index: true, Component: AdminHomePage }],
+        children: [
+            {
+                index: true,
+                Component: AdminHomePage,
+            },
+        ],
     },
     {
         path: '/forbidden',

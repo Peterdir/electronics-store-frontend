@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { Navigate, Outlet, useLocation } from "react-router";
 import { useSession } from "./session.store";
-import { Role } from "../types/enums";
 import type { Role as RoleType } from "../types/enums";
 import { isExpired } from "./jwt";
+import { getLoginDestination } from "./redirect"
 
 
 interface GuardProps {
@@ -55,20 +55,40 @@ export function RequireRole({ roles, children }: RequireRoleProps) {
 }
 
 export function GuestOnly({ children }: GuardProps) {
-  const token = useSession((state) => state.token);
-  const role = useSession((state) => state.user?.role);
-  const location = useLocation();
+  const token = useSession((state) => state.token)
+  const role = useSession((state) => state.user?.role)
+  const location = useLocation()
 
   if (!token || isExpired(token)) {
-    return children ?? <Outlet />;
+    return children ?? <Outlet />
   }
 
-  const state = location.state as
-    | { from?: { pathname?: string } }
-    | null;
-  const destination =
-    state?.from?.pathname ??
-    (role === Role.CUSTOMER ? "/" : "/admin");
+  const state = location.state as {
+    from?: {
+      pathname?: string
+      search?: string
+      hash?: string
+    }
+  } | null
 
-  return <Navigate to={destination} replace />;
+  const from = state?.from
+  let savedPath: string | undefined
+
+  if (typeof from?.pathname === "string") {
+    const search = typeof from.search === "string" ? from.search : ""
+
+    const hash = typeof from.hash === "string" ? from.hash : ""
+
+    savedPath = `${from.pathname}${search}${hash}`
+  }
+
+  const redirect = new URLSearchParams(location.search).get("redirect")
+
+  const destination = getLoginDestination(
+    role,
+    redirect,
+    savedPath,
+  )
+
+  return <Navigate to={destination} replace />
 }

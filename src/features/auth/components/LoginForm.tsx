@@ -8,8 +8,6 @@ import {
 } from "@/features/auth/schemas"
 import { useLogin } from "@/features/auth/queries"
 import { ApiError } from "@/shared/api/errors"
-import { useNavigate } from "react-router"
-import { Role } from "@/shared/types/enums"
 
 function getLoginErrorMessage(error: Error): string {
     if (error instanceof ApiError) {
@@ -36,7 +34,6 @@ function getLoginErrorMessage(error: Error): string {
 }
 
 export function LoginForm() {
-    const navigate = useNavigate()
     const loginMutation = useLogin()
 
     const {
@@ -54,13 +51,7 @@ export function LoginForm() {
     function handleValidSubmit(values: LoginFormValues) {
         if (loginMutation.isPending) return
 
-        loginMutation.mutate(values, {
-            onSuccess: (data) => {
-                const destination = data.user.role === Role.CUSTOMER ? "/" : "/admin"
-
-                navigate(destination, { replace: true })
-            },
-        })
+        loginMutation.mutate(values)
     }
 
     return (
