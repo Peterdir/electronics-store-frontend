@@ -7,7 +7,10 @@ import { normalizeError } from "./errors";
 // Mở rộng kiểu config để feature có thể chặn public retry.
 declare module "axios" {
   interface AxiosRequestConfig {
-    meta?: { noPublicRetry?: boolean };
+    meta?: { 
+      noPublicRetry?: boolean
+      authToken?: string
+    };
   }
 }
 
@@ -50,7 +53,7 @@ api.interceptors.request.use((config) => {
   // Header này chỉ dùng nội bộ, không gửi sang backend.
   config.headers.delete("X-Skip-Auth");
 
-  const token = useSession.getState().token;
+  const token = config.meta?.authToken ?? useSession.getState().token;
 
   if (skipAuth || !token || isExpired(token)) {
     config.headers.delete("Authorization");

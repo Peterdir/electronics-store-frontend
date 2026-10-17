@@ -5,9 +5,9 @@
 
 > **Cách triển khai hiện tại — cập nhật 2026-10-17:** học React bằng giao diện và luồng Auth chạy với backend thật. Đọc [Mục 3](#3-lộ-trình-triển-khai-roadmap--dependency-rationale), sau đó làm từng mốc A1 → A16 trong Phase 1. Phần nền tảng đã có được giữ lại; hạ tầng còn thiếu được bổ sung ngay khi màn hình cần đến. Không cần hoàn thành toàn bộ shared infrastructure trước khi làm `/login`.
 
-> **Tiến độ cập nhật 2026-10-17:** đã hoàn thành **A1–A3** (LoginPage, hiện/ẩn mật khẩu, validation bằng React Hook Form + Zod). **Điểm tiếp tục: A4 — đăng nhập backend thật và thấy header đổi.** Chưa có request login, chưa lưu session từ form và chưa kiểm thử tích hợp Auth với backend. Xem bảng tiến độ ở đầu Phase 1; không làm lại A1–A3.
+> **Tiến độ cập nhật 2026-10-17:** đã hoàn thành **A1–A5**: LoginPage, hiện/ẩn mật khẩu, validation, đăng nhập backend thật/lưu session/đổi header/điều hướng và trang hồ sơ lấy dữ liệu backend. Người dùng xác nhận các luồng đã chạy thành công; trợ lý review source, build/lint và kiểm tra diff đạt. **Điểm tiếp tục: A6 — đăng xuất thật.** A4 đã commit `94d55c3`, A5 đã commit `520222f`. Xem bảng tiến độ và hướng dẫn tiếp nối ở đầu Phase 1; không làm lại A1–A5.
 
-> **Ưu tiên người dùng đã chốt:** làm Auth trước. Tiếp tục A4 sau khi đã hoàn thành A1–A3 để thấy đăng nhập backend thật; tiếp tục hồ sơ, logout/guards, register/verify và khôi phục mật khẩu. Chưa mở công việc Catalog/Cart/Admin nghiệp vụ trong lúc hướng dẫn Auth. Hạ tầng và kiểm thử chỉ bổ sung để phục vụ luồng đang làm; từng nhiệm vụ vẫn có giải thích, flow, cách kiểm tra và commit. Không tự sửa source code nếu người dùng chưa yêu cầu cụ thể.
+> **Ưu tiên người dùng đã chốt:** làm Auth trước, tiếp tục **A6 → A16** sau A1–A5. Người dùng muốn nhận hướng dẫn **trọn một mốc trong một lượt**, tự sửa code rồi gửi kết quả để trợ lý review trước commit; vẫn giải thích từng bước và kiến thức mới ngay tại nơi dùng. Chưa mở công việc Catalog/Cart/Admin nghiệp vụ trong lúc hướng dẫn Auth. Hạ tầng và kiểm thử chỉ bổ sung để phục vụ luồng đang làm; từng nhiệm vụ vẫn có giải thích, flow, cách kiểm tra và commit. Chỉ trực tiếp sửa source khi người dùng yêu cầu cụ thể.
 
 ---
 
@@ -489,21 +489,21 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 
 | Nhóm | Quan sát source ngày 2026-10-17 | Việc tiếp theo có tác dụng thực tế |
 |---|---|---|
-| Scaffold/design/layout | Đã có Vite/React/TS, Tailwind/shadcn Base UI, alias, Geist/tokens, StorefrontLayout, AdminLayout và route errors; A1 đã thêm LoginPage, route `/login` và link header | Tiếp tục từ form hiện có ở A4; không scaffold hoặc dựng lại LoginPage |
-| Env/proxy | Đã có port 3000, proxy `/api` và `/uploads`, env example/development, env helper | A4 quan sát request login đi qua proxy |
-| HTTP/error | Axios đã cài; `client.ts` và `errors.ts` hiện có và được Git theo dõi; chưa nối request login vào form | A4 kiểm thử login thật; A6/A13 kiểm tra logout/401. Chưa đánh dấu integration thành công chỉ vì file đã tồn tại |
-| Session/RBAC | Đã có store/JWT/events/lifecycle/permissions/guards; providers đã start lifecycle và hiển thị toast | A4 dùng session ở header; A7 nối guards khi đã có login; A13 quan sát vòng đời |
-| QueryClient | Đã có provider, staleTime 30 giây, tắt refetch khi focus | A5 thêm query hồ sơ/key/retry theo nhu cầu; không tạo client/provider thứ hai |
-| Shared UI/form | Có Button; Auth đã có PasswordInput, LoginForm và loginSchema. Đã cài React Hook Form, Zod, resolvers; có lỗi cạnh input và thuộc tính hỗ trợ truy cập | A4 giữ validation và toggle hiện có, nối submit với API; component còn lại theo Mục 3.3 |
+| Scaffold/design/layout | Đã có Vite/React/TS, Tailwind/shadcn Base UI, alias, Geist/tokens, StorefrontLayout, AdminLayout và route errors; có `/login`, `/account/profile` và UserMenu ở cả hai header | A6 thêm nút Đăng xuất vào UserMenu; không dựng lại layout hoặc các trang đã có |
+| Env/proxy | Port 3000, proxy `/api` và `/uploads`, env example/development, env helper; login/profile đã gọi backend thật qua cấu hình hiện có | A6 tái sử dụng proxy để gọi logout |
+| HTTP/error | Có Axios client/error normalizer; form đã gọi POST login, hồ sơ gọi GET me; login dùng skip-auth, me dùng Bearer | A6 thêm logout có Bearer và `meta.noPublicRetry`; A13 kiểm tra 401/vòng đời phiên |
+| Session/RBAC | Store/JWT/events/lifecycle/permissions/guards đã có; login lưu token/user qua `setSession`, persist `ec.session`, header đọc store; điều hướng CUSTOMER `/`, các role quản trị `/admin` | A6 dùng `clear()` hiện có; A7 mới gắn guards vào router; A13 quan sát vòng đời |
+| QueryClient | Có provider, staleTime 30 giây, tắt refetch khi focus; A5 thêm `queryKeys.ts`, `qk.me`, hook `useMe`, query key theo user ID, enabled khi token còn hạn và `retry: false` | A6 xác nhận logout xóa cache hồ sơ qua `clear()` của session store; không tạo client/provider thứ hai |
+| Shared UI/form | Có Button, PasswordInput, LoginForm, loginSchema; form có validation/pending/lỗi backend; ProfilePage có loading/error/retry và fallback dữ liệu null | A6 thêm trạng thái pending cho logout; component khác theo Mục 3.3 |
 | Type-gen/quality | Chưa có gen:api, test/MSW/CI/boundaries; app/node TS config hiện chưa bật strict | A14–A16 thực hiện bằng DTO và flow Auth đã chạy |
 
-**Kết quả kiểm tra gần nhất — sau A3, ngày 2026-10-17:** trợ lý đã đối chiếu source và chạy `npm run build`, `npm run lint`, `git diff --check`: đều đạt. Build có cảnh báo chunk khoảng 536 kB sau minify, không làm build thất bại; chưa thêm config tối ưu ở mốc này. Người dùng xác nhận đã test A3 đầy đủ trên giao diện; trợ lý chưa kiểm tra trực tiếp bằng trình duyệt. Lỗi lint cũ tại `button.tsx` đã được sửa bằng cách chỉ export `Button` (commit `c90cc7b`). Đây chưa phải kết quả kiểm thử backend Auth.
+**Kết quả kiểm tra gần nhất — sau A5, ngày 2026-10-17:** trợ lý đã review source và chạy `npm run build`, `npm run lint`, `git diff --check`: đều đạt. Build có cảnh báo chunk khoảng 603 kB sau minify, không làm build thất bại; chưa thêm config tối ưu ở mốc này. Người dùng đã xác nhận login, giao diện sau sửa AdminLayout và trang hồ sơ chạy thành công với backend thật. Trợ lý chưa trực tiếp thao tác trình duyệt; không suy diễn mọi trường hợp trong checklist đã được kiểm thử riêng khi chưa có kết quả chi tiết. Chưa có test tự động cho Auth; bổ sung ở A15. Lỗi lint cũ tại `button.tsx` đã được sửa bằng cách chỉ export `Button` (commit `c90cc7b`).
 
-**Nền và UI A1–A3 đã đủ để bắt đầu A4:** dùng app/layout/form hiện có và chạy `npm run dev` để xem `/login`; `/` vẫn là HomePage. Trước khi gọi API cần backend chạy ở port 8080 và tài khoản ACTIVE có thể đăng nhập; có thể chuẩn bị tài khoản bằng Swagger trong khi chưa làm giao diện đăng ký. Các dịch vụ phụ thuộc của backend chạy theo hướng dẫn backend. Chưa xác nhận backend/tài khoản đã sẵn sàng trong lần kiểm tra A3.
+**Môi trường để tiếp tục:** chạy frontend bằng `npm run dev` ở port 3000, backend ở port 8080 cùng các dịch vụ phụ thuộc theo hướng dẫn backend. Đã có tài khoản đăng nhập và lấy hồ sơ thành công. Tiếp tục dùng `/login` và `/account/profile` để kiểm tra logout; `/` vẫn là HomePage. Các tài khoản/nhánh lỗi chưa có kết quả kiểm thử riêng cần được ghi rõ khi kiểm tra, không coi việc có code xử lý là bằng chứng đã chạy nhánh đó.
 
-**Điểm tiếp tục chính thức: A4 — Đăng nhập backend thật và thấy header đổi.** Không làm lại A1–A3 hoặc tiếp tục tuyến cũ “làm hết infra P0 rồi mới làm Auth”. `AccountLayout` vẫn hoãn đến P4; trang hồ sơ đọc ở P1 dùng StorefrontLayout hiện có.
+**Điểm tiếp tục chính thức: A6 — Đăng xuất thật.** A1–A5 đã có code và commit; không giao lại các nhiệm vụ này hoặc quay về tuyến cũ “làm hết infra P0 rồi mới làm Auth”. `AccountLayout` vẫn hoãn đến P4; trang hồ sơ đọc ở P1 đang dùng StorefrontLayout.
 
-**Cách phối hợp:** người dùng tự sửa source code; trợ lý chỉ đọc/kiểm tra, giải thích và cung cấp hướng dẫn/code theo từng phần. Trước code phải nêu mục đích từng file và kiến thức mới; sau khi chạy phải có flow, kết quả kiểm tra và gợi ý commit/push. Không tự sửa source code. Chỉ sửa tài liệu kế hoạch khi người dùng cho phép, như lần cập nhật này.
+**Cách phối hợp:** người dùng tự sửa source code; trợ lý đọc/kiểm tra, giải thích và cung cấp hướng dẫn/code trọn một mốc trong một lượt theo yêu cầu mới nhất. Trước code nêu mục đích từng file và kiến thức mới; sau khi chạy có flow, kết quả kiểm tra và gợi ý commit/push. Chỉ trực tiếp sửa source khi được yêu cầu cụ thể (ví dụ người dùng đã yêu cầu sửa AdminLayout trong A4); yêu cầu đó không tự mở rộng sang các file khác. Cập nhật tài liệu kế hoạch khi người dùng cho phép, như lần cập nhật này.
 
 ---
 
@@ -520,12 +520,16 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 | A1 | ✅ Hoàn thành | Có LoginPage trong StorefrontLayout, route `/login`, link Đăng nhập trên header; `/` giữ HomePage. Commit `dd96410` — `feat(auth): add login page and navigation`. |
 | A2 | ✅ Hoàn thành | Có PasswordInput dùng props/useState, nút hiện/ẩn `type="button"`, giữ nội dung khi đổi type; đã kiểm tra source/build. Phần code A2 hiện nằm cùng snapshot commit A3 `aded89e`; không tạo lại nhiệm vụ hoặc commit giả cho A2. |
 | A3 | ✅ Hoàn thành | Có loginSchema, LoginForm, resolver, register/handleSubmit, lỗi cạnh input; PasswordInput chuyển tiếp props xuống input. Người dùng đã xác nhận test giao diện đầy đủ; trợ lý review source, build/lint đạt. Commit `aded89e` — `feat(auth): validate login form inputs`. |
-| A4 | ⏭ Tiếp theo — chưa triển khai | `handleValidSubmit` mới có comment chờ nối API; chưa có `features/auth/types.ts`, `api.ts`, `queries.ts`, chưa dùng response login để lưu phiên/đổi header/điều hướng. |
-| A5–A16 | ⬜ Chưa hoàn thành | Làm lần lượt sau A4 theo các mục bên dưới; hạ tầng đã có không đồng nghĩa các flow này đã được nối và kiểm thử. |
+| A4 | ✅ Hoàn thành | Có types/API login, `useLogin` không tự retry, form pending/lỗi backend; thành công gọi `setSession`, UserMenu hiện email ở cả hai layout và điều hướng theo role. Người dùng xác nhận chạy tốt; review/build/lint đạt. Commit `e9ffe7b` (API), `a5592e6` (mutation/form), `94d55c3` — `feat(auth): connect login to backend session`. |
+| A5 | ✅ Hoàn thành | Có `UserProfileResponse`, `getMyProfile`, `qk.me`, `useMe`, ProfilePage `/account/profile` và link Tài khoản. Cache theo user ID; chỉ tự query khi token còn hạn; `retry: false`; có loading/error/retry và fallback null, không ghi đè role/status của session. Người dùng xác nhận test thành công với backend; review/build/lint/diff check đạt. Commit `520222f` — `feat(auth): display authenticated user profile`. |
+| A6 | ⏭ Tiếp theo — chưa triển khai | Chưa có API/hook/nút logout. Thêm POST `/api/auth/logout`, Bearer, không public retry; dọn session và cache bằng store hiện có, có bảo vệ phiên mới khi request cũ kết thúc. |
+| A7–A16 | ⬜ Chưa hoàn thành | Làm lần lượt sau A6. Guards/lifecycle đã có trong shared nhưng chưa đồng nghĩa flow A7/A13 đã được nối và kiểm thử; register/verify/recovery và test tự động chưa triển khai. |
 
-**Ghi nhớ để hướng dẫn tiếp:** người dùng mới học React, tự code theo từng bước nhỏ; chỉ giới thiệu kiến thức cần ngay tại bước dùng, giải thích cú pháp và tác dụng thực tế. Đã giải thích destructuring của useForm, register/spread, resolver/schema/errors, noValidate, render lỗi có điều kiện và vai trò của aria-invalid/aria-describedby/role="alert". Giữ Zod để phản hồi lỗi đầu vào nhanh; backend vẫn kiểm tra lại. Login chỉ kiểm tra email hợp lệ và password không rỗng; không áp password mạnh cho login.
+**Ghi nhớ để hướng dẫn tiếp:** người dùng mới học React, muốn hướng dẫn đầy đủ một mốc trong một lượt rồi tự code/test và gửi trợ lý review trước commit. Chỉ giới thiệu kiến thức cần ngay tại bước dùng, giải thích cú pháp và tác dụng thực tế. Đã giải thích destructuring của useForm, register/spread, resolver/schema/errors, noValidate, render lỗi có điều kiện và aria; A4 thêm async/await, mutation, callback onSuccess, Zustand/persist và navigate; A5 thêm query key/cache, enabled, isPending/isFetching, refetch và dữ liệu null. Người dùng đã hỏi rõ mutation là hành động chủ động (vẫn có response), còn query trả object dữ liệu/trạng thái/hàm điều khiển. Đã giải thích frontend route khác API request: Link → `/account/profile` trên port 3000 → `useMe` → `getMyProfile` trong `features/auth/api.ts` → Axios client → Vite proxy → backend port 8080. Giữ Zod cho phản hồi đầu vào; backend vẫn kiểm tra lại. Login chỉ kiểm tra email hợp lệ và password không rỗng, không áp password mạnh cho login.
 
-**Bắt đầu A4 từ source hiện có:** xác nhận backend và tài khoản ACTIVE → thêm types/API/hook login → nối LoginForm, pending/error → lưu session bằng store hiện có, đổi header và điều hướng. Tái sử dụng client/proxy/QueryClient/providers; không cài lại hoặc tạo bộ thứ hai. Thay thông báo kiểm tra form của A3 bằng trạng thái request thật; chỉ kết luận A4 hoàn thành sau khi kiểm tra Network và kết quả backend. Tiếp tục hướng dẫn từng phần, chờ người dùng thực hiện/gửi kết quả trước phần tiếp theo.
+**Bắt đầu A6 từ source hiện có:** đọc `features/auth/api.ts`, `queries.ts`, `components/UserMenu.tsx`, `shared/auth/session.store.ts` và `shared/api/client.ts`. Thêm API logout → hook xử lý pending/finally và kiểm tra token hiện tại → nút Đăng xuất trong UserMenu. Tái sử dụng `clear()` để xóa token/user, QueryClient và phát event; không tạo store/client hoặc cơ chế cleanup thứ hai. Gửi Bearer, không skip-auth, dùng `meta: { noPublicRetry: true }`. Chụp token khi bắt đầu; chỉ clear trong finally nếu vẫn là phiên đó, không xóa phiên mới hoặc clear lặp khi interceptor đã xử lý 401. Backend lỗi vẫn kết thúc phiên cần logout. Hướng dẫn trọn A6, có giải thích try/finally, flow, checklist backend thật và commit; chờ người dùng tự làm/test rồi review trước khi chuyển A7.
+
+**Bằng chứng và phần chưa xác nhận:** người dùng báo login backend thành công, xác nhận giao diện sau sửa chạy tốt và báo đã test trang hồ sơ thành công. Trợ lý đã kiểm tra source/build/lint/diff; chưa tự thao tác browser hoặc lưu log Network cho từng trường hợp. Các checklist dưới A4/A5 tiếp tục là tiêu chí hồi quy, không phải nhật ký chứng minh từng nhánh pending/locked, mất kết nối hoặc từng role đã được test. Chưa có bằng chứng logout blacklist token, guards, 401 đồng thời/hết hạn phiên, email verify/reset hoặc test mock tự động; thực hiện ở các mốc tiếp theo tương ứng.
 
 #### A1 — Nhìn thấy màn hình đăng nhập
 
@@ -562,7 +566,7 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 
 #### A4 — Đăng nhập backend thật và thấy header đổi
 
-**Trạng thái: ⏭ Điểm tiếp tục — chưa triển khai, chưa kiểm thử backend login.**
+**Trạng thái: ✅ Đã hoàn thành.** API/form/session/header/điều hướng đã có; người dùng xác nhận chạy thành công với backend thật. Commit chính `94d55c3`, trước đó có `e9ffe7b` và `a5592e6`. Giữ checklist dưới đây để hồi quy; không giao lại A4.
 
 - **Kết quả:** nhập tài khoản ACTIVE → backend xác thực → header hiện email; reload vẫn có session. Sai thông tin có lỗi trong form, nút có trạng thái đang gửi.
 - **Học và áp dụng:** request/response type, Promise/async-await, API function, mutation và trạng thái pending/error/success; dùng store session hiện có để nhiều component cùng thấy trạng thái đăng nhập. Giải thích từng đoạn trước khi nối, có thể chia vài lượt hướng dẫn.
@@ -573,6 +577,8 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 
 #### A5 — Trang hồ sơ lấy dữ liệu thật
 
+**Trạng thái: ✅ Đã hoàn thành.** Người dùng xác nhận đã test và chạy thành công; trợ lý review source, build/lint/diff check đạt. Commit `520222f`. `qk.me` được khai báo trong `shared/api/queryKeys.ts`; hook dùng key `[...qk.me, userId]`, token còn hạn mới tự query, `retry: false`. Giữ checklist để hồi quy; không giao lại A5.
+
 - **Kết quả:** link Tài khoản mở `/account/profile`, hiển thị email/họ tên/số điện thoại từ `GET /api/users/me` với loading/error/nút thử lại.
 - **Học và áp dụng:** phân biệt session ở Zustand với dữ liệu server ở Query; `useQuery`, query key, `enabled` và cache có tác dụng trên một màn hình thật. Chỉ thêm key hồ sơ theo quy ước `qk.me`, chưa tạo keys cho mọi module.
 - **Phạm vi tự sửa:** API/hook me, trang hồ sơ chỉ đọc, route và UserMenu. Dùng StorefrontLayout; chưa tạo AccountLayout hoặc form chỉnh sửa. Query chỉ chạy khi session hợp lệ; khi chưa có session hiển thị CTA đăng nhập, A7 bổ sung chuyển hướng tự động.
@@ -581,6 +587,8 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 - **Commit:** `feat(auth): display authenticated user profile`.
 
 #### A6 — Đăng xuất thật
+
+**Trạng thái: ⏭ Điểm tiếp tục — chưa triển khai.** Bắt đầu từ UserMenu/API/hooks hiện có sau A5; chưa có nút đăng xuất hoặc request logout trong feature Auth.
 
 - **Kết quả:** bấm Đăng xuất → header trở về trạng thái guest, hồ sơ/cache của phiên cũ được xóa.
 - **Học và áp dụng:** mutation từ sự kiện, `try/finally` và cleanup phiên ở client; phân biệt backend blacklist token với xóa session phía trình duyệt.

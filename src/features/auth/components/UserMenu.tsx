@@ -1,8 +1,19 @@
 import { Link } from "react-router"
+import { Button } from "@/components/ui/button"
+import { useLogout } from "@/features/auth/queries"
 import { useSession } from "@/shared/auth/session.store"
 
 export function UserMenu() {
     const user = useSession((state) => state.user)
+    const logoutMutation = useLogout()
+
+    function handleLogout() {
+        if (logoutMutation.isPending) return
+
+        const token = useSession.getState().token
+
+        logoutMutation.mutate(token)
+    }
 
     if (!user) {
         return (
@@ -30,6 +41,18 @@ export function UserMenu() {
             >
                 Tài khoản
             </Link>
+
+            <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={logoutMutation.isPending}
+                onClick={handleLogout}
+            >
+                {logoutMutation.isPending
+                    ? "Đang đăng xuất..."
+                    : "Đăng xuất"}
+            </Button>
         </div>
     )
 }
