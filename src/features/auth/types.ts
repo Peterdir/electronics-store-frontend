@@ -25,3 +25,9 @@ export interface UserProfileResponse {
     email: string
     phone: string | null
 }
+
+export interface RegisterRequest {
+    email: string
+    password: string
+    confirmPassword: string
+}

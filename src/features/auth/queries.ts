@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { getMyProfile, login, logout } from "./api"
+import { getMyProfile, login, logout, registerAccount } from "./api"
 import { useSession } from "@/shared/auth/session.store"
 import { qk } from "@/shared/api/queryKeys"
 import { isExpired } from "@/shared/auth/jwt"
@@ -51,5 +51,12 @@ export function useLogout() {
                 }
             }
         },
+    })
+}
+
+export function useRegister() {
+    return useMutation({
+        mutationFn: registerAccount,
+        retry: false,
     })
 }

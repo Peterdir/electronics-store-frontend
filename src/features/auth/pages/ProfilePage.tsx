@@ -78,7 +78,7 @@ export function ProfilePage() {
                             <dt className="text-sm text-muted-foreground">
                                 Email
                             </dt>
-                            <dd className="mt-1 break-words font-medium">
+                            <dd className="mt-1 wrap-break-word font-medium">
                                 {profileQuery.data.email}
                             </dd>
                         </div>

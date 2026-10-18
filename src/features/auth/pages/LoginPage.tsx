@@ -1,4 +1,5 @@
 import { LoginForm } from "@/features/auth/components/LoginForm"
+import { Link } from "react-router"
 
 export function LoginPage() {
     return (
@@ -13,6 +14,13 @@ export function LoginPage() {
                 </p>
 
                 <LoginForm />
+
+                <p className="mt-6 text-sm text-muted-foreground">
+                    Chưa có tài khoản?{" "}
+                    <Link to="/register" className="text-primary underline">
+                        Đăng ký
+                    </Link>
+                </p>
             </section>
         </div>
     )

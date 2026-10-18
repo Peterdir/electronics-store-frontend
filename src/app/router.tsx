@@ -14,6 +14,8 @@ import {
     RequireRole,
 } from "@/shared/auth/guards"
 import { Role } from "@/shared/types/enums"
+import { RegisterPage } from "@/features/auth/pages/RegisterPage"
+import { CheckEmailPage } from "@/features/auth/pages/CheckEmailPage"
 
 
 export const router = createBrowserRouter([
@@ -38,6 +40,18 @@ export const router = createBrowserRouter([
                         <ProfilePage />
                     </RequireAuth>
                 ),
+            },
+            {
+                path: "register",
+                element: (
+                    <GuestOnly>
+                        <RegisterPage />
+                    </GuestOnly>
+                ),
+            },
+            {
+                path: "register/check-email",
+                Component: CheckEmailPage,
             },
         ],
     },
