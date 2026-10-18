@@ -16,6 +16,7 @@ import {
 import { Role } from "@/shared/types/enums"
 import { RegisterPage } from "@/features/auth/pages/RegisterPage"
 import { CheckEmailPage } from "@/features/auth/pages/CheckEmailPage"
+import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage"
 
 
 export const router = createBrowserRouter([
@@ -52,6 +53,10 @@ export const router = createBrowserRouter([
             {
                 path: "register/check-email",
                 Component: CheckEmailPage,
+            },
+            {
+                path: "verify-email",
+                Component: VerifyEmailPage,
             },
         ],
     },

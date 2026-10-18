@@ -79,3 +79,20 @@ export async function resendVerification(
 
     return response.data;
 }
+
+// VERIFY EMAIL
+export async function verifyEmail(
+    token: string,
+): Promise<AuthResponse> {
+    const response = await api.get<AuthResponse>(
+        "/api/auth/verify",
+        {
+            params: { token },
+            headers: {
+                "X-Skip-Auth": "1",
+            },
+        },
+    )
+
+    return response.data
+}

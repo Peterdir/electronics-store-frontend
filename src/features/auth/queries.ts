@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { getMyProfile, login, logout, registerAccount, resendVerification } from "./api"
+import { getMyProfile, login, logout, registerAccount, resendVerification, verifyEmail } from "./api"
 import { useSession } from "@/shared/auth/session.store"
 import { qk } from "@/shared/api/queryKeys"
 import { isExpired } from "@/shared/auth/jwt"
@@ -70,5 +70,18 @@ export function useResendVerification() {
     return useMutation({
         mutationFn: resendVerification,
         retry: false,
+    })
+}
+
+// VERIFY EMAIL
+export function useVerifyEmail() {
+    const setSession = useSession((state) => state.setSession)
+
+    return useMutation({
+        mutationFn: verifyEmail,
+        retry: false,
+        onSuccess: (data) => {
+            setSession(data.accessToken, data.user)
+        },
     })
 }

@@ -8,6 +8,7 @@ import {
 } from "@/features/auth/schemas"
 import { useLogin } from "@/features/auth/queries"
 import { ApiError } from "@/shared/api/errors"
+import { Link } from "react-router"
 
 function getLoginErrorMessage(error: Error): string {
     if (error instanceof ApiError) {
@@ -35,6 +36,11 @@ function getLoginErrorMessage(error: Error): string {
 
 export function LoginForm() {
     const loginMutation = useLogin()
+
+    const needsVerification = loginMutation.error instanceof ApiError && 
+                                loginMutation.error.message.includes("not verified yet")
+
+    const submittedEmail = loginMutation.variables?.email
 
     const {
         register,
@@ -133,6 +139,16 @@ export function LoginForm() {
                 <p role="alert" className="text-sm text-destructive">
                     {getLoginErrorMessage(loginMutation.error)}
                 </p>
+            )}
+
+            {needsVerification && submittedEmail && (
+                <Link
+                    to="/register/check-email"
+                    state={{ email: submittedEmail }}
+                    className="block text-sm text-primary underline"
+                >
+                    Gửi lại email xác thực
+                </Link>
             )}
         </form>
     )
