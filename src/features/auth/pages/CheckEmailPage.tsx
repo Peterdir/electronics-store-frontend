@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router"
+import { ResendVerificationButton } from "../components/ResendVerificationButton"
 
 export function CheckEmailPage() {
     const location = useLocation()
@@ -36,6 +37,8 @@ export function CheckEmailPage() {
                     <p className="text-sm text-muted-foreground">
                         Nếu chưa thấy email, hãy kiểm tra thư mục spam.
                     </p>
+
+                    <ResendVerificationButton key={email} email={email} />
                 </>
             ) : (
                 <p className="text-sm text-muted-foreground">

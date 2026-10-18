@@ -1,10 +1,11 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { getMyProfile, login, logout, registerAccount } from "./api"
+import { getMyProfile, login, logout, registerAccount, resendVerification } from "./api"
 import { useSession } from "@/shared/auth/session.store"
 import { qk } from "@/shared/api/queryKeys"
 import { isExpired } from "@/shared/auth/jwt"
 import { toast } from "sonner"
 
+// LOGIN
 export function useLogin() {
     const setSession = useSession((state) => state.setSession)
 
@@ -17,6 +18,7 @@ export function useLogin() {
     })
 }
 
+// PROFILE
 export function useMe() {
     const token = useSession((state) => state.token)
     const userId = useSession((state) => state.user?.id)
@@ -29,6 +31,7 @@ export function useMe() {
     })
 }
 
+// LOGOUT
 export function useLogout() {
     return useMutation({
         retry: false,
@@ -54,9 +57,18 @@ export function useLogout() {
     })
 }
 
+// REGISTER
 export function useRegister() {
     return useMutation({
         mutationFn: registerAccount,
+        retry: false,
+    })
+}
+
+// RESEND VERIFICATION
+export function useResendVerification() {
+    return useMutation({
+        mutationFn: resendVerification,
         retry: false,
     })
 }

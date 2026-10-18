@@ -62,3 +62,20 @@ export async function registerAccount(
 
     return response.data
 }
+
+// RESEND VERIFICATION
+export async function resendVerification(
+    email: string,
+): Promise<MessageResponse> {
+    const response = await api.post<MessageResponse>(
+        "/api/auth/resend-verification",
+        { email },
+        {
+            headers: {
+                "X-Skip-Auth": "1",
+            }
+        }
+    )
+
+    return response.data;
+}
