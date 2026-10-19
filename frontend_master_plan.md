@@ -5,9 +5,9 @@
 
 > **Cách triển khai hiện tại — cập nhật 2026-10-17:** học React bằng giao diện và luồng Auth chạy với backend thật. Đọc [Mục 3](#3-lộ-trình-triển-khai-roadmap--dependency-rationale), sau đó làm từng mốc A1 → A16 trong Phase 1. Phần nền tảng đã có được giữ lại; hạ tầng còn thiếu được bổ sung ngay khi màn hình cần đến. Không cần hoàn thành toàn bộ shared infrastructure trước khi làm `/login`.
 
-> **Tiến độ cập nhật 2026-10-18:** **A1–A8 đã có code và commit; không giao lại các phần này.** A6 logout: `134d2b0`; A7 guards/redirect: `024edfe`; A8 đăng ký và trang check-email: `4e0bf9e`. A9 đã có API/hook/nút gửi lại và được review; còn sửa vị trí ngoặc trong công thức làm tròn giây trước khi chốt, chưa commit. **Điểm tiếp tục: sửa một dòng countdown A9 rồi làm A10 — xác thực email và tự đăng nhập.** Chưa có xác nhận chi tiết mọi nhánh backend/browser/email thật. Còn **3 nhóm việc**: xác thực email (A9–A10), khôi phục mật khẩu (A11–A12), kiểm tra/chốt Auth (A13–A16). Xem bảng tiến độ ở Phase 1.
+> **Tiến độ cập nhật 2026-10-19:** **A1–A10 đã có code và commit; không giao lại các phần này.** A9: `1f10780`; A10: `74f55f3`. A11–A12 đã triển khai trong working tree. Có strict typecheck, generated types từ snapshot OpenAPI và workflow CI cho lint/typecheck/build. Người dùng yêu cầu xóa toàn bộ test Auth vừa thêm, nên đã bỏ test files, test runner, cấu hình và dependencies. **Còn hai đầu việc chính:** (1) kiểm tra recovery A11–A12 bằng backend/email thật; (2) chốt Auth A13–A16, hiện không có kiểm thử tự động. Backend local và CI remote chưa được xác nhận.
 
-> **Ưu tiên người dùng đã chốt — 2026-10-18:** làm Auth trước, tiếp tục **A9 → A16**; gộp các việc liên quan, bỏ việc làm lại/cải tiến không cần thiết để hoàn thành nhanh. Người dùng xác nhận vẫn muốn **hướng dẫn trọn một mốc trong một lượt và tự sửa code**, sau đó gửi kết quả để trợ lý review. Chỉ giải thích kiến thức mới tại nơi dùng; không dựng lại hạ tầng đã có. Chưa mở Catalog/Cart/Admin nghiệp vụ. Người dùng yêu cầu cập nhật tiến độ vào plan để lần sau không làm trùng; chỉ trực tiếp sửa source khi được yêu cầu cụ thể.
+> **Ưu tiên người dùng đã chốt — 2026-10-18:** làm Auth trước, theo dõi phần còn lại bằng **hai đầu việc chính** nêu trên. Yêu cầu “Triển khai” trong phiên này cho phép trợ lý sửa source trực tiếp. Chỉ giải thích kiến thức mới tại nơi dùng; không dựng lại hạ tầng đã có. Chưa mở Catalog/Cart/Admin nghiệp vụ. Cập nhật tiến độ vào plan để lần sau không làm trùng.
 
 ---
 
@@ -489,21 +489,21 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 
 | Nhóm | Quan sát source ngày 2026-10-18 | Việc tiếp theo có tác dụng thực tế |
 |---|---|---|
-| Scaffold/design/layout | Có StorefrontLayout/AdminLayout, login/profile/register/check-email và UserMenu với nút logout | Tái sử dụng layout; thêm resend/verify/recovery vào luồng hiện có |
+| Scaffold/design/layout | Có StorefrontLayout/AdminLayout, các trang Auth gồm resend/verify/forgot/reset và UserMenu | Kiểm tra recovery với backend/email thật khi môi trường hoạt động |
 | Env/proxy | Port 3000, proxy `/api` và `/uploads`, env helper; login/profile đã gọi backend thật | Dùng cấu hình hiện có cho API còn thiếu |
-| HTTP/error | Có client/error normalizer; API login/me/logout/register/resend; logout dùng token chụp lúc click và `noPublicRetry`, register/resend dùng skip-auth | Thêm verify/forgot/reset; kiểm tra 401 trong lượt chốt Auth |
+| HTTP/error | Có client/error normalizer và API Auth đến verify/forgot/reset; các request public dùng skip-auth | Kiểm tra lại contract bằng OpenAPI live và backend thật |
 | Session/RBAC | Store/JWT/events/lifecycle/permissions đã có; guards đã gắn login/register/profile/admin; redirect hợp lệ theo role | Không tạo lại store/guards/lifecycle; kiểm tra hồi quy ở nhóm chốt Auth |
-| QueryClient | Provider, qk.me theo user ID, enabled/retry và clear cache qua session store đã có | Tái sử dụng; kiểm tra cleanup cùng test logout/session |
+| QueryClient | Provider, qk.me theo user ID, enabled/retry và clear cache qua session store đã có | Tái sử dụng; kiểm tra cleanup khi chạy luồng đăng xuất |
 | Shared UI/form | Có PasswordInput, LoginForm, RegisterForm, schema mật khẩu mới/confirm, map lỗi server; ProfilePage có loading/error/retry | Tái sử dụng schema/Input ở reset; không thêm strength meter hoặc đổi giao diện lúc này |
-| Type-gen/quality | Chưa có gen:api, test/MSW/CI; app/node TS config chưa bật strict | Gộp A13–A16 vào lượt chốt; hoãn Prettier/boundaries toàn repo |
+| Type-gen/quality | Có gen:api, strict/typecheck và workflow CI cho lint/typecheck/build; generated hiện từ `../ecommerce-backend/openapi.json` ngày 2026-10-13; test Auth đã được gỡ theo yêu cầu | Sinh lại từ `/v3/api-docs` khi backend chạy; xác nhận CI remote |
 
-**Kết quả kiểm tra gần nhất — sau A8, ngày 2026-10-18:** đối chiếu source và commit `4e0bf9e`; `npm run build`, `npm run lint`, `git diff --check` đều đạt. Build còn cảnh báo chunk khoảng 610 kB sau minify, không làm build thất bại; tối ưu bundle chưa nằm trong lượt này. A1–A5 có xác nhận trước đó từ người dùng về login/profile backend và giao diện. Chưa trực tiếp kiểm tra browser/email thật cho A6–A8 trong lượt cập nhật này; không coi build/lint hoặc commit là bằng chứng mọi nhánh runtime đã chạy. Chưa có test tự động cho Auth; gộp vào lượt chốt A13–A16. Lỗi lint cũ tại `button.tsx` đã được sửa ở commit `c90cc7b`.
+**Kết quả kiểm tra gần nhất — 2026-10-19:** trước khi người dùng yêu cầu gỡ tests, `npm run typecheck`, `npm run lint`, `npm run build`, 16 test Auth mock và `git diff --check` đều đạt. Toàn bộ test runner/test files đã được xóa; các lệnh lint/typecheck/build cần chạy lại sau khi gỡ dependencies. Bundle có cảnh báo kích thước khoảng 620 kB. Chưa trực tiếp kiểm tra browser/email thật hoặc CI remote.
 
 **Môi trường để tiếp tục:** chạy frontend bằng `npm run dev` ở port 3000, backend ở port 8080 cùng các dịch vụ phụ thuộc theo hướng dẫn backend. Đã có tài khoản đăng nhập và lấy hồ sơ thành công. Tiếp tục dùng `/login` và `/account/profile` để kiểm tra logout; `/` vẫn là HomePage. Các tài khoản/nhánh lỗi chưa có kết quả kiểm thử riêng cần được ghi rõ khi kiểm tra, không coi việc có code xử lý là bằng chứng đã chạy nhánh đó.
 
-**Điểm tiếp tục chính thức: sửa một dòng countdown A9 rồi làm A10 — Xác thực email và tự đăng nhập.** A9 đã có API/hook/nút gửi lại trên CheckEmailPage; không hướng dẫn tạo lại. Công thức đúng là `Math.ceil((cooldownUntil - Date.now()) / 1000)`, hiện source làm tròn mili giây trước khi chia nên hiển thị giây thập phân. A1–A8 đã có code và commit; không giao lại các nhiệm vụ này. A13 đã có nền lifecycle và chỉ kiểm tra/sửa khi có lỗi trong lượt chốt. `AccountLayout` vẫn hoãn đến P4.
+**Điểm tiếp tục chính thức:** kiểm tra A11–A12 với backend/email thật; sau đó sinh lại OpenAPI types từ backend đang chạy và xác nhận workflow CI. A1–A10 đã commit, không làm lại. A13 dùng nền lifecycle hiện có; chỉ sửa nếu kiểm tra phát hiện lỗi. `AccountLayout` vẫn hoãn đến P4.
 
-**Cách phối hợp:** người dùng tự sửa source code; trợ lý đọc/kiểm tra, giải thích và cung cấp hướng dẫn/code trọn một mốc trong một lượt theo yêu cầu mới nhất. Trước code nêu mục đích từng file và kiến thức mới; sau khi chạy có flow, kết quả kiểm tra và gợi ý commit/push. Chỉ trực tiếp sửa source khi được yêu cầu cụ thể (ví dụ người dùng đã yêu cầu sửa AdminLayout trong A4); yêu cầu đó không tự mở rộng sang các file khác. Cập nhật tài liệu kế hoạch khi người dùng cho phép, như lần cập nhật này.
+**Cách phối hợp:** ưu tiên yêu cầu mới nhất của người dùng. Trong phiên hiện tại người dùng đã yêu cầu triển khai trực tiếp. Sau khi chạy ghi flow, kết quả kiểm tra và phần chưa xác nhận; cập nhật kế hoạch để tránh làm trùng.
 
 ---
 
@@ -525,27 +525,28 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 | A6 | ✅ Đã triển khai/commit; không làm lại | `134d2b0` — API/hook/nút logout, pending, token snapshot, noPublicRetry; finally chỉ clear đúng phiên; cảnh báo nếu backend lỗi. Các nhánh runtime chưa có xác nhận riêng được kiểm tra trong lượt chốt. |
 | A7 | ✅ Đã triển khai/commit; không làm lại | `024edfe` — RequireAuth/RequireRole/GuestOnly gắn vào router, lưu đích đến, kiểm tra redirect theo route/quyền. A8 bổ sung GuestOnly cho register. |
 | A8 | ✅ Đã triển khai/commit; không làm lại | `4e0bf9e` — RegisterRequest/schema/API/hook/RegisterForm/RegisterPage/CheckEmailPage, route/link; validation field/root, pending, chuyển email/message qua navigation state; không tạo session. Chưa xác nhận đầy đủ luồng email thật. |
-| A9 | 🛠 Đã triển khai; còn một sửa nhỏ sau review | Có resend API/hook với skip-auth, retry false; nút pending/cooldown/cleanup/error và gắn CheckEmailPage. Người dùng báo hoàn thành; review phát hiện `Math.ceil` phải bao cả phép chia 1000 để hiển thị giây nguyên. Chưa commit, chưa trực tiếp kiểm tra browser/email thật. |
-| A10 | ⏭ Mốc tiếp theo | Thêm API GET `/api/auth/verify`, hook lưu session, trang public `/verify-email?token=...` có nút xác nhận rồi tự đăng nhập/điều hướng; nối CTA gửi lại từ lỗi login chưa xác thực. |
-| A11–A12 | ⬜ Chưa triển khai | Chưa có forgot/reset password ở frontend. |
-| A13 | ♻ Đã có nền; gộp kiểm thử | Lifecycle đã được AppProviders khởi động, có timer/storage/events và xử lý 401 trong client. Không dựng lại; kiểm tra cùng A15, chỉ sửa lỗi thực tế. |
-| A14–A16 | ⬜ Gộp vào lượt chốt Auth | Đối chiếu/sinh types Auth, strict/typecheck, test hành vi và CI tối thiểu. Hoãn Prettier/boundaries toàn repo; không coi các cải tiến đó là điều kiện chặn Auth. |
+| A9 | ✅ Đã commit | `1f10780` — resend và countdown nguyên giây. Email thật chưa được xác nhận trong lượt này. |
+| A10 | ✅ Đã commit | `74f55f3` — verify bằng click, lưu session và điều hướng; link gửi lại từ lỗi login. Email thật chưa được xác nhận trong lượt này. |
+| A11–A12 | 🛠 Đã triển khai, chưa commit | Trang/API/hook/schema cho forgot/reset; xử lý token thiếu/hết hạn, field errors, guest và phiên đang đăng nhập. Test đã được gỡ theo yêu cầu; backend/email thật chưa xác nhận. |
+| A13 | ⬜ Chưa xác nhận đầy đủ | Lifecycle hiện có; cần kiểm tra hai tab, cảnh báo/hết hạn và 401/403 với backend/browser. |
+| A14 | 🛠 Đã triển khai, chưa commit | Có generated OpenAPI types từ snapshot backend 2026-10-13 và strict/typecheck. Cần tái sinh types từ backend live. |
+| A15 | ⏸ Tạm bỏ theo yêu cầu người dùng | Test files, Vitest, Testing Library, MSW và jsdom đã được gỡ; Auth hiện không có test tự động. |
+| A16 | 🛠 Đã triển khai một phần, chưa commit | Workflow CI chạy lint/typecheck/build; cần xác nhận CI remote. Hoãn Prettier/boundaries toàn repo. |
 
 #### Danh sách còn lại đã gộp — dùng cho các lượt tiếp theo
 
 | Nhóm | Đầu việc thực sự còn thiếu | Tái sử dụng / tránh trùng |
 |---|---|---|
-| 1. Xác thực email (A9–A10) | POST resend-verification + cooldown 60s; trang `/verify-email?token=...` + GET verify, xử lý token thiếu/hết hạn/đã dùng, thành công lưu session và điều hướng; nối CTA gửi lại khi login báo chưa xác thực | Mở rộng CheckEmailPage; dùng client, mutation, session và redirect đã có. Không tạo lại form đăng ký. |
-| 2. Khôi phục mật khẩu (A11–A12) | ForgotPasswordPage + POST forgot-password; ResetPasswordPage + POST reset-password, kiểm tra token/confirm và đường đi đăng nhập lại cho guest/phiên đang đăng nhập | Dùng newPasswordSchema, PasswordInput và flow logout hiện có. |
-| 3. Kiểm tra/chốt Auth (A13–A16) | Đối chiếu/sinh types Auth, bật strict/typecheck; test login/register/verify/reset/logout/guards, expiry/401/cross-tab và phiên cũ trả lỗi muộn; kiểm tra backend/email thật; CI chạy lint/typecheck/test/build | Lifecycle/store/client/guards đã có, chỉ sửa nếu lỗi; không thêm watcher hoặc client thứ hai. Hoãn strength meter, chỉnh lại UI, Prettier/boundaries toàn repo. |
+| 1. Hoàn thiện recovery (A11–A12) | Code và test mock đã có; còn kiểm tra forgot → email → reset → login mật khẩu mới với backend thật, gồm guest và người đang đăng nhập | Dùng schema mật khẩu, PasswordInput và logout hiện có; không xây lại form Auth cũ. |
+| 2. Chốt Auth (A13–A16) | Test/browser hai tab và email thật; tái sinh OpenAPI types từ backend live, xử lý drift nếu có; xác nhận CI remote | Lifecycle/store/client/guards đã có; chỉ sửa lỗi phát hiện được. Hoãn strength meter, chỉnh lại UI, Prettier/boundaries toàn repo. |
 
 **Quy tắc ghi tiến độ:** phân biệt “đã triển khai/commit” với “đã xác nhận chạy backend/browser”. Sau mỗi mốc cập nhật bảng, commit/bằng chứng và điểm tiếp tục tại đầu file; không biến phần chưa kiểm thử thành nhiệm vụ xây lại tính năng.
 
-**Làm rõ CheckEmailPage:** đã có email/thông báo/hướng dẫn, fallback khi thiếu state và nút gửi lại A9; không đọc hộp thư hoặc polling trạng thái xác thực. Backend gửi email lần đầu trong API register; việc email thực sự đến hộp thư cần xác nhận riêng. Xử lý link xác thực thuộc A10, chưa triển khai. Nằm trong StorefrontLayout để dùng header/footer; không có guard vì đây là trang hướng dẫn public.
+**Làm rõ CheckEmailPage:** đã có email/thông báo/hướng dẫn, fallback khi thiếu state và nút gửi lại A9; không đọc hộp thư hoặc polling trạng thái xác thực. Backend gửi email lần đầu trong API register; việc email thực sự đến hộp thư cần xác nhận riêng. Link xác thực đã được xử lý ở A10. Nằm trong StorefrontLayout để dùng header/footer; không có guard vì đây là trang hướng dẫn public.
 
 **Ghi nhớ để hướng dẫn tiếp:** người dùng mới học React, muốn hướng dẫn đầy đủ một mốc trong một lượt rồi tự code/test và gửi trợ lý review trước commit. Chỉ giới thiệu kiến thức cần ngay tại bước dùng, giải thích cú pháp và tác dụng thực tế. Đã giải thích destructuring của useForm, register/spread, resolver/schema/errors, noValidate, render lỗi có điều kiện và aria; A4 thêm async/await, mutation, callback onSuccess, Zustand/persist và navigate; A5 thêm query key/cache, enabled, isPending/isFetching, refetch và dữ liệu null. Người dùng đã hỏi rõ mutation là hành động chủ động (vẫn có response), còn query trả object dữ liệu/trạng thái/hàm điều khiển. Đã giải thích frontend route khác API request: Link → `/account/profile` trên port 3000 → `useMe` → `getMyProfile` trong `features/auth/api.ts` → Axios client → Vite proxy → backend port 8080. Giữ Zod cho phản hồi đầu vào; backend vẫn kiểm tra lại. Login chỉ kiểm tra email hợp lệ và password không rỗng, không áp password mạnh cho login.
 
-**Tiếp tục sau review A9:** người dùng tự sửa công thức countdown nêu trên, rồi triển khai A10 theo hướng dẫn trọn mốc. Tái sử dụng AuthResponse, setSession và getLoginDestination; verify gọi từ click handler, skip-auth, retry false, không tự gọi khi mount. Route verify là public để mở được link từ email kể cả khi có phiên; sau thành công điều hướng bằng replace. Thêm CTA từ lỗi login chưa xác thực sang check-email với email của lần submit bị lỗi. Không làm lại đăng ký/resend hoặc dựng lại session.
+**Tiếp tục sau triển khai 2026-10-18:** chạy backend và mail service để kiểm tra các luồng email, sau đó chạy `npm run gen:api` từ OpenAPI live. Các request Auth public dùng skip-auth và mutation không retry tự động. CI chạy lint/typecheck/test/build; chưa có bằng chứng runner remote đã xanh.
 
 **Bằng chứng và phần chưa xác nhận:** người dùng báo login backend thành công, xác nhận giao diện sau sửa chạy tốt và báo đã test trang hồ sơ thành công. Trợ lý đã kiểm tra source/build/lint/diff; chưa tự thao tác browser hoặc lưu log Network cho từng trường hợp. Các checklist dưới A4/A5 tiếp tục là tiêu chí hồi quy, không phải nhật ký chứng minh từng nhánh pending/locked, mất kết nối hoặc từng role đã được test. Chưa có bằng chứng logout blacklist token, guards, 401 đồng thời/hết hạn phiên, email verify/reset hoặc test mock tự động; thực hiện ở các mốc tiếp theo tương ứng.
 
@@ -639,7 +640,7 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 
 #### A9 — Gửi lại email và hiểu useEffect qua bộ đếm
 
-**Review ngày 2026-10-18:** đã có code API/hook/component và tích hợp CheckEmailPage; `npm run build`, `npm run lint`, `git diff --check` đạt. Build cảnh báo chunk khoảng 611 kB, chưa thuộc phạm vi tối ưu. Kiểm tra công thức với 59.749 giây còn lại cho kết quả hiện tại `59.749`, mong muốn `60`; cần chuyển phép chia vào trong `Math.ceil`. Trợ lý chỉ cập nhật plan, người dùng tự sửa source. Chưa xác nhận trực tiếp browser/hộp thư thật và chưa có commit A9.
+**Lịch sử review ngày 2026-10-18:** công thức countdown từng làm tròn mili giây trước khi chia; đã sửa thành `Math.ceil((cooldownUntil - Date.now()) / 1000)` và commit `1f10780`. Chưa xác nhận trực tiếp hộp thư thật trong lượt này.
 
 - **Kết quả:** bấm Gửi lại → gọi backend → nút chờ 60 giây rồi dùng lại được.
 - **Học và áp dụng:** state đếm lùi, effect đồng bộ timer với màn hình, cleanup khi unmount. Request gửi lại nằm trong click handler/mutation; effect chỉ quản lý timer.
@@ -695,24 +696,19 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 - **Kiểm tra/hoàn thành:** gen:api với backend chạy, typecheck và build đạt; response Auth khớp Swagger. Không bắt buộc chuẩn hóa DTO của tất cả module chưa sử dụng ở bước này.
 - **Commit:** `chore(types): validate auth contracts with OpenAPI and strict types`.
 
-#### A15 — Biến thao tác đã test thật thành kiểm thử lặp lại
+#### A15 — Kiểm thử tự động (đang tạm bỏ theo yêu cầu người dùng)
 
-- **Kết quả:** Vitest/Testing Library/MSW chạy lại được các nhánh Auth quan trọng mà không cần thao tác tay mỗi lần.
-- **Học và áp dụng:** test kiểm tra hành vi người dùng; MSW giả lập các response đã thấy để kiểm tra ổn định. Test mock không thay thế xác nhận với backend thật.
-- **Phạm vi tự sửa:** cài/setup test lúc này, thêm Auth MSW handlers; kiểm tra login thành công/thất bại, server validation, profile, logout, redirect theo quyền, verify/reset và hết hạn phiên. Dùng clock/token fixture trong test cho cảnh báo/hết hạn.
-- **Flow:** thao tác giống trình duyệt → request bị MSW trả response đã định → form/header/route thay đổi → assertion. Mỗi test phải chứng minh một hành vi hoặc nhánh lỗi cụ thể.
-- **Kiểm tra/hoàn thành:** test đạt, không dùng token/password thật làm fixture; chạy lại thủ công register → verify → login → profile → logout và forgot → reset → login với backend thật, ghi rõ phần môi trường chưa kiểm tra được.
-- **Commit:** `test(auth): cover authentication and session flows`.
+Test runner, test files và dependencies Auth đã được gỡ khỏi repo. Nếu sau này cần khôi phục A15, chọn lại phạm vi test rồi mới cài công cụ; không coi A15 là đã hoàn thành.
 
 #### A16 — Config chất lượng với lỗi có ví dụ thật
 
 **Phạm vi rút gọn 2026-10-18:** lượt chốt Auth chỉ thêm CI chạy các lệnh kiểm tra đã có từ A14/A15. Hoãn Prettier và boundaries toàn repo; các mô tả bên dưới về hai công cụ này là hướng mở rộng, không phải điều kiện hoàn tất Auth hiện tại.
 
-- **Kết quả:** lệnh local và CI phát hiện lỗi import/type/test trên chính module Auth đã chạy.
+- **Kết quả:** lệnh local và CI phát hiện lỗi lint/type/build trên module Auth.
 - **Học và áp dụng:** ESLint boundaries chặn lớp shared import ngược feature; formatter giữ code nhất quán; CI chạy lại kiểm tra khi push.
 - **Phạm vi tự sửa:** cấu hình boundaries/Prettier và CI theo quan hệ import thật; không đổi kiến trúc chỉ để dùng một config. Không tạo workflow bắt buộc backend live hoặc gọi gen:api localhost trên runner CI.
-- **Flow:** sửa file → lint/typecheck/test/build local → commit/push → CI chạy cùng kiểm tra. Generated types được commit; tái sinh khi contract backend đổi trong môi trường có backend.
-- **Kiểm tra/hoàn thành:** chứng minh một ví dụ import sai bị chặn rồi sửa lại; lint/typecheck/test/build đạt. Nếu chưa xác nhận CI remote thì ghi “cấu hình đã có, chưa xác nhận runner”, không tự ghi xanh.
+- **Flow:** sửa file → lint/typecheck/build local → commit/push → CI chạy cùng kiểm tra. Generated types được commit; tái sinh khi contract backend đổi trong môi trường có backend.
+- **Kiểm tra/hoàn thành:** lint/typecheck/build đạt. Nếu chưa xác nhận CI remote thì ghi “cấu hình đã có, chưa xác nhận runner”, không tự ghi xanh.
 - **Commit:** `chore(quality): enforce auth checks in CI`.
 
 #### Tài liệu học đúng lúc

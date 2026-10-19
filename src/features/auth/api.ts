@@ -1,5 +1,5 @@
 import { api } from "@/shared/api/client";
-import type { AuthResponse, LoginRequest, RegisterRequest, UserProfileResponse } from "./types";
+import type { AuthResponse, ForgotPasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, UserProfileResponse } from "./types";
 import type { MessageResponse } from "@/shared/types/common"
 
 // LOGIN
@@ -94,5 +94,29 @@ export async function verifyEmail(
         },
     )
 
+    return response.data
+}
+
+// FORGOT PASWORD
+export async function forgotPassword(
+    payload: ForgotPasswordRequest,
+): Promise<MessageResponse> {
+    const response = await api.post<MessageResponse>(
+        "/api/auth/forgot-password",
+        payload,
+        { headers: { "X-Skip-Auth": "1" } },
+    )
+    return response.data
+}
+
+// RESET PASSWORD
+export async function resetPassword(
+    payload: ResetPasswordRequest,
+): Promise<MessageResponse> {
+    const response = await api.post<MessageResponse>(
+        "/api/auth/reset-password",
+        payload,
+        { headers: { "X-Skip-Auth": "1" } },
+    )
     return response.data
 }

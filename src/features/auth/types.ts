@@ -6,6 +6,26 @@ export interface LoginRequest {
     password: string
 }
 
+export interface RegisterRequest {
+    email: string
+    password: string
+    confirmPassword: string
+}
+
+export interface ResendVerificationRequest {
+    email: string
+}
+
+export interface ForgotPasswordRequest {
+    email: string
+}
+
+export interface ResetPasswordRequest {
+    token: string
+    newPassword: string
+    confirmPassword: string
+}
+
 export interface UserResponse {
     id: ID
     email: string
@@ -24,10 +44,4 @@ export interface UserProfileResponse {
     fullName: string | null
     email: string
     phone: string | null
-}
-
-export interface RegisterRequest {
-    email: string
-    password: string
-    confirmPassword: string
 }

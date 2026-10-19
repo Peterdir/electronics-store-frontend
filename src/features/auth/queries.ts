@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { getMyProfile, login, logout, registerAccount, resendVerification, verifyEmail } from "./api"
+import { forgotPassword, getMyProfile, login, logout, registerAccount, resendVerification, resetPassword, verifyEmail } from "./api"
 import { useSession } from "@/shared/auth/session.store"
 import { qk } from "@/shared/api/queryKeys"
 import { isExpired } from "@/shared/auth/jwt"
@@ -83,5 +83,21 @@ export function useVerifyEmail() {
         onSuccess: (data) => {
             setSession(data.accessToken, data.user)
         },
+    })
+}
+
+// FORGOT PASSWORD
+export function useForgotPassword() {
+    return useMutation({ 
+        mutationFn: forgotPassword, 
+        retry: false 
+    })
+}
+
+// RESET PASSWORD
+export function useResetPassword() {
+    return useMutation({ 
+        mutationFn: resetPassword, 
+        retry: false 
     })
 }

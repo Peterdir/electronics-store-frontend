@@ -15,6 +15,10 @@ export function LoginPage() {
 
                 <LoginForm />
 
+                <Link to="/forgot-password" className="mt-4 inline-block text-sm text-primary underline">
+                    Quên mật khẩu?
+                </Link>
+
                 <p className="mt-6 text-sm text-muted-foreground">
                     Chưa có tài khoản?{" "}
                     <Link to="/register" className="text-primary underline">

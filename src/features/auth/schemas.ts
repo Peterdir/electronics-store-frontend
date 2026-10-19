@@ -1,6 +1,5 @@
 import { z } from "zod"
 
-
 // LOGIN
 export const loginSchema = z.object({
     email: z.email("Email không hợp lệ."),
@@ -29,3 +28,26 @@ export const registerSchema = z.object({
 )
 
 export type RegisterFormValues = z.infer<typeof registerSchema>
+
+
+// FORGOT PASSWORD
+export const forgotPasswordSchema = z.object({
+    email: z.email("Email không hợp lệ."),
+})
+
+export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>
+
+
+// RESET PASSWORD
+export const resetPasswordSchema = z.object({
+    newPassword: newPasswordSchema,
+    confirmPassword: z.string().min(1, "Vui lòng xác nhận mật khẩu."),
+}).refine(
+    (values) => values.newPassword === values.confirmPassword,
+    {
+        message: "Mật khẩu xác nhận không khớp.",
+        path: ["confirmPassword"],
+    },
+)
+
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>
