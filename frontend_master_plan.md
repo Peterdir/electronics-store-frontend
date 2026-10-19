@@ -5,7 +5,7 @@
 
 > **Cách triển khai hiện tại — cập nhật 2026-10-17:** học React bằng giao diện và luồng Auth chạy với backend thật. Đọc [Mục 3](#3-lộ-trình-triển-khai-roadmap--dependency-rationale), sau đó làm từng mốc A1 → A16 trong Phase 1. Phần nền tảng đã có được giữ lại; hạ tầng còn thiếu được bổ sung ngay khi màn hình cần đến. Không cần hoàn thành toàn bộ shared infrastructure trước khi làm `/login`.
 
-> **Tiến độ cập nhật 2026-10-19:** **A1–A10 đã có code và commit; không giao lại các phần này.** A9: `1f10780`; A10: `74f55f3`. A11–A12 đã triển khai trong working tree. Có strict typecheck, generated types từ snapshot OpenAPI và workflow CI cho lint/typecheck/build. Người dùng yêu cầu xóa toàn bộ test Auth vừa thêm, nên đã bỏ test files, test runner, cấu hình và dependencies. **Còn hai đầu việc chính:** (1) kiểm tra recovery A11–A12 bằng backend/email thật; (2) chốt Auth A13–A16, hiện không có kiểm thử tự động. Backend local và CI remote chưa được xác nhận.
+> **Tiến độ cập nhật 2026-10-19:** **Auth đã chốt trong phạm vi người dùng lựa chọn.** A1–A10 đã có code và commit; A11–A12 đã được người dùng kiểm tra với backend; DTO thủ công A14 đã được người dùng chốt và kiểm tra. A13 được bỏ khỏi danh sách việc còn lại theo yêu cầu, không ghi nhận là đã kiểm thử đầy đủ. A15 (kiểm thử tự động) và A16 (CI) để sau. Không dùng OpenAPI generation. **Module tiếp theo: Phase 2 — Catalog & Discovery, bắt đầu trang danh sách sản phẩm `/products`.**
 
 > **Ưu tiên người dùng đã chốt — 2026-10-18:** làm Auth trước, theo dõi phần còn lại bằng **hai đầu việc chính** nêu trên. Yêu cầu “Triển khai” trong phiên này cho phép trợ lý sửa source trực tiếp. Chỉ giải thích kiến thức mới tại nơi dùng; không dựng lại hạ tầng đã có. Chưa mở Catalog/Cart/Admin nghiệp vụ. Cập nhật tiến độ vào plan để lần sau không làm trùng.
 
@@ -160,7 +160,7 @@ Một số endpoint trả **plain text** thay vì JSON (`String`): `PUT /admin/u
 | Date | **date-fns** + `date-fns-tz` | Hiển thị `Asia/Ho_Chi_Minh`, format `yyyy-MM-dd` cho query |
 | Rich text | `react-markdown` / sanitize HTML (`dompurify`) | Policy content, product description |
 | Toast | `sonner` | Đi kèm shadcn |
-| Type-gen | **`openapi-typescript`** từ `/v3/api-docs` | Đối chiếu tự động với DTO, giảm drift |
+| API types | DTO TypeScript viết thủ công theo endpoint đang dùng | Dễ đọc, kiểm soát rõ dữ liệu gửi/nhận; đối chiếu contract backend khi thay đổi |
 | Test | Vitest + Testing Library + **MSW** | Mock API theo contract |
 | Lint | ESLint flat + Prettier + `eslint-plugin-boundaries` | Chặn import chéo giữa features |
 
@@ -202,7 +202,7 @@ src/
 │   │   ├── jwt.ts                 # decode, isExpired
 │   │   ├── permissions.ts         # ma trận RBAC
 │   │   └── guards.tsx             # RequireAuth, RequireRole, GuestOnly
-│   ├── types/                     # common.ts, enums.ts, (generated) openapi.d.ts
+│   ├── types/                     # common.ts, enums.ts, shared response types
 │   └── config/env.ts
 ├── features/
 │   ├── auth/        { api.ts, queries.ts, schemas.ts, types.ts, components/, pages/ }
@@ -452,7 +452,7 @@ UI trước nghĩa là làm một màn hình rồi nối chức năng của chí
 | Guard, navigate, location.state | A7 | Guest bị chuyển sang login và quay lại trang hợp lệ sau đăng nhập |
 | Search params, token dùng một lần | A10/A12 | Link email đưa đúng token vào xác thực/reset |
 | useEffect và cleanup | A9/A13 | Cooldown đếm lùi, timer/subscription được dọn, hai tab đồng bộ logout |
-| Type generation, strict types, test mock, CI | A14–A16 | Phát hiện sai DTO và kiểm tra lại đúng các nhánh đã nhìn thấy ở Auth |
+| DTO thủ công và strict types | A14 | Khai báo rõ request/response Auth và dùng typecheck để bắt sai lệch kiểu |
 
 `useState` giữ trạng thái UI như hiện/ẩn mật khẩu; React Hook Form giữ dữ liệu/lỗi form; Zustand giữ token và danh tính phiên; TanStack Query giữ hồ sơ/dữ liệu server. Không sao chép cùng một dữ liệu sang nhiều bộ state. Chưa giới thiệu tối ưu hóa hoặc abstraction mới khi chưa có nhu cầu cụ thể.
 
@@ -462,9 +462,9 @@ UI trước nghĩa là làm một màn hình rồi nối chức năng của chí
 |---|---|---|
 | Hoàn thiện client/error policy Auth | A4/A6/A13: sai credentials, logout, 401, toast không trùng | Theo commit của mốc Auth tương ứng; nếu tách riêng: `fix(api): align auth errors with session lifecycle` |
 | Query key hồ sơ và retry policy | A5: hồ sơ tải/retry đúng; logout xóa cache qua store hiện có | `feat(auth): display authenticated user profile` |
-| OpenAPI type-gen và TS strict | A14: đối chiếu DTO Auth đang dùng, bắt lỗi field/type thật | `chore(types): validate auth contracts with OpenAPI and strict types` |
-| Vitest + Testing Library + MSW | A15: tái hiện thành công/lỗi đã thử với backend | `test(auth): cover authentication and session flows` |
-| ESLint boundaries, Prettier, CI | A16: kiểm tra quan hệ import Auth đang có; CI chạy đúng lệnh local | `chore(quality): enforce auth checks in CI` |
+| DTO Auth thủ công và TS strict | A14: khai báo request/response tường minh, typecheck bắt lỗi field/type | `chore(auth): define explicit API DTOs` |
+| Kiểm thử tự động | A15: hoãn theo yêu cầu; xem xét lại sau khi Auth hoàn tất | Chưa lên lịch |
+| CI và cấu hình chất lượng bổ sung | A16: hoãn theo yêu cầu; xem xét lại sau khi Auth hoàn tất | Chưa lên lịch |
 | Money/DateTime/StatusBadge/Skeleton/EmptyState | P2: giá, trạng thái, loading và danh sách rỗng có dữ liệu minh họa | `feat(ui): add catalog display and feedback components` |
 | normalizePage + Pagination | P2: đổi trang listing và đối chiếu response backend | `feat(catalog): integrate paginated product listings` |
 | useUrlState + query keys catalog | P2: lọc sản phẩm, refresh và Back/Forward giữ đúng bộ lọc | `feat(catalog): synchronize filters and pagination with URL` |
@@ -489,19 +489,19 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 
 | Nhóm | Quan sát source ngày 2026-10-18 | Việc tiếp theo có tác dụng thực tế |
 |---|---|---|
-| Scaffold/design/layout | Có StorefrontLayout/AdminLayout, các trang Auth gồm resend/verify/forgot/reset và UserMenu | Kiểm tra recovery với backend/email thật khi môi trường hoạt động |
+| Scaffold/design/layout | Có StorefrontLayout/AdminLayout, các trang Auth gồm resend/verify/forgot/reset và UserMenu | Recovery đã được người dùng xác nhận kiểm tra với backend |
 | Env/proxy | Port 3000, proxy `/api` và `/uploads`, env helper; login/profile đã gọi backend thật | Dùng cấu hình hiện có cho API còn thiếu |
-| HTTP/error | Có client/error normalizer và API Auth đến verify/forgot/reset; các request public dùng skip-auth | Kiểm tra lại contract bằng OpenAPI live và backend thật |
+| HTTP/error | Có client/error normalizer và API Auth đến verify/forgot/reset; các request public dùng skip-auth | DTO viết tay; đối chiếu contract khi endpoint/backend thay đổi |
 | Session/RBAC | Store/JWT/events/lifecycle/permissions đã có; guards đã gắn login/register/profile/admin; redirect hợp lệ theo role | Không tạo lại store/guards/lifecycle; kiểm tra hồi quy ở nhóm chốt Auth |
 | QueryClient | Provider, qk.me theo user ID, enabled/retry và clear cache qua session store đã có | Tái sử dụng; kiểm tra cleanup khi chạy luồng đăng xuất |
 | Shared UI/form | Có PasswordInput, LoginForm, RegisterForm, schema mật khẩu mới/confirm, map lỗi server; ProfilePage có loading/error/retry | Tái sử dụng schema/Input ở reset; không thêm strength meter hoặc đổi giao diện lúc này |
-| Type-gen/quality | Có gen:api, strict/typecheck và workflow CI cho lint/typecheck/build; generated hiện từ `../ecommerce-backend/openapi.json` ngày 2026-10-13; test Auth đã được gỡ theo yêu cầu | Sinh lại từ `/v3/api-docs` khi backend chạy; xác nhận CI remote |
+| Types/quality | DTO Auth viết tay; strict/typecheck và workflow CI hiện có; test Auth đã được gỡ theo yêu cầu | Người dùng hoãn kiểm thử tự động và CI; không dùng OpenAPI generation |
 
-**Kết quả kiểm tra gần nhất — 2026-10-19:** trước khi người dùng yêu cầu gỡ tests, `npm run typecheck`, `npm run lint`, `npm run build`, 16 test Auth mock và `git diff --check` đều đạt. Toàn bộ test runner/test files đã được xóa; các lệnh lint/typecheck/build cần chạy lại sau khi gỡ dependencies. Bundle có cảnh báo kích thước khoảng 620 kB. Chưa trực tiếp kiểm tra browser/email thật hoặc CI remote.
+**Kết quả kiểm tra gần nhất — 2026-10-19:** người dùng xác nhận đã kiểm tra luồng recovery với backend. `npm run typecheck` đạt sau khi chuyển DTO Auth sang khai báo thủ công. Kiểm thử tự động và CI được hoãn theo yêu cầu; không dùng OpenAPI generation. Những kiểm tra khác chỉ được ghi nhận khi chạy lại sau các thay đổi tương ứng.
 
 **Môi trường để tiếp tục:** chạy frontend bằng `npm run dev` ở port 3000, backend ở port 8080 cùng các dịch vụ phụ thuộc theo hướng dẫn backend. Đã có tài khoản đăng nhập và lấy hồ sơ thành công. Tiếp tục dùng `/login` và `/account/profile` để kiểm tra logout; `/` vẫn là HomePage. Các tài khoản/nhánh lỗi chưa có kết quả kiểm thử riêng cần được ghi rõ khi kiểm tra, không coi việc có code xử lý là bằng chứng đã chạy nhánh đó.
 
-**Điểm tiếp tục chính thức:** kiểm tra A11–A12 với backend/email thật; sau đó sinh lại OpenAPI types từ backend đang chạy và xác nhận workflow CI. A1–A10 đã commit, không làm lại. A13 dùng nền lifecycle hiện có; chỉ sửa nếu kiểm tra phát hiện lỗi. `AccountLayout` vẫn hoãn đến P4.
+**Điểm tiếp tục chính thức:** Phase 2 — Catalog & Discovery đã có kế hoạch bên dưới. Bắt đầu danh sách sản phẩm `/products` nối `GET /api/products`, với DTO viết tay, API/hook, ProductCard/ProductGrid và loading/error/empty. Tiếp tục phân trang, tìm kiếm/lọc/sắp xếp theo URL, rồi chi tiết sản phẩm và các phần còn lại của P2. Auth đã chốt theo phạm vi người dùng; không giao lại A13/A14. `AccountLayout` vẫn hoãn đến P4.
 
 **Cách phối hợp:** ưu tiên yêu cầu mới nhất của người dùng. Trong phiên hiện tại người dùng đã yêu cầu triển khai trực tiếp. Sau khi chạy ghi flow, kết quả kiểm tra và phần chưa xác nhận; cập nhật kế hoạch để tránh làm trùng.
 
@@ -527,18 +527,15 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 | A8 | ✅ Đã triển khai/commit; không làm lại | `4e0bf9e` — RegisterRequest/schema/API/hook/RegisterForm/RegisterPage/CheckEmailPage, route/link; validation field/root, pending, chuyển email/message qua navigation state; không tạo session. Chưa xác nhận đầy đủ luồng email thật. |
 | A9 | ✅ Đã commit | `1f10780` — resend và countdown nguyên giây. Email thật chưa được xác nhận trong lượt này. |
 | A10 | ✅ Đã commit | `74f55f3` — verify bằng click, lưu session và điều hướng; link gửi lại từ lỗi login. Email thật chưa được xác nhận trong lượt này. |
-| A11–A12 | 🛠 Đã triển khai, chưa commit | Trang/API/hook/schema cho forgot/reset; xử lý token thiếu/hết hạn, field errors, guest và phiên đang đăng nhập. Test đã được gỡ theo yêu cầu; backend/email thật chưa xác nhận. |
-| A13 | ⬜ Chưa xác nhận đầy đủ | Lifecycle hiện có; cần kiểm tra hai tab, cảnh báo/hết hạn và 401/403 với backend/browser. |
-| A14 | 🛠 Đã triển khai, chưa commit | Có generated OpenAPI types từ snapshot backend 2026-10-13 và strict/typecheck. Cần tái sinh types từ backend live. |
-| A15 | ⏸ Tạm bỏ theo yêu cầu người dùng | Test files, Vitest, Testing Library, MSW và jsdom đã được gỡ; Auth hiện không có test tự động. |
-| A16 | 🛠 Đã triển khai một phần, chưa commit | Workflow CI chạy lint/typecheck/build; cần xác nhận CI remote. Hoãn Prettier/boundaries toàn repo. |
+| A11–A12 | ✅ Đã triển khai và xác nhận với backend | Trang/API/hook/schema cho forgot/reset; người dùng đã kiểm tra luồng với backend. Chưa có kiểm thử tự động; được hoãn. |
+| A13 | ➖ Bỏ khỏi phạm vi còn lại theo yêu cầu | Giữ lifecycle hiện có; không giao thêm việc rà soát/kiểm thử vòng đời phiên. Không coi quyết định này là bằng chứng đã kiểm thử mọi nhánh. |
+| A14 | ✅ Đã chốt | Người dùng xác nhận DTO viết tay đã chốt và kiểm tra; không dùng OpenAPI generation. |
+| A15 | ⏸ Hoãn theo yêu cầu người dùng | Không có test tự động; xem xét lại sau khi Auth hoàn tất. |
+| A16 | ⏸ Hoãn theo yêu cầu người dùng | CI và kiểm tra remote để giai đoạn sau; không phải điều kiện chốt Auth hiện tại. |
 
-#### Danh sách còn lại đã gộp — dùng cho các lượt tiếp theo
+#### Kết thúc phạm vi Auth hiện tại
 
-| Nhóm | Đầu việc thực sự còn thiếu | Tái sử dụng / tránh trùng |
-|---|---|---|
-| 1. Hoàn thiện recovery (A11–A12) | Code và test mock đã có; còn kiểm tra forgot → email → reset → login mật khẩu mới với backend thật, gồm guest và người đang đăng nhập | Dùng schema mật khẩu, PasswordInput và logout hiện có; không xây lại form Auth cũ. |
-| 2. Chốt Auth (A13–A16) | Test/browser hai tab và email thật; tái sinh OpenAPI types từ backend live, xử lý drift nếu có; xác nhận CI remote | Lifecycle/store/client/guards đã có; chỉ sửa lỗi phát hiện được. Hoãn strength meter, chỉnh lại UI, Prettier/boundaries toàn repo. |
+Không còn đầu việc Auth đang giao. Người dùng đã chốt DTO, xác nhận recovery với backend và bỏ phần rà soát vòng đời phiên. Kiểm thử tự động và CI để sau; OpenAPI generation không sử dụng. Chuyển sang Phase 2 — Catalog & Discovery theo kế hoạch đã có.
 
 **Quy tắc ghi tiến độ:** phân biệt “đã triển khai/commit” với “đã xác nhận chạy backend/browser”. Sau mỗi mốc cập nhật bảng, commit/bằng chứng và điểm tiếp tục tại đầu file; không biến phần chưa kiểm thử thành nhiệm vụ xây lại tính năng.
 
@@ -546,7 +543,7 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 
 **Ghi nhớ để hướng dẫn tiếp:** người dùng mới học React, muốn hướng dẫn đầy đủ một mốc trong một lượt rồi tự code/test và gửi trợ lý review trước commit. Chỉ giới thiệu kiến thức cần ngay tại bước dùng, giải thích cú pháp và tác dụng thực tế. Đã giải thích destructuring của useForm, register/spread, resolver/schema/errors, noValidate, render lỗi có điều kiện và aria; A4 thêm async/await, mutation, callback onSuccess, Zustand/persist và navigate; A5 thêm query key/cache, enabled, isPending/isFetching, refetch và dữ liệu null. Người dùng đã hỏi rõ mutation là hành động chủ động (vẫn có response), còn query trả object dữ liệu/trạng thái/hàm điều khiển. Đã giải thích frontend route khác API request: Link → `/account/profile` trên port 3000 → `useMe` → `getMyProfile` trong `features/auth/api.ts` → Axios client → Vite proxy → backend port 8080. Giữ Zod cho phản hồi đầu vào; backend vẫn kiểm tra lại. Login chỉ kiểm tra email hợp lệ và password không rỗng, không áp password mạnh cho login.
 
-**Tiếp tục sau triển khai 2026-10-18:** chạy backend và mail service để kiểm tra các luồng email, sau đó chạy `npm run gen:api` từ OpenAPI live. Các request Auth public dùng skip-auth và mutation không retry tự động. CI chạy lint/typecheck/test/build; chưa có bằng chứng runner remote đã xanh.
+**Cập nhật 2026-10-19:** người dùng xác nhận đã kiểm tra recovery A11–A12 với backend. DTO viết tay là lựa chọn chính; không chạy `gen:api`/OpenAPI. Kiểm thử tự động và CI được hoãn sang giai đoạn sau. Các request Auth public dùng skip-auth và mutation không retry tự động.
 
 **Bằng chứng và phần chưa xác nhận:** người dùng báo login backend thành công, xác nhận giao diện sau sửa chạy tốt và báo đã test trang hồ sơ thành công. Trợ lý đã kiểm tra source/build/lint/diff; chưa tự thao tác browser hoặc lưu log Network cho từng trường hợp. Các checklist dưới A4/A5 tiếp tục là tiêu chí hồi quy, không phải nhật ký chứng minh từng nhánh pending/locked, mất kết nối hoặc từng role đã được test. Chưa có bằng chứng logout blacklist token, guards, 401 đồng thời/hết hạn phiên, email verify/reset hoặc test mock tự động; thực hiện ở các mốc tiếp theo tương ứng.
 
@@ -678,7 +675,7 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 
 #### A13 — Thấy vòng đời phiên và hiểu effect/cleanup đang có
 
-**Cập nhật 2026-10-18:** nền code đã có và được AppProviders sử dụng. Gộp kiểm tra với A15; chỉ sửa lỗi được phát hiện, không mở nhiệm vụ xây lại lifecycle.
+**Quyết định 2026-10-19:** người dùng bỏ A13 khỏi phạm vi công việc còn lại. Nền code đã có và được AppProviders sử dụng; các mô tả bên dưới chỉ giữ để tham khảo, không phải yêu cầu chặn chuyển sang Catalog.
 
 - **Kết quả:** logout ở tab A cập nhật tab B; phiên hết hạn có một thông báo và protected route chuyển sang login; trang public tiếp tục dùng được.
 - **Học và áp dụng:** đọc lại effect/subscription/timer của providers và session.lifecycle bằng tác dụng đã nhìn thấy; phân biệt session UI, cache và HTTP 401.
@@ -687,14 +684,16 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 - **Kiểm tra/hoàn thành:** hai tab, cảnh báo trước hạn, hết hạn, token bị blacklist qua backend, anonymous 401, 403 không logout, public retry tối đa một lần, cancellation và không toast lỗi trùng. Token hết hạn ngắn được mô phỏng ở test A15, không đổi TTL backend để phục vụ UI.
 - **Commit:** `fix(auth): align session lifecycle and expiration behavior`.
 
-#### A14 — Sinh types và bật strict bằng DTO Auth đang dùng
+#### A14 — DTO Auth viết tay và strict typecheck
 
-- **Kết quả:** `npm run gen:api` sinh `shared/types/openapi.d.ts`; typecheck bắt được tên field/type sai của form/API thật.
-- **Học và áp dụng:** type chỉ tồn tại lúc kiểm tra code; schema Zod và backend validation kiểm tra dữ liệu lúc chạy. Type generation giảm lệch DTO, không tự xác thực JSON runtime.
-- **Phạm vi tự sửa:** lúc này cài openapi-typescript, thêm gen:api/typecheck script, đối chiếu types Auth hiện có; bật strict ở app/node TS project và xử lý lỗi có giải thích. Không sửa generated file bằng tay; kiểm tra ID string và nullable fields.
-- **Flow:** backend OpenAPI → gen:api → types → form/API/hook → typecheck. Thử sai field trong ví dụ hướng dẫn để thấy compiler báo lỗi, sau đó khôi phục code đúng trước commit.
-- **Kiểm tra/hoàn thành:** gen:api với backend chạy, typecheck và build đạt; response Auth khớp Swagger. Không bắt buộc chuẩn hóa DTO của tất cả module chưa sử dụng ở bước này.
-- **Commit:** `chore(types): validate auth contracts with OpenAPI and strict types`.
+**Trạng thái:** người dùng xác nhận đã chốt và kiểm tra DTO. Không giao lại mốc này.
+
+- **Kết quả:** DTO request/response Auth được khai báo tường minh trong `features/auth/types.ts`; typecheck bắt được tên field/type sai trong form/API.
+- **Học và áp dụng:** type chỉ tồn tại lúc kiểm tra code; schema Zod và backend validation kiểm tra dữ liệu lúc chạy. DTO thủ công cần được cập nhật khi contract backend đổi; TypeScript không tự xác thực JSON runtime.
+- **Phạm vi:** giữ DTO thủ công, rõ request/response; bật strict ở app/node TS project và xử lý lỗi kiểu. Không cài hoặc chạy OpenAPI generator, không duy trì generated `openapi.d.ts`.
+- **Flow:** contract backend đã kiểm tra → DTO thủ công → form/API/hook → typecheck.
+- **Kiểm tra/hoàn thành:** DTO được dùng nhất quán ở API Auth và `npm run typecheck` đạt. Kiểm thử tự động và CI được hoãn theo yêu cầu.
+- **Commit:** `chore(auth): define explicit API DTOs`.
 
 #### A15 — Kiểm thử tự động (đang tạm bỏ theo yêu cầu người dùng)
 
@@ -702,12 +701,12 @@ Test runner, test files và dependencies Auth đã được gỡ khỏi repo. N�
 
 #### A16 — Config chất lượng với lỗi có ví dụ thật
 
-**Phạm vi rút gọn 2026-10-18:** lượt chốt Auth chỉ thêm CI chạy các lệnh kiểm tra đã có từ A14/A15. Hoãn Prettier và boundaries toàn repo; các mô tả bên dưới về hai công cụ này là hướng mở rộng, không phải điều kiện hoàn tất Auth hiện tại.
+**Trạng thái 2026-10-19:** hoãn A16 theo yêu cầu người dùng. CI và kiểm tra remote sẽ được xem xét ở giai đoạn sau; không phải điều kiện hoàn tất Auth hiện tại.
 
 - **Kết quả:** lệnh local và CI phát hiện lỗi lint/type/build trên module Auth.
 - **Học và áp dụng:** ESLint boundaries chặn lớp shared import ngược feature; formatter giữ code nhất quán; CI chạy lại kiểm tra khi push.
 - **Phạm vi tự sửa:** cấu hình boundaries/Prettier và CI theo quan hệ import thật; không đổi kiến trúc chỉ để dùng một config. Không tạo workflow bắt buộc backend live hoặc gọi gen:api localhost trên runner CI.
-- **Flow:** sửa file → lint/typecheck/build local → commit/push → CI chạy cùng kiểm tra. Generated types được commit; tái sinh khi contract backend đổi trong môi trường có backend.
+- **Flow dự kiến khi tiếp tục:** sửa file → chạy các kiểm tra được thống nhất → commit/push → xác nhận CI.
 - **Kiểm tra/hoàn thành:** lint/typecheck/build đạt. Nếu chưa xác nhận CI remote thì ghi “cấu hình đã có, chưa xác nhận runner”, không tự ghi xanh.
 - **Commit:** `chore(quality): enforce auth checks in CI`.
 
@@ -1268,11 +1267,11 @@ export interface RevenueReportResponse { startDate: ISODate; endDate: ISODate; t
 
 ### 6.2 Khi kết thúc một module để chuyển sang module tiếp theo
 
-1. Types của API đang dùng khớp OpenAPI; gen:api/typecheck/build đạt sau khi công cụ được đưa vào ở A14.
+1. DTO viết tay của API đang dùng khớp contract backend đã đối chiếu; typecheck đạt. OpenAPI generation không thuộc quy trình Auth.
 2. Query/mutation đi qua `features/<m>/api.ts` và hook trong `queries.ts`; chỉ tạo query keys đang có người dùng.
 3. Form có schema phù hợp validation backend, map validationErrors và thông báo lỗi chung; không toast trùng lỗi form/session.
 4. Có pending/loading, empty khi có ý nghĩa, error/retry và guard quyền theo chức năng thực tế.
-5. Có handler/test cho luồng chính và nhánh lỗi quan trọng; Auth áp dụng A15 rồi CI ở A16 trước khi kết thúc P1. Backend flow chính được kiểm tra riêng; test mock không thay kết quả này.
+5. Luồng chính Auth đã được kiểm tra với backend. Kiểm thử tự động (A15) và CI (A16) được hoãn theo quyết định người dùng, không phải điều kiện kết thúc Auth hiện tại.
 6. Có flow tổng kết, giới hạn/môi trường chưa xác nhận và danh sách commit từng mốc. Hạ tầng chuyển sang P2–P5 theo Mục 3.3 không bị coi là thiếu sót của Auth.
 
 ---

@@ -19,6 +19,7 @@ import { CheckEmailPage } from "@/features/auth/pages/CheckEmailPage"
 import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage"
 import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage"
 import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage"
+import { ProductListPage } from "@/features/catalog/pages/ProductListPage"
 
 
 export const router = createBrowserRouter([
@@ -67,6 +68,10 @@ export const router = createBrowserRouter([
             {
                 path: "reset-password",
                 Component: ResetPasswordPage,
+            },
+            {
+                path: "/products",
+                Component: ProductListPage
             },
         ],
     },

@@ -24,6 +24,10 @@ export function StorefrontLayout() {
                         </Link>
 
                         <UserMenu />
+
+                        <Link to="/products" className="rounded-sm text-muted-foreground transition-colors hover:text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                            Sản phẩm
+                        </Link>
                     </nav>
                 </div>
             </header>
