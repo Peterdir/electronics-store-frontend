@@ -4,10 +4,45 @@ import { useSearchParams } from "react-router";
 import { Pagination } from "../components/Pagination";
 import { useEffect } from "react";
 import { SearchBar } from "../components/SearchBar";
+import { ProductSort } from "@/shared/types/enums";
+import type { ID } from "@/shared/types/common";
+
+
+const MAX_LONG_ID = 9_223_372_036_854_775_807n;
+
+function parseId(value: string | null): ID | undefined {
+    if (value === null || !/^\d+$/.test(value)) return undefined;
+
+    const id = BigInt(value);
+    if (id <= 0n || id > MAX_LONG_ID) return undefined;
+
+    return value as ID;
+}
+
+function parsePrice(value: string | null): number | undefined {
+    if (value === null || value.trim() === "") return undefined;
+
+    const price = Number(value);
+    return Number.isFinite(price) && price >= 0 ? price : undefined;
+}
+
+function parseSort(value: string | null): ProductSort {
+    const allowedSorts = Object.values(ProductSort) as ProductSort[];
+
+    return value && allowedSorts.includes(value as ProductSort)
+        ? (value as ProductSort)
+        : ProductSort.NEWEST;
+}
 
 export function ProductListPage() {
     const [searchParams, setSearchParams] = useSearchParams();
+    
     const keyword = (searchParams.get("q") ?? "").trim();
+    const categoryId = parseId(searchParams.get("categoryId"));
+    const brandId = parseId(searchParams.get("brandId"));
+    const minPrice = parsePrice(searchParams.get("minPrice"));
+    const maxPrice = parsePrice(searchParams.get("maxPrice"));
+    const sort = parseSort(searchParams.get("sort"));
 
     const rawPage = searchParams.get("page");
     const parsedPage = rawPage === null ? 1 : Number(rawPage);
@@ -15,6 +50,11 @@ export function ProductListPage() {
 
     const productsQuery = useGetProducts({
         keyword: keyword || undefined,
+        categoryId,
+        brandId,
+        minPrice,
+        maxPrice,
+        sort,
         page: currentPage - 1, 
         size: 12 
     });
