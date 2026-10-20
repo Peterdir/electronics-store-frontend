@@ -2,6 +2,7 @@ import type { ID, Money } from "@/shared/types/common";
 import type { ProductStatus } from "@/shared/types/enums";
 
 export interface GetProductsRequest {
+    keyword?: string,
     page: number,
     size: number,
 }

@@ -3,15 +3,21 @@ import { ProductGrid } from "../components/ProductGrid";
 import { useSearchParams } from "react-router";
 import { Pagination } from "../components/Pagination";
 import { useEffect } from "react";
+import { SearchBar } from "../components/SearchBar";
 
 export function ProductListPage() {
     const [searchParams, setSearchParams] = useSearchParams();
+    const keyword = (searchParams.get("q") ?? "").trim();
 
     const rawPage = searchParams.get("page");
     const parsedPage = rawPage === null ? 1 : Number(rawPage);
     const currentPage = Number.isInteger(parsedPage) && parsedPage >= 1 ? parsedPage : 1;
 
-    const productsQuery = useGetProducts({ page: currentPage - 1, size: 10 });
+    const productsQuery = useGetProducts({
+        keyword: keyword || undefined,
+        page: currentPage - 1, 
+        size: 12 
+    });
 
     useEffect(() => {
         const totalPages = productsQuery.data?.totalPages;
@@ -54,6 +60,22 @@ export function ProductListPage() {
         });
     }
 
+    function searchProducts(nextKeyword: string) {
+        setSearchParams((currentParams) => {
+            const nextParams = new URLSearchParams(currentParams);
+            const normalizedKeyword = nextKeyword.trim();
+
+            if (normalizedKeyword) {
+                nextParams.set("q", normalizedKeyword);
+            } else {
+                nextParams.delete("q");
+            }
+
+            nextParams.set("page", "1");
+            return nextParams;
+        });
+    }
+
     if (productsQuery.isPending) {
         return <p role="status">Đang tải sản phẩm</p>
     }
@@ -74,6 +96,8 @@ export function ProductListPage() {
     return (
         <section className="space-y-6">
             <h1 className="text-2xl font-bold">Sản phẩm</h1>
+
+            <SearchBar initialValue={keyword} onSearch={searchProducts} />
 
             {productsQuery.isFetching && (
                 <p role="status">Đang tải trang sản phẩm…</p>
