@@ -76,45 +76,46 @@ export function ProductListPage() {
         });
     }
 
-    if (productsQuery.isPending) {
-        return <p role="status">Đang tải sản phẩm</p>
-    }
-
-    if (productsQuery.isError) {
-        return (
-            <section aria-live="polite">
-                <p>Không tải được sản phẩm</p>
-                <button type="button" onClick={() => void productsQuery.refetch()}>
-                    Thử lại
-                </button>
-            </section>
-        )
-    }
-
-    const products = productsQuery.data.items;
-
     return (
         <section className="space-y-6">
             <h1 className="text-2xl font-bold">Sản phẩm</h1>
 
-            <SearchBar initialValue={keyword} onSearch={searchProducts} />
-
-            {productsQuery.isFetching && (
-                <p role="status">Đang tải trang sản phẩm…</p>
-            )}
-
-            {products.length === 0 ? (
-                <p>Chưa có sản phẩm phù hợp</p>
-            ) : (
-                <ProductGrid products={products} />
-            )}
-
-            <Pagination
-                currentPage={currentPage}
-                totalPages={productsQuery.data.totalPages}
-                isFetching={productsQuery.isFetching}
-                onPageChange={goToPage}
+            <SearchBar 
+                key={keyword} 
+                initialValue={keyword} 
+                onSearch={searchProducts}
             />
+
+            {productsQuery.isPending ? (
+                <p role="status">Đang tải sản phẩm…</p>
+            ) : productsQuery.isError ? (
+                <div aria-live="polite">
+                    <p>Không tải được sản phẩm</p>
+                    
+                    <button type="button" onClick={() => void productsQuery.refetch()}>
+                        Thử lại
+                    </button>
+                </div>
+            ) : (
+                <>
+                    {productsQuery.isFetching && (
+                        <p role="status">Đang tải trang sản phẩm…</p>
+                    )}
+
+                    {productsQuery.data.items.length === 0 ? (
+                        <p>Chưa có sản phẩm phù hợp</p>
+                    ) : (
+                        <ProductGrid products={productsQuery.data.items} />
+                    )}
+
+                    <Pagination
+                        currentPage={currentPage}
+                        totalPages={productsQuery.data.totalPages}
+                        isFetching={productsQuery.isFetching}
+                        onPageChange={goToPage}
+                    />
+                </>
+            )}
         </section>
     )
 }

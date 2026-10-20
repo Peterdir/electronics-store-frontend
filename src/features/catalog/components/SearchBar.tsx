@@ -10,10 +10,6 @@ interface SearchBarProps {
 export function SearchBar({ initialValue, onSearch }: SearchBarProps) {
     const [value, setValue] = useState(initialValue);
 
-    useEffect(() => {
-        setValue(initialValue);
-    }, [initialValue]);
-
     function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
         onSearch(value.trim());
