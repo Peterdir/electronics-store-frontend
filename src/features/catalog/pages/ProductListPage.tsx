@@ -6,6 +6,10 @@ import { useEffect } from "react";
 import { SearchBar } from "../components/SearchBar";
 import { ProductSort } from "@/shared/types/enums";
 import type { ID } from "@/shared/types/common";
+import {
+    ProductFilters,
+    type ProductFilterValues,
+} from "../components/ProductFilters";
 
 
 const MAX_LONG_ID = 9_223_372_036_854_775_807n;
@@ -19,11 +23,15 @@ function parseId(value: string | null): ID | undefined {
     return value as ID;
 }
 
-function parsePrice(value: string | null): number | undefined {
+function parseUrlPrice(value: string | null): number | undefined {
     if (value === null || value.trim() === "") return undefined;
 
     const price = Number(value);
-    return Number.isFinite(price) && price >= 0 ? price : undefined;
+    return Number.isSafeInteger(price) && 
+        price >= 0 &&
+        price % 1000 === 0
+        ? price
+        : undefined;
 }
 
 function parseSort(value: string | null): ProductSort {
@@ -36,12 +44,12 @@ function parseSort(value: string | null): ProductSort {
 
 export function ProductListPage() {
     const [searchParams, setSearchParams] = useSearchParams();
-    
+
     const keyword = (searchParams.get("q") ?? "").trim();
     const categoryId = parseId(searchParams.get("categoryId"));
     const brandId = parseId(searchParams.get("brandId"));
-    const minPrice = parsePrice(searchParams.get("minPrice"));
-    const maxPrice = parsePrice(searchParams.get("maxPrice"));
+    const minPrice = parseUrlPrice(searchParams.get("minPrice"));
+    const maxPrice = parseUrlPrice(searchParams.get("maxPrice"));
     const sort = parseSort(searchParams.get("sort"));
 
     const rawPage = searchParams.get("page");
@@ -56,7 +64,7 @@ export function ProductListPage() {
         maxPrice,
         sort,
         page: currentPage - 1, 
-        size: 12 
+        size: 12
     });
 
     useEffect(() => {
@@ -116,46 +124,111 @@ export function ProductListPage() {
         });
     }
 
+    function applyFilters(filters: ProductFilterValues) {
+        setSearchParams((currentParams) => {
+            const nextParams = new URLSearchParams(currentParams);
+
+            if (filters.categoryId) {
+                nextParams.set("categoryId", filters.categoryId);
+            } else {
+                nextParams.delete("categoryId");
+            }
+
+            if (filters.brandId) {
+                nextParams.set("brandId", filters.brandId);
+            } else {
+                nextParams.delete("brandId");
+            }
+
+            if (filters.minPrice !== undefined) {
+                nextParams.set("minPrice", String(filters.minPrice));
+            } else {
+                nextParams.delete("minPrice");
+            }
+
+            if (filters.maxPrice !== undefined) {
+                nextParams.set("maxPrice", String(filters.maxPrice));
+            } else {
+                nextParams.delete("maxPrice");
+            }
+
+            if (filters.sort === ProductSort.NEWEST) {
+                nextParams.delete("sort");
+            } else {
+                nextParams.set("sort", filters.sort);
+            }
+
+            nextParams.set("page", "1");
+            return nextParams;
+        });
+    }
+
     return (
         <section className="space-y-6">
             <h1 className="text-2xl font-bold">Sản phẩm</h1>
 
-            <SearchBar 
-                key={keyword} 
-                initialValue={keyword} 
-                onSearch={searchProducts}
-            />
-
-            {productsQuery.isPending ? (
-                <p role="status">Đang tải sản phẩm…</p>
-            ) : productsQuery.isError ? (
-                <div aria-live="polite">
-                    <p>Không tải được sản phẩm</p>
-                    
-                    <button type="button" onClick={() => void productsQuery.refetch()}>
-                        Thử lại
-                    </button>
-                </div>
-            ) : (
-                <>
-                    {productsQuery.isFetching && (
-                        <p role="status">Đang tải trang sản phẩm…</p>
-                    )}
-
-                    {productsQuery.data.items.length === 0 ? (
-                        <p>Chưa có sản phẩm phù hợp</p>
-                    ) : (
-                        <ProductGrid products={productsQuery.data.items} />
-                    )}
-
-                    <Pagination
-                        currentPage={currentPage}
-                        totalPages={productsQuery.data.totalPages}
-                        isFetching={productsQuery.isFetching}
-                        onPageChange={goToPage}
+            <div className="grid items-start gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
+                <aside className="self-start lg:sticky lg:top-6">
+                    <ProductFilters
+                        key={[
+                            categoryId ?? "",
+                            brandId ?? "",
+                            minPrice ?? "",
+                            maxPrice ?? "",
+                            sort,
+                        ].join("|")}
+                        initialValues={{
+                            categoryId,
+                            brandId,
+                            minPrice,
+                            maxPrice,
+                            sort,
+                        }}
+                        onApply={applyFilters}
                     />
-                </>
-            )}
+                </aside>
+
+                <div className="min-w-0 space-y-6">
+                    <SearchBar
+                        key={keyword}
+                        initialValue={keyword}
+                        onSearch={searchProducts}
+                    />
+
+                    {productsQuery.isPending ? (
+                        <p role="status">Đang tải sản phẩm…</p>
+                    ) : productsQuery.isError ? (
+                        <div aria-live="polite">
+                            <p>Không tải được sản phẩm</p>
+                            <button
+                                type="button"
+                                onClick={() => void productsQuery.refetch()}
+                            >
+                                Thử lại
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            {productsQuery.isFetching && (
+                                <p role="status">Đang tải trang sản phẩm…</p>
+                            )}
+
+                            {productsQuery.data.items.length === 0 ? (
+                                <p>Chưa có sản phẩm phù hợp</p>
+                            ) : (
+                                <ProductGrid products={productsQuery.data.items} />
+                            )}
+
+                            <Pagination
+                                currentPage={currentPage}
+                                totalPages={productsQuery.data.totalPages}
+                                isFetching={productsQuery.isFetching}
+                                onPageChange={goToPage}
+                            />
+                        </>
+                    )}
+                </div>
+            </div>
         </section>
     )
 }
