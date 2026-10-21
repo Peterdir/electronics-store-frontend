@@ -1,5 +1,5 @@
 import { qk } from "@/shared/api/queryKeys";
-import { getBrands, getCategories, getProducts } from "./api";
+import { getBrands, getCategories, getProducts, getProductSuggestions } from "./api";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { GetProductsRequest } from "./types";
 
@@ -32,4 +32,19 @@ export function useGetBrands() {
         staleTime: 10 * 60 * 1000,
         retry: 2,
     })
+}
+
+// GET SUGGESTIONS
+export function useProductSuggestions(
+    keyword: string,
+    enabled: boolean,
+) {
+    return useQuery({
+        queryKey: [...qk.products, "suggest", keyword],
+        queryFn: ({ signal }) =>
+            getProductSuggestions(keyword, signal),
+        enabled: enabled && keyword.length > 0,
+        staleTime: 30_000,
+        retry: false,
+    });
 }

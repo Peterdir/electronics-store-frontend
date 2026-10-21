@@ -35,3 +35,10 @@ export interface CategoryResponse {
 export interface BrandResponse extends CategoryResponse {
   logo: string | null;
 }
+
+export interface SuggestionResponse {
+    id: ID;
+    name: string;
+    imageUrl: string | null;
+    basePrice: Money;
+}
