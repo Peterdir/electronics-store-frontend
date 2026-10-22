@@ -1,6 +1,6 @@
 import { api } from "@/shared/api/client";
-import type { BrandResponse, CategoryResponse, GetProductsRequest, ProductResponse, SuggestionResponse } from "./types";
-import type { Page } from "@/shared/types/common";
+import type { BrandResponse, CategoryResponse, GetProductsRequest, ProductDetailsResponse, ProductResponse, SuggestionResponse } from "./types";
+import type { ID, Page } from "@/shared/types/common";
 import { normalizePage, type BackendPage } from "@/shared/api/pagination";
 
 
@@ -44,6 +44,15 @@ export async function getProductSuggestions(
             signal,
         },
     );
+
+    return response.data;
+}
+
+// GET PRODUCT DETAILS
+export async function getProductDetails(
+    id: ID,
+): Promise<ProductDetailsResponse> {
+    const response = await api.get<ProductDetailsResponse>(`/api/products/${id}`)
 
     return response.data;
 }

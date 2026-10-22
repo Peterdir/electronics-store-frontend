@@ -1,6 +1,7 @@
 import type { ProductResponse } from "../types";
 import { formatVND } from "@/lib/format";
 import { useState } from "react";
+import { Link } from "react-router";
 
 interface ProductCardProps {
   product: ProductResponse;
@@ -9,10 +10,16 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
     const [imageFailed, setImageFailed] = useState(false);
     const imageUrl = product.primaryImageUrl;
+    const detailUrl = `/products/${product.id}`;
 
     return (
         <article className="overflow-hidden rounded-lg border border-border bg-card">
             <div className="aspect-square w-full">
+                <Link
+                    to={detailUrl}
+                    aria-label={`Xem chi tiết ${product.name}`}
+                    className="block aspect-square w-full"
+                >
                 {imageUrl && !imageFailed ? (
                     <img
                         src={imageUrl}
@@ -22,14 +29,11 @@ export function ProductCard({ product }: ProductCardProps) {
                         className="h-full w-full object-cover"
                     />
                 ) : (
-                    <div
-                        className="flex h-full items-center justify-center bg-muted text-sm text-muted-foreground"
-                        role="img"
-                        aria-label={`${product.name} chưa có ảnh`}
-                    >
+                    <div className="flex h-full items-center justify-center bg-muted text-sm text-muted-foreground">
                         Chưa có ảnh
                     </div>
                 )}
+                </Link>
             </div>
 
             <div className="space-y-2 p-4">
@@ -37,9 +41,9 @@ export function ProductCard({ product }: ProductCardProps) {
                     {product.brandName ?? product.categoryName}
                 </p>
 
-                <h2 className="font-medium">
+                <Link to={detailUrl} className="font-medium">
                     {product.name}
-                </h2>
+                </Link>
 
                 <p className="font-semibold text-primary">
                     {formatVND(product.basePrice)}

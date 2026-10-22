@@ -1,4 +1,4 @@
-import type { ID, ISODateTime, Money } from "@/shared/types/common";
+import type { Attributes, ID, ISODateTime, Money } from "@/shared/types/common";
 import type { ActiveStatus, ProductSort, ProductStatus } from "@/shared/types/enums";
 
 export interface GetProductsRequest {
@@ -41,4 +41,28 @@ export interface SuggestionResponse {
     name: string;
     imageUrl: string | null;
     basePrice: Money;
+}
+
+export interface VariantResponse {
+  id: ID;
+  sku: string;
+  price: Money;
+  stock: number;
+  imageUrl: string | null;
+  attributes: Attributes | null;
+  status: ProductStatus;
+}
+
+export interface ProductDetailsResponse {
+  id: ID;
+  name: string;
+  basePrice: Money;
+  description: string | null;
+  specification: Attributes | null;
+  images: string[] | null;
+  categoryName: string | null,
+  brandName: string | null,
+  variants: VariantResponse[] | null;
+  stock: number;
+  averageRating: number | null;
 }

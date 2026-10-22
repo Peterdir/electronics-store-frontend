@@ -1,7 +1,8 @@
 import { qk } from "@/shared/api/queryKeys";
-import { getBrands, getCategories, getProducts, getProductSuggestions } from "./api";
+import { getBrands, getCategories, getProductDetails, getProducts, getProductSuggestions } from "./api";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { GetProductsRequest } from "./types";
+import type { ID } from "@/shared/types/common";
 
 
 // GET PRODUCTS
@@ -47,4 +48,16 @@ export function useProductSuggestions(
         staleTime: 30_000,
         retry: false,
     });
+}
+
+// GET PRODUCT DETAILS
+export function useGetProductDetails(
+    id: ID
+) {
+    return useQuery({
+        queryKey: [...qk.products, "detail", id],
+        queryFn: () => getProductDetails(id),
+        enabled: Boolean(id),
+        retry: false,
+    })
 }

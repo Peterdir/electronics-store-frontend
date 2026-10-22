@@ -20,6 +20,7 @@ import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage"
 import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage"
 import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage"
 import { ProductListPage } from "@/features/catalog/pages/ProductListPage"
+import { ProductDetailPage } from "@/features/catalog/pages/ProductDetailPage";
 
 
 export const router = createBrowserRouter([
@@ -72,6 +73,10 @@ export const router = createBrowserRouter([
             {
                 path: "/products",
                 Component: ProductListPage
+            },
+            { 
+                path: "products/:id", 
+                Component: ProductDetailPage 
             },
         ],
     },
