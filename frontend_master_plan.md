@@ -5,7 +5,7 @@
 
 > **Cách triển khai hiện tại — cập nhật 2026-10-17:** học React bằng giao diện và luồng Auth chạy với backend thật. Đọc [Mục 3](#3-lộ-trình-triển-khai-roadmap--dependency-rationale), sau đó làm từng mốc A1 → A16 trong Phase 1. Phần nền tảng đã có được giữ lại; hạ tầng còn thiếu được bổ sung ngay khi màn hình cần đến. Không cần hoàn thành toàn bộ shared infrastructure trước khi làm `/login`.
 
-> **Tiến độ cập nhật 2026-10-22:** **Auth đã chốt trong phạm vi người dùng lựa chọn.** Phase 2 B1–B6 đã có code và commit; B6 là trang chi tiết sản phẩm ở `b58362d`. `npm run typecheck` và `npm run lint` đạt sau B6; kết quả kiểm tra backend/trình duyệt từng nhánh cần ghi riêng. **Điểm tiếp tục: B7 — chọn biến thể và số lượng.** A13 bỏ theo yêu cầu; A15 (kiểm thử tự động), A16 (CI) để sau. Không dùng OpenAPI generation.
+> **Tiến độ cập nhật 2026-10-23:** **Auth đã chốt trong phạm vi người dùng lựa chọn.** Phase 2 B1–B7 đã có code và commit; B7 là chọn biến thể và số lượng ở `e3c56bf`. Chưa ghi nhận kết quả kiểm tra backend/trình duyệt riêng cho B7. **Điểm tiếp tục: B8 — danh sách so sánh.** A13 bỏ theo yêu cầu; A15 (kiểm thử tự động), A16 (CI) để sau. Không dùng OpenAPI generation.
 
 > **Cách phối hợp hiện tại — 2026-10-22:** người dùng tự viết code Phase 2 và yêu cầu trợ lý đưa code tham khảo, review và hướng dẫn; chỉ sửa source tính năng khi người dùng yêu cầu rõ. Cập nhật tiến độ vào plan để lần sau không làm trùng.
 
@@ -501,7 +501,7 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 
 **Môi trường để tiếp tục:** chạy frontend bằng `npm run dev` ở port 3000, backend ở port 8080 cùng các dịch vụ phụ thuộc theo hướng dẫn backend. Đã có tài khoản đăng nhập và lấy hồ sơ thành công. Tiếp tục dùng `/login` và `/account/profile` để kiểm tra logout; `/` vẫn là HomePage. Các tài khoản/nhánh lỗi chưa có kết quả kiểm thử riêng cần được ghi rõ khi kiểm tra, không coi việc có code xử lý là bằng chứng đã chạy nhánh đó.
 
-**Điểm tiếp tục chính thức:** Phase 2 B1–B6 đã có code và commit. Tiếp theo là B7 — chọn biến thể và số lượng trên trang `/products/:id`; xem bảng tiến độ Phase 2 bên dưới. Auth đã chốt theo phạm vi người dùng; không giao lại A13/A14. `AccountLayout` vẫn hoãn đến P4.
+**Điểm tiếp tục chính thức:** Phase 2 B1–B7 đã có code và commit. Tiếp theo là B8 — danh sách so sánh; xem bảng tiến độ Phase 2 bên dưới. Auth đã chốt theo phạm vi người dùng; không giao lại A13/A14. `AccountLayout` vẫn hoãn đến P4.
 
 **Cách phối hợp:** ưu tiên yêu cầu mới nhất của người dùng. Người dùng tự code Phase 2; trợ lý hướng dẫn, đưa đoạn code tham khảo và review. Chỉ sửa file tính năng khi được yêu cầu rõ. Sau khi chạy ghi flow, kết quả kiểm tra và phần chưa xác nhận; cập nhật kế hoạch để tránh làm trùng.
 
@@ -771,7 +771,7 @@ export interface UserProfileResponse { id: ID; fullName: string | null; email: s
 
 ### PHASE 2 — Public Customer Flow: Catalog & Discovery
 
-#### Tiến độ theo 12 mốc (cập nhật 2026-10-22)
+#### Tiến độ theo 12 mốc (cập nhật 2026-10-23)
 
 | Mốc | Trạng thái | Bằng chứng / điểm tiếp tục |
 |---|---|---|
@@ -781,8 +781,8 @@ export interface UserProfileResponse { id: ID; fullName: string | null; email: s
 | B4 — Bộ lọc và sắp xếp | Đã commit | `2db9bb6`, `ea47d2e`, `276727a` |
 | B5 — Gợi ý tìm kiếm | Đã commit | `9065711` |
 | B6 — Chi tiết sản phẩm | Đã commit | `b58362d` — DTO/API/hook, `/products/:id`, link từ card, gallery, thông số, 404/lỗi/retry. Typecheck/lint đạt; chưa có bằng chứng riêng cho mọi nhánh backend/trình duyệt. |
-| B7 — Biến thể và số lượng | Tiếp theo | `VariantSelector`, `StockIndicator`, `QuantityStepper`; giá/tồn kho theo variant |
-| B8 — Danh sách so sánh | Chưa làm | ID so sánh trong Zustand persist, tối đa 4 |
+| B7 — Biến thể và số lượng | Đã commit | `e3c56bf` — `VariantSelector`, `StockIndicator`, `QuantityStepper`; chưa ghi nhận kiểm tra backend/trình duyệt riêng |
+| B8 — Danh sách so sánh | Tiếp theo | ID so sánh trong Zustand persist, tối đa 4 |
 | B9 — Trang so sánh | Chưa làm | API/route/bảng so sánh |
 | B10 — Trang chủ | Chưa làm | Danh mục, thương hiệu, sản phẩm mới |
 | B11 — Chính sách | Chưa làm | Trang chính sách theo slug |

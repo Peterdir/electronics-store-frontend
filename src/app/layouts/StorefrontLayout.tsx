@@ -1,9 +1,13 @@
 import { Link, Outlet } from "react-router"
 import { UserMenu } from "@/features/auth/components/UserMenu"
+import { CompareTray } from "@/features/catalog/components/CompareTray";
+import { useCompare } from "@/features/catalog/compare.store";
 
 export function StorefrontLayout() {
+    const hasCompare = useCompare((state) => state.compareIds.length > 0);
+
     return (
-        <div className="flex flex-col min-h-screen bg-background text-foreground">
+        <div className={`flex flex-col min-h-screen bg-background text-foreground ${hasCompare ? "pb-64" : ""}`}>
             <header className="border-b border-border">
                 <div className="mx-auto flex w-full max-w-7xl flex-wrap items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
                     <Link to="/"
@@ -41,6 +45,8 @@ export function StorefrontLayout() {
                     Electronics Store
                 </div>
             </footer>
+
+            <CompareTray />
         </div>
     )
 }

@@ -5,6 +5,7 @@ import { ProductGallery } from "../components/ProductGallery";
 import { SpecTable } from "../components/SpecTable";
 import { ProductPurchaseOptions } from "../components/ProductPurchaseOptions";
 import { useState } from "react";
+import { CompareToggleButton } from "../components/CompareToggleButton";
 
 export function ProductDetailPage() {
     const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
@@ -55,7 +56,7 @@ export function ProductDetailPage() {
     const fallbackImages = selectedVariant?.imageUrl
         ? [selectedVariant.imageUrl]
         : (product.images ?? []);
-        
+
     const galleryImages = [
         ...new Set(variantImages.length > 0 ? variantImages : fallbackImages),
     ];
@@ -83,6 +84,8 @@ export function ProductDetailPage() {
                     <h1 className="text-3xl font-bold">
                         {product.name}
                     </h1>
+
+                    <CompareToggleButton id={product.id} name={product.name} />
 
                     {product.averageRating !== null && (
                         <p>Đánh giá trung bình: {product.averageRating.toFixed(1)}/5</p>

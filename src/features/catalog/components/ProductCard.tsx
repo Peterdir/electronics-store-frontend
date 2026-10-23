@@ -2,6 +2,7 @@ import type { ProductResponse } from "../types";
 import { formatVND } from "@/lib/format";
 import { useState } from "react";
 import { Link } from "react-router";
+import { CompareToggleButton } from "./CompareToggleButton";
 
 interface ProductCardProps {
   product: ProductResponse;
@@ -48,6 +49,8 @@ export function ProductCard({ product }: ProductCardProps) {
                 <p className="font-semibold text-primary">
                     {formatVND(product.basePrice)}
                 </p>
+
+                <CompareToggleButton id={product.id} name={product.name} />
             </div>
         </article>
     )
