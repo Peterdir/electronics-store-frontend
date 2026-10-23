@@ -5,9 +5,9 @@
 
 > **Cách triển khai hiện tại — cập nhật 2026-10-17:** học React bằng giao diện và luồng Auth chạy với backend thật. Đọc [Mục 3](#3-lộ-trình-triển-khai-roadmap--dependency-rationale), sau đó làm từng mốc A1 → A16 trong Phase 1. Phần nền tảng đã có được giữ lại; hạ tầng còn thiếu được bổ sung ngay khi màn hình cần đến. Không cần hoàn thành toàn bộ shared infrastructure trước khi làm `/login`.
 
-> **Tiến độ cập nhật 2026-10-19:** **Auth đã chốt trong phạm vi người dùng lựa chọn.** A1–A10 đã có code và commit; A11–A12 đã được người dùng kiểm tra với backend; DTO thủ công A14 đã được người dùng chốt và kiểm tra. A13 được bỏ khỏi danh sách việc còn lại theo yêu cầu, không ghi nhận là đã kiểm thử đầy đủ. A15 (kiểm thử tự động) và A16 (CI) để sau. Không dùng OpenAPI generation. **Module tiếp theo: Phase 2 — Catalog & Discovery, bắt đầu trang danh sách sản phẩm `/products`.**
+> **Tiến độ cập nhật 2026-10-22:** **Auth đã chốt trong phạm vi người dùng lựa chọn.** Phase 2 B1–B6 đã có code và commit; B6 là trang chi tiết sản phẩm ở `b58362d`. `npm run typecheck` và `npm run lint` đạt sau B6; kết quả kiểm tra backend/trình duyệt từng nhánh cần ghi riêng. **Điểm tiếp tục: B7 — chọn biến thể và số lượng.** A13 bỏ theo yêu cầu; A15 (kiểm thử tự động), A16 (CI) để sau. Không dùng OpenAPI generation.
 
-> **Ưu tiên người dùng đã chốt — 2026-10-18:** làm Auth trước, theo dõi phần còn lại bằng **hai đầu việc chính** nêu trên. Yêu cầu “Triển khai” trong phiên này cho phép trợ lý sửa source trực tiếp. Chỉ giải thích kiến thức mới tại nơi dùng; không dựng lại hạ tầng đã có. Chưa mở Catalog/Cart/Admin nghiệp vụ. Cập nhật tiến độ vào plan để lần sau không làm trùng.
+> **Cách phối hợp hiện tại — 2026-10-22:** người dùng tự viết code Phase 2 và yêu cầu trợ lý đưa code tham khảo, review và hướng dẫn; chỉ sửa source tính năng khi người dùng yêu cầu rõ. Cập nhật tiến độ vào plan để lần sau không làm trùng.
 
 ---
 
@@ -501,9 +501,9 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 
 **Môi trường để tiếp tục:** chạy frontend bằng `npm run dev` ở port 3000, backend ở port 8080 cùng các dịch vụ phụ thuộc theo hướng dẫn backend. Đã có tài khoản đăng nhập và lấy hồ sơ thành công. Tiếp tục dùng `/login` và `/account/profile` để kiểm tra logout; `/` vẫn là HomePage. Các tài khoản/nhánh lỗi chưa có kết quả kiểm thử riêng cần được ghi rõ khi kiểm tra, không coi việc có code xử lý là bằng chứng đã chạy nhánh đó.
 
-**Điểm tiếp tục chính thức:** Phase 2 — Catalog & Discovery đã có kế hoạch bên dưới. Bắt đầu danh sách sản phẩm `/products` nối `GET /api/products`, với DTO viết tay, API/hook, ProductCard/ProductGrid và loading/error/empty. Tiếp tục phân trang, tìm kiếm/lọc/sắp xếp theo URL, rồi chi tiết sản phẩm và các phần còn lại của P2. Auth đã chốt theo phạm vi người dùng; không giao lại A13/A14. `AccountLayout` vẫn hoãn đến P4.
+**Điểm tiếp tục chính thức:** Phase 2 B1–B6 đã có code và commit. Tiếp theo là B7 — chọn biến thể và số lượng trên trang `/products/:id`; xem bảng tiến độ Phase 2 bên dưới. Auth đã chốt theo phạm vi người dùng; không giao lại A13/A14. `AccountLayout` vẫn hoãn đến P4.
 
-**Cách phối hợp:** ưu tiên yêu cầu mới nhất của người dùng. Trong phiên hiện tại người dùng đã yêu cầu triển khai trực tiếp. Sau khi chạy ghi flow, kết quả kiểm tra và phần chưa xác nhận; cập nhật kế hoạch để tránh làm trùng.
+**Cách phối hợp:** ưu tiên yêu cầu mới nhất của người dùng. Người dùng tự code Phase 2; trợ lý hướng dẫn, đưa đoạn code tham khảo và review. Chỉ sửa file tính năng khi được yêu cầu rõ. Sau khi chạy ghi flow, kết quả kiểm tra và phần chưa xác nhận; cập nhật kế hoạch để tránh làm trùng.
 
 ---
 
@@ -771,13 +771,32 @@ export interface UserProfileResponse { id: ID; fullName: string | null; email: s
 
 ### PHASE 2 — Public Customer Flow: Catalog & Discovery
 
+#### Tiến độ theo 12 mốc (cập nhật 2026-10-22)
+
+| Mốc | Trạng thái | Bằng chứng / điểm tiếp tục |
+|---|---|---|
+| B1 — Danh sách sản phẩm | Đã commit | `af245de` — listing, DTO/API/hook, card/grid, loading/error/empty |
+| B2 — Phân trang | Đã commit | `712c182` — page trong URL, API page 0-based |
+| B3 — Tìm kiếm | Đã commit | `121676f`; sửa trạng thái loading/error ở `c88c7ff` |
+| B4 — Bộ lọc và sắp xếp | Đã commit | `2db9bb6`, `ea47d2e`, `276727a` |
+| B5 — Gợi ý tìm kiếm | Đã commit | `9065711` |
+| B6 — Chi tiết sản phẩm | Đã commit | `b58362d` — DTO/API/hook, `/products/:id`, link từ card, gallery, thông số, 404/lỗi/retry. Typecheck/lint đạt; chưa có bằng chứng riêng cho mọi nhánh backend/trình duyệt. |
+| B7 — Biến thể và số lượng | Tiếp theo | `VariantSelector`, `StockIndicator`, `QuantityStepper`; giá/tồn kho theo variant |
+| B8 — Danh sách so sánh | Chưa làm | ID so sánh trong Zustand persist, tối đa 4 |
+| B9 — Trang so sánh | Chưa làm | API/route/bảng so sánh |
+| B10 — Trang chủ | Chưa làm | Danh mục, thương hiệu, sản phẩm mới |
+| B11 — Chính sách | Chưa làm | Trang chính sách theo slug |
+| B12 — Hoàn thiện Phase 2 | Chưa làm | Responsive, accessibility, metadata và kiểm tra toàn luồng |
+
+Ranh giới: B7 chỉ chọn variant và số lượng; thêm giỏ/mua ngay thuộc Phase 3, wishlist thuộc Phase 4. Không hiển thị hành động báo thành công giả. B12 kiểm tra và ghi rõ nhánh chưa được xác nhận, không suy ra kiểm thử backend chỉ từ commit hoặc typecheck.
+
 #### Pages & Routes
 
 | Path | Quyền | Mô tả |
 |---|---|---|
 | `/` | 🌐 | Hero, danh mục, thương hiệu, sản phẩm mới (`/api/products?page=0&size=8`) |
 | `/products?q=&page=` | 🌐 | Listing + search (server pagination) |
-| `/products/:id` | 🌐 | PDP: gallery, chọn variant, specs, thêm giỏ / mua ngay / wishlist / so sánh |
+| `/products/:id` | 🌐 | B6: gallery, mô tả, specs; B7: chọn variant và số lượng; Phase 3: thêm giỏ/mua ngay; Phase 4: wishlist |
 | `/compare?ids=a,b,c` | 🌐 | Bảng so sánh specification |
 | `/policies/:slug` | 🌐 | Chính sách (shipping/payment/return) |
 
@@ -820,8 +839,8 @@ export interface PolicyResponse { id: ID; title: string; slug: string; content: 
 
 #### Logic & Edge cases
 - **Variant selection client-side**: `ProductDetailsResponse.variants` đã đủ dữ liệu ⇒ dựng ma trận thuộc tính từ `attributes` của tất cả variant, disable option không tồn tại / hết hàng; **không cần** gọi `/variants` mỗi lần click (dùng endpoint đó làm fallback/deeplink `?color=…`). So khớp bằng `String(value)` giống backend.
-- Khi chưa chọn đủ thuộc tính ⇒ disable "Thêm vào giỏ"; giá hiển thị `basePrice` hoặc khoảng `min–max` của variants.
-- `quantity` ≤ `variant.stock`; stock = 0 ⇒ "Hết hàng", vẫn cho thêm wishlist.
+- B7: khi chưa chọn đủ thuộc tính, hiển thị giá `basePrice` hoặc khoảng `min–max` của variants; chưa nối nút "Thêm vào giỏ" trước Phase 3.
+- B7: `quantity` ≤ `variant.stock`; stock = 0 ⇒ "Hết hàng". Wishlist thuộc Phase 4.
 - **Listing**: theo API contract ở bảng trên, backend đã hỗ trợ `keyword`, `categoryId`, `brandId`, `minPrice`, `maxPrice`, phân trang và `sort`. Thêm từng control rồi đối chiếu query params/response thật; không lọc client-side trên dữ liệu đã phân trang. Nếu Swagger thực tế khác contract thì ghi nhận chênh lệch trước khi triển khai.
 - URL là nguồn sự thật: `?q=&page=` (URL 1-based → API 0-based). `placeholderData: keepPreviousData` khi chuyển trang.
 - **Suggest**: bỏ qua khi `q.trim()` rỗng; `AbortSignal` hủy request cũ; Enter ⇒ `/products?q=`.

@@ -43,12 +43,20 @@ export interface SuggestionResponse {
     basePrice: Money;
 }
 
+export interface ProductImageDetailResponse {
+  id: ID;
+  imageUrl: string;
+  displayOrder: number;
+  isPrimary: boolean | null;
+}
+
 export interface VariantResponse {
   id: ID;
   sku: string;
   price: Money;
   stock: number;
   imageUrl: string | null;
+  images: ProductImageDetailResponse[] | null;
   attributes: Attributes | null;
   status: ProductStatus;
 }

@@ -3,10 +3,12 @@ import { Link, useParams } from "react-router";
 import { ApiError } from "@/shared/api/errors";
 import { ProductGallery } from "../components/ProductGallery";
 import { SpecTable } from "../components/SpecTable";
-import { formatVND } from "@/lib/format";
-
+import { ProductPurchaseOptions } from "../components/ProductPurchaseOptions";
+import { useState } from "react";
 
 export function ProductDetailPage() {
+    const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+
     const { id } = useParams<{ id: string }>();
     const productId = id && /^[1-9]\d*$/.test(id) ? id : "";
     const detailQuery = useGetProductDetails(productId);
@@ -36,6 +38,28 @@ export function ProductDetailPage() {
 
     const product = detailQuery.data;
 
+    const variants = (product.variants ?? []).filter(
+        (variant) => variant.status === "ACTIVE",
+    );
+
+    const selectedVariant = variants.find((variant) => variant.id === selectedVariantId) ?? variants[0];
+
+    const variantImages = [...(selectedVariant?.images ?? [])]
+        .sort((a, b) =>
+            Number(b.isPrimary === true) - Number(a.isPrimary === true) ||
+            a.displayOrder - b.displayOrder,
+        )
+        .map((image) => image.imageUrl)
+        .filter((url) => url.trim().length > 0);
+
+    const fallbackImages = selectedVariant?.imageUrl
+        ? [selectedVariant.imageUrl]
+        : (product.images ?? []);
+        
+    const galleryImages = [
+        ...new Set(variantImages.length > 0 ? variantImages : fallbackImages),
+    ];
+
     return (
         <section className="space-y-8">
             <Link to="/products" className="inline-block text-sm text-primary hover:underline">
@@ -44,7 +68,8 @@ export function ProductDetailPage() {
 
             <div className="grid gap-8 lg:grid-cols-2">
                 <ProductGallery
-                    images={product.images ?? []}
+                    key={`${product.id}:${selectedVariant?.id ?? ""}`}
+                    images={galleryImages}
                     name={product.name}
                 />
 
@@ -63,9 +88,12 @@ export function ProductDetailPage() {
                         <p>Đánh giá trung bình: {product.averageRating.toFixed(1)}/5</p>
                     )}
 
-                    <p className="text-2xl font-semibold text-primary">
-                        {formatVND(product.basePrice)}
-                    </p>
+                    <ProductPurchaseOptions
+                        key={product.id}
+                        product={product}
+                        selectedVariantId={selectedVariant?.id ?? null}
+                        onVariantChange={setSelectedVariantId}
+                    />
 
                     <div className="space-y-2 border-t pt-4">
                         <h2 className="text-lg font-semibold">Mô tả</h2>
