@@ -23,7 +23,7 @@ export interface ProductResponse {
     status: ProductStatus,
 }
 
-export interface CategoryResponse {
+interface CatalogGroupResponse {
   id: ID;
   name: string;
   status: ActiveStatus;
@@ -32,7 +32,11 @@ export interface CategoryResponse {
   updatedAt: ISODateTime;
 }
 
-export interface BrandResponse extends CategoryResponse {
+export interface CategoryResponse extends CatalogGroupResponse {
+  imageUrl: string | null;
+}
+
+export interface BrandResponse extends CatalogGroupResponse {
   logo: string | null;
 }
 
