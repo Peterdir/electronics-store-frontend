@@ -21,6 +21,7 @@ import { ForgotPasswordPage } from "@/features/auth/pages/ForgotPasswordPage"
 import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage"
 import { ProductListPage } from "@/features/catalog/pages/ProductListPage"
 import { ProductDetailPage } from "@/features/catalog/pages/ProductDetailPage";
+import { ComparePage } from "@/features/catalog/pages/ComparePage";
 
 
 export const router = createBrowserRouter([
@@ -77,6 +78,10 @@ export const router = createBrowserRouter([
             { 
                 path: "products/:id", 
                 Component: ProductDetailPage 
+            },
+            {
+                path: "compare",
+                Component: ComparePage,
             },
         ],
     },

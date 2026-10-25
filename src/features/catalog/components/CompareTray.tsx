@@ -40,6 +40,19 @@ export function CompareTray() {
             </li>
           ))}
         </ul>
+
+        {ids.length >= 2 ? (
+          <Link
+            to={`/compare?ids=${ids.join(",")}`}
+            className="inline-block rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground"
+          >
+            Xem so sánh
+          </Link>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Chọn thêm 1 sản phẩm để so sánh.
+          </p>
+        )}
       </div>
     </section>
   );

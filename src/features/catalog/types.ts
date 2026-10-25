@@ -74,3 +74,13 @@ export interface ProductDetailsResponse {
   stock: number;
   averageRating: number | null;
 }
+
+export interface ProductCompareResponse {
+  id: ID;
+  name: string;
+  basePrice: Money;
+  imageUrl: string | null;
+  brandName: string | null;
+  categoryName: string;
+  specification: Attributes | null;
+}

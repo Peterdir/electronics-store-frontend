@@ -1,11 +1,10 @@
 import { qk } from "@/shared/api/queryKeys";
-import { getBrands, getCategories, getProductDetails, getProducts, getProductSuggestions } from "./api";
+import { getBrands, getCategories, getProductCompare, getProductDetails, getProducts, getProductSuggestions } from "./api";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { GetProductsRequest } from "./types";
 import type { ID } from "@/shared/types/common";
 
 
-// GET PRODUCTS
 export function useGetProducts(payload: GetProductsRequest) {
     return useQuery({
         queryKey: [...qk.products, payload],
@@ -15,7 +14,6 @@ export function useGetProducts(payload: GetProductsRequest) {
     })
 }
 
-// GET CATEGORIES
 export function useGetCategories() {
     return useQuery({
         queryKey: [...qk.categories],
@@ -25,7 +23,6 @@ export function useGetCategories() {
     })
 }
 
-// GET BRANDS
 export function useGetBrands() {
     return useQuery({
         queryKey: [...qk.brands],
@@ -35,7 +32,6 @@ export function useGetBrands() {
     })
 }
 
-// GET SUGGESTIONS
 export function useProductSuggestions(
     keyword: string,
     enabled: boolean,
@@ -50,7 +46,6 @@ export function useProductSuggestions(
     });
 }
 
-// GET PRODUCT DETAILS
 export function useGetProductDetails(
     id: ID
 ) {
@@ -60,4 +55,13 @@ export function useGetProductDetails(
         enabled: Boolean(id),
         retry: false,
     })
+}
+
+export function useGetProductCompare(ids: ID[]) {
+  return useQuery({
+    queryKey: [...qk.products, "compare", ids],
+    queryFn: ({ signal }) => getProductCompare(ids, signal),
+    enabled: ids.length >= 2,
+    retry: false,
+  });
 }
