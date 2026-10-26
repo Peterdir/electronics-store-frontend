@@ -5,9 +5,9 @@
 
 > **Cách triển khai hiện tại — cập nhật 2026-10-17:** học React bằng giao diện và luồng Auth chạy với backend thật. Đọc [Mục 3](#3-lộ-trình-triển-khai-roadmap--dependency-rationale), sau đó làm từng mốc A1 → A16 trong Phase 1. Phần nền tảng đã có được giữ lại; hạ tầng còn thiếu được bổ sung ngay khi màn hình cần đến. Không cần hoàn thành toàn bộ shared infrastructure trước khi làm `/login`.
 
-> **Tiến độ cập nhật 2026-10-23:** **Auth đã chốt trong phạm vi người dùng lựa chọn.** Phase 2 B1–B7 đã có code và commit; B7 là chọn biến thể và số lượng ở `e3c56bf`. Chưa ghi nhận kết quả kiểm tra backend/trình duyệt riêng cho B7. **Điểm tiếp tục: B8 — danh sách so sánh.** A13 bỏ theo yêu cầu; A15 (kiểm thử tự động), A16 (CI) để sau. Không dùng OpenAPI generation.
+> **Tiến độ cập nhật 2026-10-25:** **Auth đã chốt trong phạm vi người dùng lựa chọn.** Phase 2 đã có commit B1–B10, gần nhất là B10 `2fee741`. Người dùng quyết định làm B11 (policy) sau các phase chính. B12 chưa hoàn tất: còn metadata và chưa có biên bản kiểm tra responsive, accessibility, toàn luồng với backend/trình duyệt. **Điểm tiếp tục: Phase 3 C1 — giỏ hàng guest và thêm vào giỏ từ chi tiết sản phẩm.** Đây là chuyển giai đoạn theo phạm vi đã chọn, không phải xác nhận toàn bộ tiêu chí Phase 2 đã đạt. A13 bỏ theo yêu cầu; A15 (kiểm thử tự động), A16 (CI) để sau. Không dùng OpenAPI generation.
 
-> **Cách phối hợp hiện tại — 2026-10-22:** người dùng tự viết code Phase 2 và yêu cầu trợ lý đưa code tham khảo, review và hướng dẫn; chỉ sửa source tính năng khi người dùng yêu cầu rõ. Cập nhật tiến độ vào plan để lần sau không làm trùng.
+> **Cách phối hợp hiện tại — 2026-10-25:** người dùng tự viết code theo từng mốc và yêu cầu trợ lý đưa code tham khảo, review và hướng dẫn; chỉ sửa source tính năng khi người dùng yêu cầu rõ. Cập nhật tiến độ vào plan để lần sau không làm trùng.
 
 ---
 
@@ -501,9 +501,9 @@ Thư viện mới chỉ được cài lúc mốc đó sử dụng. Những helpe
 
 **Môi trường để tiếp tục:** chạy frontend bằng `npm run dev` ở port 3000, backend ở port 8080 cùng các dịch vụ phụ thuộc theo hướng dẫn backend. Đã có tài khoản đăng nhập và lấy hồ sơ thành công. Tiếp tục dùng `/login` và `/account/profile` để kiểm tra logout; `/` vẫn là HomePage. Các tài khoản/nhánh lỗi chưa có kết quả kiểm thử riêng cần được ghi rõ khi kiểm tra, không coi việc có code xử lý là bằng chứng đã chạy nhánh đó.
 
-**Điểm tiếp tục chính thức:** Phase 2 B1–B7 đã có code và commit. Tiếp theo là B8 — danh sách so sánh; xem bảng tiến độ Phase 2 bên dưới. Auth đã chốt theo phạm vi người dùng; không giao lại A13/A14. `AccountLayout` vẫn hoãn đến P4.
+**Điểm tiếp tục chính thức (2026-10-25):** Phase 2 B1–B10 đã có code và commit. Người dùng hoãn B11 policy đến sau các phase chính; B12 còn các đầu việc được ghi trong bảng tiến độ Phase 2. Chuyển sang Phase 3 theo quyết định của người dùng, bắt đầu từ C1 — giỏ hàng guest và thêm vào giỏ từ chi tiết sản phẩm; xem bảng mốc C1–C13. Auth đã chốt theo phạm vi người dùng; không giao lại A13/A14. `AccountLayout` vẫn hoãn đến P4.
 
-**Cách phối hợp:** ưu tiên yêu cầu mới nhất của người dùng. Người dùng tự code Phase 2; trợ lý hướng dẫn, đưa đoạn code tham khảo và review. Chỉ sửa file tính năng khi được yêu cầu rõ. Sau khi chạy ghi flow, kết quả kiểm tra và phần chưa xác nhận; cập nhật kế hoạch để tránh làm trùng.
+**Cách phối hợp:** ưu tiên yêu cầu mới nhất của người dùng. Người dùng tự code theo từng mốc; trợ lý hướng dẫn, đưa đoạn code tham khảo và review. Chỉ sửa file tính năng khi được yêu cầu rõ. Sau khi chạy ghi flow, kết quả kiểm tra và phần chưa xác nhận; cập nhật kế hoạch để tránh làm trùng.
 
 ---
 
@@ -771,7 +771,7 @@ export interface UserProfileResponse { id: ID; fullName: string | null; email: s
 
 ### PHASE 2 — Public Customer Flow: Catalog & Discovery
 
-#### Tiến độ theo 12 mốc (cập nhật 2026-10-23)
+#### Tiến độ theo 12 mốc (cập nhật 2026-10-25)
 
 | Mốc | Trạng thái | Bằng chứng / điểm tiếp tục |
 |---|---|---|
@@ -782,11 +782,13 @@ export interface UserProfileResponse { id: ID; fullName: string | null; email: s
 | B5 — Gợi ý tìm kiếm | Đã commit | `9065711` |
 | B6 — Chi tiết sản phẩm | Đã commit | `b58362d` — DTO/API/hook, `/products/:id`, link từ card, gallery, thông số, 404/lỗi/retry. Typecheck/lint đạt; chưa có bằng chứng riêng cho mọi nhánh backend/trình duyệt. |
 | B7 — Biến thể và số lượng | Đã commit | `e3c56bf` — `VariantSelector`, `StockIndicator`, `QuantityStepper`; chưa ghi nhận kiểm tra backend/trình duyệt riêng |
-| B8 — Danh sách so sánh | Tiếp theo | ID so sánh trong Zustand persist, tối đa 4 |
-| B9 — Trang so sánh | Chưa làm | API/route/bảng so sánh |
-| B10 — Trang chủ | Chưa làm | Danh mục, thương hiệu, sản phẩm mới |
-| B11 — Chính sách | Chưa làm | Trang chính sách theo slug |
-| B12 — Hoàn thiện Phase 2 | Chưa làm | Responsive, accessibility, metadata và kiểm tra toàn luồng |
+| B8 — Danh sách so sánh | Đã commit | `4366d10` — ID so sánh trong Zustand persist, tối đa 4 |
+| B9 — Trang so sánh | Đã commit | `3ded9db` — API/route/bảng so sánh |
+| B10 — Trang chủ | Đã commit | `2fee741` — hero, danh mục có ảnh, thương hiệu, 8 sản phẩm mới |
+| B11 — Chính sách | Hoãn theo quyết định người dùng | Làm sau các phase chính: trang chính sách theo slug, link footer, loading/error/404, sanitize HTML |
+| B12 — Hoàn thiện Phase 2 | Chưa hoàn tất; hoãn phần còn lại | Build/lint đạt ngày 2026-10-25. Chưa hoàn tất metadata (`index.html` còn `lang="en"`, title mặc định), chưa ghi nhận kiểm tra responsive, accessibility và toàn luồng với backend/trình duyệt. Rà lại trước khi phát hành. |
+
+**Quyết định chuyển giai đoạn:** Phạm vi catalog/discovery B1–B10 đã có code và commit; bắt đầu Phase 3 dù B11 và phần còn lại của B12 được hoãn. Không đánh dấu Phase 2 hoàn thành đầy đủ theo kế hoạch gốc. Trước khi phát hành, quay lại B11/B12 và ghi kết quả kiểm tra thật cho từng luồng.
 
 Ranh giới: B7 chỉ chọn variant và số lượng; thêm giỏ/mua ngay thuộc Phase 3, wishlist thuộc Phase 4. Không hiển thị hành động báo thành công giả. B12 kiểm tra và ghi rõ nhánh chưa được xác nhận, không suy ra kiểm thử backend chỉ từ commit hoặc typecheck.
 
@@ -798,10 +800,10 @@ Ranh giới: B7 chỉ chọn variant và số lượng; thêm giỏ/mua ngay thu
 | `/products?q=&page=` | 🌐 | Listing + search (server pagination) |
 | `/products/:id` | 🌐 | B6: gallery, mô tả, specs; B7: chọn variant và số lượng; Phase 3: thêm giỏ/mua ngay; Phase 4: wishlist |
 | `/compare?ids=a,b,c` | 🌐 | Bảng so sánh specification |
-| `/policies/:slug` | 🌐 | Chính sách (shipping/payment/return) |
+| `/policies/:slug` | 🌐 | Chính sách (shipping/payment/return) — B11 hoãn, route chưa triển khai |
 
 #### Components
-`SearchBar` + `SearchSuggestDropdown` (debounce 300ms, keyboard nav), `ProductCard`, `ProductGrid`, `ProductGallery`, `VariantSelector`, `StockIndicator`, `SpecTable`, `QuantityStepper`, `CategoryMenu`, `BrandStrip`, `CompareTray` (sticky, tối đa 4), `CompareTable`, `PolicyContent`.
+`SearchBar` + `SearchSuggestDropdown` (debounce 300ms, keyboard nav), `ProductCard`, `ProductGrid`, `ProductGallery`, `VariantSelector`, `StockIndicator`, `SpecTable`, `QuantityStepper`, `CategoryMenu`, `BrandStrip`, `CompareTray` (sticky, tối đa 4), `CompareTable`. `PolicyContent` thuộc B11 đã hoãn.
 
 #### API Endpoints
 
@@ -830,9 +832,10 @@ export interface ProductDetailsResponse { id: ID; name: string; basePrice: Money
 export interface ProductCompareResponse { id: ID; name: string; basePrice: Money; imageUrl: string | null;
   brandName: string | null; categoryName: string; specification: Attributes | null }
 export interface SuggestionResponse { id: ID; name: string; imageUrl: string | null; basePrice: Money }
-export interface CategoryResponse { id: ID; name: string; status: ActiveStatus; totalProducts: number;
+export interface CategoryResponse { id: ID; name: string; imageUrl: string | null; status: ActiveStatus; totalProducts: number;
   createdAt: ISODateTime; updatedAt: ISODateTime }
-export interface BrandResponse extends CategoryResponse { logo: string | null }
+export interface BrandResponse { id: ID; name: string; status: ActiveStatus; totalProducts: number;
+  createdAt: ISODateTime; updatedAt: ISODateTime; logo: string | null }
 export interface PolicyResponse { id: ID; title: string; slug: string; content: string; type: PolicyType;
   status: ActiveStatus; updatedAt: ISODateTime }
 ```
@@ -852,6 +855,28 @@ export interface PolicyResponse { id: ID; title: string; slug: string; content: 
 ---
 
 ### PHASE 3 — Transaction Flow: Cart, Address, Checkout, Payment
+
+#### Tiến độ theo 13 mốc (lập kế hoạch 2026-10-25)
+
+Mỗi mốc: người dùng tự triển khai, review và kiểm tra hành vi tương ứng với backend/trình duyệt trước khi tạo một commit. Ghi rõ nhánh chưa kiểm tra; build/lint không thay thế kết quả chạy luồng thật. Đối chiếu DTO, status và endpoint với backend đang chạy trước khi viết phần gọi API.
+
+| Mốc | Cần tạo/bổ sung | Điều kiện hoàn thành | Commit đề xuất |
+|---|---|---|---|
+| **C1 — Giỏ hàng guest** | DTO/snapshot item local; Zustand persist `ec.guestCart`; nối nút "Thêm vào giỏ" tại chi tiết sản phẩm với variant và số lượng đang chọn | Chưa đăng nhập vẫn thêm được variant hợp lệ; không trùng variant; chặn vượt tồn snapshot; refresh còn dữ liệu; không báo thành công khi không thêm được | `feat(cart): add persistent guest cart` |
+| **C2 — Giỏ hàng user** | DTO/API/hook cho `GET /api/cart`, `POST /api/cart/items`; query key cart và interface `useCart()` dùng chung cho guest/user | User đăng nhập thêm hàng bằng backend thật; số lượng và response cart đúng; loading/lỗi rõ ràng; không dùng guest cart làm nguồn dữ liệu cho user | `feat(cart): connect authenticated cart` |
+| **C3 — Trang giỏ hàng** | Route `/cart`; `CartItemRow`, `CartSummary`, `CartIssueBanner`; cập nhật số lượng, xóa item, xóa hết cho hai chế độ | Tổng tiền và số lượng cập nhật đúng; user dùng PUT/DELETE backend, lỗi mutation được phục hồi; cảnh báo hết/thiếu hàng; giỏ rỗng có lối quay lại mua sắm; chặn checkout khi cart không hợp lệ | `feat(cart): build cart page and item controls` |
+| **C4 — Lối vào giỏ ở header** | Link/badge giỏ trong StorefrontLayout; `MiniCartDrawer` nếu cần theo thiết kế | Badge phản ánh guest/user cart; mở giỏ từ mọi trang; drawer (nếu dùng) hiện item và tổng tạm tính, điều hướng `/cart` | `feat(cart): add header cart entry and preview` |
+| **C5 — Hợp nhất giỏ sau đăng nhập** | Merge guest items tuần tự qua `POST /api/cart/items` sau login; cập nhật cache server cart; thông báo item lỗi | Item thêm thành công xuất hiện trong giỏ user; không tạo trùng khi đăng nhập lại; item lỗi/tồn kho được báo rõ; chỉ xóa dữ liệu guest đã xử lý theo chiến lược được kiểm tra | `feat(cart): merge guest items after login` |
+| **C6 — Sổ địa chỉ** | DTO/API/hook; route `/account/addresses`; `AddressForm`, `AddressCard`; thêm/sửa/xóa/đặt mặc định; chọn tỉnh/huyện/xã | Chỉ user đăng nhập truy cập; CRUD chạy với backend; địa chỉ mặc định không bị xóa; lỗi form/API và loading/empty xử lý được | `feat(address): manage customer addresses` |
+| **C7 — Nguồn hàng và kiểm tra checkout** | Route `/checkout`; xác định guest cart, user cart hoặc Buy Now; user gọi `POST /api/cart/validate-checkout`; kiểm tra session | Không vào checkout với giỏ rỗng; user thấy `issues` và đường quay lại giỏ khi invalid; session hết hạn không âm thầm tạo đơn guest | `feat(checkout): validate cart and checkout entry` |
+| **C8 — Địa chỉ nhận hàng trong checkout** | Guest nhập tên/SĐT/địa chỉ; user chọn địa chỉ mặc định hoặc nhập tay; tái sử dụng `AddressForm`/`AddressPickerDialog` | Form guest validate SĐT và trường bắt buộc; user đổi địa chỉ được; payload gửi `addressId` hoặc ba trường tay đúng chế độ | `feat(checkout): collect delivery address` |
+| **C9 — Giao hàng, thanh toán, coupon và tổng tạm tính** | `ShippingMethodSelector`, `PaymentMethodSelector`, `CouponInput`, `OrderSummaryPanel` | Chọn STANDARD/EXPRESS và COD/VNPAY; tổng tạm tính cập nhật theo phí vận chuyển; coupon chỉ ghi "sẽ áp dụng khi đặt hàng", không báo đã xác thực khi backend chưa có endpoint validate | `feat(checkout): add shipping payment and order preview` |
+| **C10 — Đặt hàng COD và trang thành công** | `POST /api/orders/checkout`, `PlaceOrderButton`; route `/checkout/success/:orderId`; lưu `CheckoutResponse` trong sessionStorage; đồng bộ/xóa cart sau thành công | Guest gửi `directItems`, user cart không gửi `directItems`; không double-submit; lỗi giữ form để sửa; success hiển thị số liệu từ response; reload trang success có trạng thái hợp lý | `feat(checkout): place COD orders and show confirmation` |
+| **C11 — Mua ngay** | Nút Buy Now tại chi tiết sản phẩm; chuyển `directItems` qua navigation state tới checkout | Dùng variant/số lượng đang chọn; không sửa cart hiện có; thiếu state hoặc refresh checkout được xử lý rõ; đặt hàng thành công theo đúng chế độ guest/user | `feat(checkout): add buy now flow` |
+| **C12 — Thanh toán VNPay** | Redirect từ `paymentUrl`; route `/payment/result`; `PaymentResultView`; gọi return endpoint với query nguyên vẹn | Full-page redirect đúng; callback chỉ xử lý một lần; phân biệt thành công/hủy/thất bại; không báo đã thanh toán từ FE khi backend chưa xác nhận; có lối tiếp tục phù hợp | `feat(payment): handle VNPay redirect and result` |
+| **C13 — Hoàn thiện Phase 3** | Rà responsive/accessibility, lỗi API, metadata cần thiết; kiểm tra guest/user cart → checkout → COD/VNPay; cập nhật plan | Build/lint đạt; có biên bản luồng thật, gồm trường hợp lỗi và phần còn hoãn; không suy ra thanh toán thành công chỉ từ redirect | `chore(checkout): finalize phase 3 verification` |
+
+**Thứ tự phụ thuộc:** C1–C3 tạo luồng giỏ cơ bản; C5 cần C1 và C2; C7 cần cart; C8 cần C6; C10 cần C7–C9; C11 dùng lại checkout; C12 dùng kết quả tạo đơn. C4 có thể làm sau C3. Chỉ gắn hành động thật vào nút mua/thanh toán khi API tương ứng đã nối; tránh hiển thị thành công giả.
 
 #### Pages & Routes
 

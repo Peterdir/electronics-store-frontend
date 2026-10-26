@@ -4,6 +4,9 @@ import type { ProductDetailsResponse, VariantResponse } from "../types";
 import { VariantSelector } from "./VariantSelector";
 import { StockIndicator } from "./StockIndicator";
 import { QuantityStepper } from "./QuantityStepper";
+import { useSession } from "@/shared/auth/session.store";
+import { useGuestCart } from "@/features/cart/guestCart.store";
+import { toast } from "sonner";
 
 interface ProductPurchaseOptionsProps {
   product: ProductDetailsResponse;
@@ -29,6 +32,8 @@ export function ProductPurchaseOptions({
   selectedVariantId,
   onVariantChange,
 }: ProductPurchaseOptionsProps) {
+  const addGuestItem = useGuestCart((state) => state.add);
+  const token = useSession((state) => state.token);
 
   const variants = (product.variants ?? []).filter(
     (variant) => variant.status === "ACTIVE",
@@ -86,6 +91,37 @@ export function ProductPurchaseOptions({
     );
   }
 
+  function handleAddToCart() {
+    if (token || !selectedVariant || displayedQuantity < 1) return;
+    if (selectedVariant.status !== "ACTIVE") return;
+
+    const result = addGuestItem({
+      variantId: selectedVariant.id,
+      quantity: displayedQuantity,
+      snapshot: {
+        productId: product.id,
+        name: product.name,
+        sku: selectedVariant.sku,
+        price: selectedVariant.price,
+        image: selectedVariant.imageUrl ?? product.images?.[0] ?? null,
+        attributes: selectedVariant.attributes,
+        stock: selectedVariant.stock,
+      },
+    });
+
+    if (result.ok) {
+      toast.success("Đã thêm vào giỏ hàng.");
+    } else if (result.reason === "out-of-stock") {
+      toast.error("Sản phẩm đã hết hàng.");
+    } else if (result.reason === "exceeds-stock") {
+      toast.warning(
+        `Bạn chỉ có thể thêm ${result.remaining ?? 0} sản phẩm nữa.`,
+      );
+    } else {
+      toast.error("Không thể thêm sản phẩm vào giỏ.");
+    }
+  }
+
   const displayedQuantity = selectedVariant && selectedVariant.stock > 0
       ? Math.max(1, Math.min(quantity, selectedVariant.stock))
       : 0;
@@ -110,6 +146,17 @@ export function ProductPurchaseOptions({
         max={selectedVariant?.stock ?? 0}
         onChange={setQuantity}
       />
+
+      {!token && (
+        <button
+          type="button"
+          onClick={handleAddToCart}
+          disabled={!selectedVariant || displayedQuantity < 1}
+          className="rounded-md bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50"
+        >
+          Thêm vào giỏ
+        </button>
+      )}
     </div>
   );
 }
