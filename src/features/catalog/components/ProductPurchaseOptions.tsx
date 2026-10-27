@@ -7,6 +7,7 @@ import { QuantityStepper } from "./QuantityStepper";
 import { useSession } from "@/shared/auth/session.store";
 import { useGuestCart } from "@/features/cart/guestCart.store";
 import { toast } from "sonner";
+import { useCart } from "@/features/cart/useCart";
 
 interface ProductPurchaseOptionsProps {
   product: ProductDetailsResponse;
@@ -32,8 +33,8 @@ export function ProductPurchaseOptions({
   selectedVariantId,
   onVariantChange,
 }: ProductPurchaseOptionsProps) {
-  const addGuestItem = useGuestCart((state) => state.add);
-  const token = useSession((state) => state.token);
+
+  const cart = useCart();
 
   const variants = (product.variants ?? []).filter(
     (variant) => variant.status === "ACTIVE",
@@ -91,34 +92,42 @@ export function ProductPurchaseOptions({
     );
   }
 
-  function handleAddToCart() {
-    if (token || !selectedVariant || displayedQuantity < 1) return;
+  async function handleAddToCart() {
+    if (!selectedVariant || displayedQuantity < 1 || cart.isAdding) return;
     if (selectedVariant.status !== "ACTIVE") return;
 
-    const result = addGuestItem({
-      variantId: selectedVariant.id,
-      quantity: displayedQuantity,
-      snapshot: {
-        productId: product.id,
-        name: product.name,
-        sku: selectedVariant.sku,
-        price: selectedVariant.price,
-        image: selectedVariant.imageUrl ?? product.images?.[0] ?? null,
-        attributes: selectedVariant.attributes,
-        stock: selectedVariant.stock,
-      },
-    });
+    try {
+      const result = await cart.addItem({
+        variantId: selectedVariant.id,
+        quantity: displayedQuantity,
+        snapshot: {
+          productId: product.id,
+          name: product.name,
+          sku: selectedVariant.sku,
+          price: selectedVariant.price,
+          image: selectedVariant.imageUrl ?? product.images?.[0] ?? null,
+          attributes: selectedVariant.attributes,
+          stock: selectedVariant.stock,
+        },
+      });
 
-    if (result.ok) {
-      toast.success("Đã thêm vào giỏ hàng.");
-    } else if (result.reason === "out-of-stock") {
-      toast.error("Sản phẩm đã hết hàng.");
-    } else if (result.reason === "exceeds-stock") {
-      toast.warning(
-        `Bạn chỉ có thể thêm ${result.remaining ?? 0} sản phẩm nữa.`,
+      if (result.ok) {
+        toast.success("Đã thêm vào giỏ hàng.");
+      } else if (result.reason === "out-of-stock") {
+        toast.error("Sản phẩm đã hết hàng.");
+      } else if (result.reason === "exceeds-stock") {
+        toast.warning(
+          `Bạn chỉ có thể thêm ${result.remaining ?? 0} sản phẩm nữa.`,
+        );
+      } else {
+        toast.error("Không thể thêm sản phẩm vào giỏ.");
+      }
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Không thể kết nối giỏ hàng.",
       );
-    } else {
-      toast.error("Không thể thêm sản phẩm vào giỏ.");
     }
   }
 
@@ -147,16 +156,14 @@ export function ProductPurchaseOptions({
         onChange={setQuantity}
       />
 
-      {!token && (
-        <button
-          type="button"
-          onClick={handleAddToCart}
-          disabled={!selectedVariant || displayedQuantity < 1}
-          className="rounded-md bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50"
-        >
-          Thêm vào giỏ
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => void handleAddToCart()}
+        disabled={!selectedVariant || displayedQuantity < 1 || cart.isAdding}
+        className="rounded-md bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50"
+      >
+        {cart.isAdding ? "Đang thêm..." : "Thêm vào giỏ"}
+      </button>
     </div>
   );
 }

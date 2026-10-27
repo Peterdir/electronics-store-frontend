@@ -3,4 +3,5 @@ export const qk = {
     products: ["products"] as const,
     categories: ["categories"] as const,
     brands: ["brands"] as const,
+    cart: ["cart"] as const,
 }
