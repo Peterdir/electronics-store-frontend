@@ -4,8 +4,6 @@ import type { ProductDetailsResponse, VariantResponse } from "../types";
 import { VariantSelector } from "./VariantSelector";
 import { StockIndicator } from "./StockIndicator";
 import { QuantityStepper } from "./QuantityStepper";
-import { useSession } from "@/shared/auth/session.store";
-import { useGuestCart } from "@/features/cart/guestCart.store";
 import { toast } from "sonner";
 import { useCart } from "@/features/cart/useCart";
 

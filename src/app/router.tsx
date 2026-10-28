@@ -22,6 +22,7 @@ import { ResetPasswordPage } from "@/features/auth/pages/ResetPasswordPage"
 import { ProductListPage } from "@/features/catalog/pages/ProductListPage"
 import { ProductDetailPage } from "@/features/catalog/pages/ProductDetailPage";
 import { ComparePage } from "@/features/catalog/pages/ComparePage";
+import { CartPage } from "@/features/cart/pages/CartPage";
 
 
 export const router = createBrowserRouter([
@@ -82,6 +83,10 @@ export const router = createBrowserRouter([
             {
                 path: "compare",
                 Component: ComparePage,
+            },
+            {
+                path: "cart",
+                Component: CartPage,
             },
         ],
     },

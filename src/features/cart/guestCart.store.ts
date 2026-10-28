@@ -5,6 +5,9 @@ import type { AddGuestCartResult, GuestCartItem } from "./guestCart.types";
 interface GuestCartState {
   items: GuestCartItem[];
   add: (incoming: GuestCartItem) => AddGuestCartResult;
+  setQuantity: (variantId: string, quantity: number) => boolean;
+  remove: (variantId: string) => void;
+  clear: () => void;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -101,6 +104,35 @@ export const useGuestCart = create<GuestCartState>()(
         });
 
         return { ok: true };
+      },
+      setQuantity: (variantId, quantity) => {
+        const item = get().items.find((item) => item.variantId === variantId);
+
+        if (!item ||
+            !Number.isSafeInteger(quantity) ||
+            quantity < 1 ||
+            quantity > item.snapshot.stock
+        ) {
+          return false;
+        }
+
+        set((state) => ({
+          items: state.items.map((item) =>
+            item.variantId === variantId ? { ...item, quantity }: item,
+          ),
+        }));
+
+        return true;
+      },
+
+      remove: (variantId) => {
+        set((state) => ({
+          items: state.items.filter((item) => item.variantId !== variantId),
+        }));
+      },
+
+      clear: () => {
+        set({ items: [] });
       },
     }),
     {

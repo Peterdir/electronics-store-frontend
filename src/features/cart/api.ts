@@ -1,5 +1,6 @@
 import { api } from "@/shared/api/client";
 import type { AddToCartRequest, CartResponse } from "./types";
+import type { ID, MessageResponse } from "@/shared/types/common";
 
 
 export async function getCart(
@@ -17,6 +18,32 @@ export async function addCartItem(
         "/api/cart/items",
         payload,
     );
+
+    return response.data;
+}
+
+export async function updateCartItem(
+  cartItemId: ID,
+  quantity: number,
+): Promise<CartResponse> {
+    const response = await api.put<CartResponse>(
+        `/api/cart/items/${cartItemId}`,
+        { quantity },
+    );
+
+    return response.data;
+}
+
+export async function removeCartItem(cartItemId: ID): Promise<CartResponse> {
+    const response = await api.delete<CartResponse>(
+        `/api/cart/items/${cartItemId}`,
+    );
+
+    return response.data;
+}
+
+export async function clearServerCart(): Promise<MessageResponse> {
+    const response = await api.delete<MessageResponse>("/api/cart");
 
     return response.data;
 }
