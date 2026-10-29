@@ -4,6 +4,7 @@ import { useCart } from "../useCart";
 import type { CartRow } from "../cartView.types";
 import { CartItemRow } from "../components/CartItemRow";
 import { CartSummary } from "../components/CartSummary";
+import { CartMergeReview } from "../components/CartMergeReview";
 import { ApiError } from "@/shared/api/errors";
 
 export function CartPage() {
@@ -50,7 +51,9 @@ export function CartPage() {
     return (
       <section>
         <h1 className="text-2xl font-bold">Giỏ hàng</h1>
-        <p role="status">Đang tải giỏ hàng…</p>
+        <p role="status">
+          {cart.isMerging ? "Đang đồng bộ giỏ hàng…" : "Đang tải giỏ hàng…"}
+        </p>
       </section>
     );
   }
@@ -62,6 +65,7 @@ export function CartPage() {
     return (
       <section className="space-y-3">
         <h1 className="text-2xl font-bold">Giỏ hàng</h1>
+        {cart.isMerging && <p role="status">Đang đồng bộ giỏ hàng…</p>}
         <p role="alert">{cart.error.message}</p>
 
         {sessionExpired ? (
@@ -117,6 +121,15 @@ export function CartPage() {
   return (
     <section className="space-y-6">
       <h1 className="text-2xl font-bold">Giỏ hàng</h1>
+      {cart.isMerging && <p role="status">Đang đồng bộ giỏ hàng…</p>}
+      {cart.mode === "user" && (
+        <CartMergeReview
+          serverItems={cart.items}
+          isMerging={cart.isMerging}
+          isRefreshing={cart.isRefreshing}
+          onRefetch={() => { void cart.refetch?.(); }}
+        />
+      )}
 
       {rows.length === 0 ? (
         <div className="space-y-3">

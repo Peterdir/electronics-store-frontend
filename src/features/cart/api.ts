@@ -13,10 +13,14 @@ export async function getCart(
 
 export async function addCartItem(
     payload: AddToCartRequest,
+    authToken?: string,
 ): Promise<CartResponse> {
     const response = await api.post<CartResponse>(
         "/api/cart/items",
         payload,
+        authToken
+            ? { meta: {authToken, noPublicRetry: true } }
+            : undefined
     );
 
     return response.data;

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import type { AddGuestCartResult, GuestCartItem } from "./guestCart.types";
+import { useCartMerge } from "./cartMerge.store";
 
 interface GuestCartState {
   items: GuestCartItem[];
@@ -103,6 +104,10 @@ export const useGuestCart = create<GuestCartState>()(
             : [...items, incoming],
         });
 
+        if (!existing) {
+          useCartMerge.getState().dropVariant(variantId);
+        }
+
         return { ok: true };
       },
       setQuantity: (variantId, quantity) => {
@@ -129,10 +134,12 @@ export const useGuestCart = create<GuestCartState>()(
         set((state) => ({
           items: state.items.filter((item) => item.variantId !== variantId),
         }));
+        useCartMerge.getState().dropVariant(variantId);
       },
 
       clear: () => {
         set({ items: [] });
+        useCartMerge.getState().clearAttempts();
       },
     }),
     {

@@ -4,6 +4,7 @@ import { useSession } from "@/shared/auth/session.store"
 import { qk } from "@/shared/api/queryKeys"
 import { isExpired } from "@/shared/auth/jwt"
 import { toast } from "sonner"
+import { startGuestCartMerge } from "../cart/mergeGuestCart"
 
 // LOGIN
 export function useLogin() {
@@ -13,7 +14,14 @@ export function useLogin() {
         mutationFn: login,
         retry: false,
         onSuccess: (data) => {
-            setSession(data.accessToken, data.user)
+            setSession(data.accessToken, data.user);
+
+            void startGuestCartMerge(
+                data.accessToken,
+                data.user.id,
+            ).catch(() => {
+                toast.error("Không thể đồng bộ giỏ hàng. Sản phẩm guest vẫn được lưu.");
+            });
         }
     })
 }
@@ -81,7 +89,14 @@ export function useVerifyEmail() {
         mutationFn: verifyEmail,
         retry: false,
         onSuccess: (data) => {
-            setSession(data.accessToken, data.user)
+            setSession(data.accessToken, data.user);
+
+            void startGuestCartMerge(
+                data.accessToken,
+                data.user.id,
+            ).catch(() => {
+                toast.error("Không thể đồng bộ giỏ hàng. Sản phẩm guest vẫn được lưu.");
+            });
         },
     })
 }

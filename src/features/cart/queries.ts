@@ -3,7 +3,7 @@ import { useSession } from "@/shared/auth/session.store";
 import { addCartItem, clearServerCart, getCart, removeCartItem, updateCartItem } from "./api";
 import { isExpired } from "@/shared/auth/jwt";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { CartItemResponse, CartResponse } from "./types";
+import type { AddToCartRequest, CartItemResponse, CartResponse } from "./types";
 import type { ID } from "@/shared/types/common";
 
 
@@ -24,7 +24,7 @@ export function useAddCartItem() {
     const userId = useSession((state) => state.user?.id);
 
     return useMutation({
-        mutationFn: addCartItem,
+        mutationFn: (payload: AddToCartRequest) => addCartItem(payload),
         retry: false,
 
         onSuccess: async (cart) => {

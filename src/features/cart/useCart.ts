@@ -4,6 +4,7 @@ import { useAddCartItem, useClearServerCart, useRemoveCartItem, useServerCart, u
 import { useSession } from "@/shared/auth/session.store";
 import { isExpired } from "@/shared/auth/jwt";
 import { ApiError } from "@/shared/api/errors";
+import { useCartMerge } from "./cartMerge.store";
 
 export function useCart() {
   const setGuestQuantity = useGuestCart((state) => state.setQuantity);
@@ -20,10 +21,19 @@ export function useCart() {
 
   const serverCart = useServerCart();
   const addServerItem = useAddCartItem();
+  const isMerging = useCartMerge((state) => state.isMerging);
+
+  function ensureMergeFinished() {
+    if (useCartMerge.getState().isMerging) {
+      throw new Error("Giỏ hàng đang được đồng bộ. Vui lòng chờ.");
+    }
+  }
 
   async function addItem(
     item: GuestCartItem,
   ): Promise<AddGuestCartResult> {
+    ensureMergeFinished();
+
     if (!token) {
       return addGuestItem(item);
     }
@@ -41,6 +51,8 @@ export function useCart() {
   }
 
   async function updateQuantity(id: string, quantity: number): Promise<void> {
+    ensureMergeFinished();
+
     if (!Number.isSafeInteger(quantity) || quantity < 1) {
       throw new Error("Số lượng phải là số nguyên lớn hơn 0.");
     }
@@ -60,6 +72,8 @@ export function useCart() {
   }
 
   async function removeItem(id: string): Promise<void> {
+    ensureMergeFinished();
+
     if (!token) {
       removeGuestItem(id);
       return;
@@ -73,6 +87,8 @@ export function useCart() {
   }
 
   async function clearCart(): Promise<void> {
+    ensureMergeFinished();
+
     if (!token) {
       clearGuestCart();
       return;
@@ -92,13 +108,16 @@ export function useCart() {
       totalItems: serverCart.data?.totalItems ?? 0,
       totalPrice: serverCart.data?.totalPrice ?? 0,
       isLoading: serverCart.isLoading,
-      isAdding: addServerItem.isPending,
+      isRefreshing: serverCart.isFetching,
+      isMerging,
+      isAdding: isMerging || addServerItem.isPending,
       error: isExpired(token)
         ? new ApiError(401, "Phiên đăng nhập đã hết hạn.")
         : serverCart.error,
       refetch: serverCart.refetch,
       addItem,
       isChanging:
+        isMerging ||
         updateServerItem.isPending ||
         removeServerItem.isPending ||
         clearServerCart.isPending,
@@ -120,10 +139,12 @@ export function useCart() {
       0,
     ),
     isLoading: false,
-    isAdding: false,
+    isRefreshing: false,
+    isMerging,
+    isAdding: isMerging,
     error: null,
     refetch: undefined,
-    isChanging: false,
+    isChanging: isMerging,
     addItem,
     updateQuantity,
     removeItem,

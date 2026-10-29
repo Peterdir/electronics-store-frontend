@@ -160,7 +160,11 @@ export function ProductPurchaseOptions({
         disabled={!selectedVariant || displayedQuantity < 1 || cart.isAdding}
         className="rounded-md bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50"
       >
-        {cart.isAdding ? "Đang thêm..." : "Thêm vào giỏ"}
+        {cart.isMerging
+          ? "Đang đồng bộ giỏ hàng…"
+          : cart.isAdding
+            ? "Đang thêm..."
+            : "Thêm vào giỏ"}
       </button>
     </div>
   );

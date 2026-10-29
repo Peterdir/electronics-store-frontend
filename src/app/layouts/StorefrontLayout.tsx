@@ -2,8 +2,10 @@ import { Link, Outlet, useLocation } from "react-router"
 import { UserMenu } from "@/features/auth/components/UserMenu"
 import { CompareTray } from "@/features/catalog/components/CompareTray";
 import { useCompare } from "@/features/catalog/compare.store";
+import { useCart } from "@/features/cart/useCart";
 
 export function StorefrontLayout() {
+    const cart = useCart();
     const hasCompare = useCompare((state) => state.compareIds.length > 0);
     const { pathname } = useLocation();
     const showCompareTray = hasCompare && pathname !== "/compare";
@@ -35,6 +37,28 @@ export function StorefrontLayout() {
 
                         <Link to="/products" className="rounded-sm text-muted-foreground transition-colors hover:text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                             Sản phẩm
+                        </Link>
+
+                        <Link
+                            to="/cart"
+                            aria-label={
+                                cart.isMerging
+                                    ? "Giỏ hàng, đang đồng bộ sản phẩm"
+                                    : cart.isLoading
+                                    ? "Giỏ hàng, đang tải số lượng sản phẩm"
+                                    : cart.error
+                                    ? "Giỏ hàng, chưa tải được số lượng sản phẩm"
+                                    : `Giỏ hàng, ${cart.totalItems} sản phẩm`
+                            }
+                            className="flex items-center gap-2 rounded-sm text-muted-foreground transition-colors hover:text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                            Giỏ hàng
+                            <span
+                                aria-hidden="true"
+                                className="inline-flex min-w-6 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-foreground"
+                            >
+                                {cart.isMerging || cart.isLoading ? "…" : cart.error ? "—" : cart.totalItems}
+                            </span>
                         </Link>
                     </nav>
                 </div>
