@@ -9,6 +9,7 @@ import {
   readCheckoutEntry,
   type CheckoutEntry,
 } from "../entry";
+import { useGuestCart } from "@/features/cart/guestCart.store";
 
 function CheckoutMessage({
   message,
@@ -94,6 +95,16 @@ function UserCartValidation({
 
 function CartCheckoutEntry({ userId }: { userId: string | null }) {
   const cart = useCart();
+  const attempts = useCartMerge((state) => state.attempts);
+  const guestItems = useGuestCart((state) => state.items);
+
+  const needsMergeReview =
+    userId !== null &&
+    attempts.some(
+      (attempt) =>
+        attempt.userId === userId &&
+        guestItems.some((item) => item.variantId === attempt.variantId),
+  );
 
   if (cart.isLoading) {
     return <p role="status">Đang tải giỏ hàng…</p>;
@@ -103,6 +114,16 @@ function CartCheckoutEntry({ userId }: { userId: string | null }) {
     return (
       <CheckoutMessage
         message={cart.error.message}
+        to="/cart"
+        linkText="Quay lại giỏ hàng"
+      />
+    );
+  }
+
+  if (needsMergeReview) {
+    return (
+      <CheckoutMessage
+        message="Hãy đối chiếu sản phẩm đang chờ đồng bộ trước khi thanh toán."
         to="/cart"
         linkText="Quay lại giỏ hàng"
       />
