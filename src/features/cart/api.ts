@@ -1,5 +1,5 @@
 import { api } from "@/shared/api/client";
-import type { AddToCartRequest, CartResponse } from "./types";
+import type { AddToCartRequest, CartCheckoutValidationResponse, CartResponse } from "./types";
 import type { ID, MessageResponse } from "@/shared/types/common";
 
 
@@ -50,4 +50,16 @@ export async function clearServerCart(): Promise<MessageResponse> {
     const response = await api.delete<MessageResponse>("/api/cart");
 
     return response.data;
+}
+
+export async function validateCartForCheckout(
+  signal?: AbortSignal,
+): Promise<CartCheckoutValidationResponse> {
+  const response = await api.post<CartCheckoutValidationResponse>(
+    "/api/cart/validate-checkout",
+    undefined,
+    { signal, meta: { noPublicRetry: true } },
+  );
+
+  return response.data;
 }

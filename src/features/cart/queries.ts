@@ -1,6 +1,6 @@
 import { qk } from "@/shared/api/queryKeys";
 import { useSession } from "@/shared/auth/session.store";
-import { addCartItem, clearServerCart, getCart, removeCartItem, updateCartItem } from "./api";
+import { addCartItem, clearServerCart, getCart, removeCartItem, updateCartItem, validateCartForCheckout } from "./api";
 import { isExpired } from "@/shared/auth/jwt";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AddToCartRequest, CartItemResponse, CartResponse } from "./types";
@@ -168,4 +168,12 @@ export function useClearServerCart() {
             }
         },
     });
+}
+
+export function useCheckoutCartValidation(userId: ID) {
+  return useQuery({
+    queryKey: [...qk.cart, "checkout-validation", userId],
+    queryFn: ({ signal }) => validateCartForCheckout(signal),
+    retry: false,
+  });
 }

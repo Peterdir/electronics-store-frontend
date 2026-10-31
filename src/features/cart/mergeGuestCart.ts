@@ -97,12 +97,16 @@ async function runMerge(
 
     if (isCurrentSession(token, userId)) {
       if (transferred > 0) {
-        toast.success(`Đã chuyển ${transferred} sản phẩm vào giỏ tài khoản.`);
+        toast.success(`Đã chuyển ${transferred} sản phẩm vào giỏ tài khoản.`, {
+          duration: 1000,
+        });
       }
 
       if (rejected.length > 0) {
         toast.error(
-          `Chưa chuyển được: ${rejected.join(", ")}. Sản phẩm vẫn được lưu trên thiết bị.`,
+          `Chưa chuyển được: ${rejected.join(", ")}. Sản phẩm vẫn được lưu trên thiết bị.`, {
+            duration: 1000,
+          }
         );
       }
 

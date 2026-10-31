@@ -6,6 +6,9 @@ import { StockIndicator } from "./StockIndicator";
 import { QuantityStepper } from "./QuantityStepper";
 import { toast } from "sonner";
 import { useCart } from "@/features/cart/useCart";
+import { useNavigate } from "react-router";
+import { useSession } from "@/shared/auth/session.store";
+import { isExpired } from "@/shared/auth/jwt";
 
 interface ProductPurchaseOptionsProps {
   product: ProductDetailsResponse;
@@ -33,7 +36,10 @@ export function ProductPurchaseOptions({
 }: ProductPurchaseOptionsProps) {
 
   const cart = useCart();
-
+  const navigate = useNavigate();
+  const token = useSession((state) => state.token);
+  const userId = useSession((state) => state.user?.id);
+  
   const variants = (product.variants ?? []).filter(
     (variant) => variant.status === "ACTIVE",
   );
@@ -61,7 +67,7 @@ export function ProductPurchaseOptions({
     colorKey,
     isPhone ? storageKey : undefined,
   ].filter((key): key is string => key !== undefined);
-
+  
   function handleSelect(key: string, value: string) {
 
     const matchingCurrent = variants.filter((variant) =>
@@ -85,15 +91,15 @@ export function ProductPurchaseOptions({
     onVariantChange(next.id);
     setQuantity((current) =>
       next.stock > 0
-        ? Math.max(1, Math.min(current, next.stock))
-        : 0,
-    );
+    ? Math.max(1, Math.min(current, next.stock))
+    : 0,
+  );
   }
 
   async function handleAddToCart() {
     if (!selectedVariant || displayedQuantity < 1 || cart.isAdding) return;
     if (selectedVariant.status !== "ACTIVE") return;
-
+    
     try {
       const result = await cart.addItem({
         variantId: selectedVariant.id,
@@ -110,7 +116,7 @@ export function ProductPurchaseOptions({
       });
 
       if (result.ok) {
-        toast.success("Đã thêm vào giỏ hàng.");
+        toast.success("Đã thêm vào giỏ hàng.", { duration: 1000 });
       } else if (result.reason === "out-of-stock") {
         toast.error("Sản phẩm đã hết hàng.");
       } else if (result.reason === "exceeds-stock") {
@@ -123,15 +129,46 @@ export function ProductPurchaseOptions({
     } catch (error) {
       toast.error(
         error instanceof Error
-          ? error.message
-          : "Không thể kết nối giỏ hàng.",
+        ? error.message
+        : "Không thể kết nối giỏ hàng.",
       );
     }
   }
 
   const displayedQuantity = selectedVariant && selectedVariant.stock > 0
-      ? Math.max(1, Math.min(quantity, selectedVariant.stock))
-      : 0;
+  ? Math.max(1, Math.min(quantity, selectedVariant.stock))
+  : 0;
+  
+  const canBuyNow =
+    Boolean(selectedVariant) &&
+    displayedQuantity > 0 &&
+    !cart.isMerging &&
+    (!token || (Boolean(userId) && !isExpired(token)));
+
+  function handleBuyNow() {
+    if (!canBuyNow || !selectedVariant) return;
+
+    navigate("/checkout?source=buy-now", {
+      state: {
+        startedUserId: token ? userId : null,
+        directItems: [
+          {
+            productVariantId: selectedVariant.id,
+            quantity: displayedQuantity,
+          },
+        ],
+        snapshot: {
+          productId: product.id,
+          productName: product.name,
+          sku: selectedVariant.sku,
+          unitPrice: selectedVariant.price,
+          imageUrl:
+            selectedVariant.imageUrl ?? product.images?.[0] ?? null,
+          availableStock: selectedVariant.stock,
+        },
+      },
+    });
+  }
 
   return (
     <div className="space-y-4">
@@ -165,6 +202,15 @@ export function ProductPurchaseOptions({
           : cart.isAdding
             ? "Đang thêm..."
             : "Thêm vào giỏ"}
+      </button>
+
+      <button
+        type="button"
+        onClick={handleBuyNow}
+        disabled={!canBuyNow}
+        className="rounded-md border px-4 py-2 disabled:opacity-50"
+      >
+        Mua ngay
       </button>
     </div>
   );

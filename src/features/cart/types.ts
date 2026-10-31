@@ -28,3 +28,18 @@ export interface CartResponse {
   totalItems: number;
   totalPrice: Money;
 }
+
+export interface CartItemIssueResponse {
+  cartItemId: ID;
+  productVariantId: ID;
+  productName: string;
+  requestedQuantity: number;
+  availableStock: number;
+  message: string;
+}
+
+export interface CartCheckoutValidationResponse {
+  isValid: boolean;
+  message: string;
+  issues: CartItemIssueResponse[];
+}

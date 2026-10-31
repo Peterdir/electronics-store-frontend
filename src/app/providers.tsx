@@ -4,6 +4,9 @@ import { queryClient } from "../shared/api/queryClient";
 import { Toaster, toast } from "sonner";
 import { authEvents } from "@/shared/auth/auth.events";
 import { startSessionLifecycle } from "../shared/auth/session.lifecycle";
+import { useSession } from "@/shared/auth/session.store";
+
+const SESSION_EXPIRED_TOAST_ID = "session-expired";
 
 interface AppProvidersProps {
     children: ReactNode
@@ -22,7 +25,16 @@ export function AppProviders({ children }: AppProvidersProps) {
                 event.type === "session-cleared" &&
                 event.reason === "expired"
             ) {
-                toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", {
+                    id: SESSION_EXPIRED_TOAST_ID,
+                    duration: 2000,
+                });
+            }
+        });
+
+        const unsubscribeSession = useSession.subscribe((state, previousState) => {
+            if (state.token && state.token !== previousState.token) {
+                toast.dismiss(SESSION_EXPIRED_TOAST_ID);
             }
         });
 
@@ -30,6 +42,7 @@ export function AppProviders({ children }: AppProvidersProps) {
 
         return () => {
             unsubscribeEvents();
+            unsubscribeSession();
             stopSessionLifecycle();
         };
     }, []);

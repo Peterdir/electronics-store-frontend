@@ -23,6 +23,7 @@ import { ProductListPage } from "@/features/catalog/pages/ProductListPage"
 import { ProductDetailPage } from "@/features/catalog/pages/ProductDetailPage";
 import { ComparePage } from "@/features/catalog/pages/ComparePage";
 import { CartPage } from "@/features/cart/pages/CartPage";
+import { CheckoutPage } from "@/features/checkout/pages/CheckoutPage";
 
 
 export const router = createBrowserRouter([
@@ -87,6 +88,10 @@ export const router = createBrowserRouter([
             {
                 path: "cart",
                 Component: CartPage,
+            },
+            {
+                path: "checkout",
+                Component: CheckoutPage,
             },
         ],
     },
