@@ -61,6 +61,7 @@ export function AddressesPage() {
   async function handleSave(values: AddressFormValues) {
     if (!mode || busy) return;
     setFormError(null);
+    setActionError(null);
 
     try {
       const payload = toAddressRequest({
