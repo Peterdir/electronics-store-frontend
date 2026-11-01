@@ -24,6 +24,7 @@ import { ProductDetailPage } from "@/features/catalog/pages/ProductDetailPage";
 import { ComparePage } from "@/features/catalog/pages/ComparePage";
 import { CartPage } from "@/features/cart/pages/CartPage";
 import { CheckoutPage } from "@/features/checkout/pages/CheckoutPage";
+import { AddressesPage } from "@/features/address/pages/AddressesPage";
 
 
 export const router = createBrowserRouter([
@@ -92,6 +93,14 @@ export const router = createBrowserRouter([
             {
                 path: "checkout",
                 Component: CheckoutPage,
+            },
+            {
+                path: "account/addresses",
+                element: (
+                    <RequireAuth>
+                        <AddressesPage />
+                    </RequireAuth>
+                ),
             },
         ],
     },

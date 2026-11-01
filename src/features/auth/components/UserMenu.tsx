@@ -42,6 +42,13 @@ export function UserMenu() {
                 Tài khoản
             </Link>
 
+            <Link
+                to="/account/addresses"
+                className="text-sm text-muted-foreground hover:text-primary"
+            >
+                Địa chỉ
+            </Link>
+
             <Button
                 type="button"
                 variant="ghost"
