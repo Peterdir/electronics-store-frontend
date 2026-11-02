@@ -10,6 +10,7 @@ import {
   type CheckoutEntry,
 } from "../entry";
 import { useGuestCart } from "@/features/cart/guestCart.store";
+import { CheckoutContent } from "../components/CheckoutContent";
 
 function CheckoutMessage({
   message,
@@ -82,14 +83,15 @@ function UserCartValidation({
   }
 
   return (
-    <section className="space-y-3">
-      <h1 className="text-2xl font-bold">Thanh toán</h1>
+    <CheckoutContent key={userId} userId={userId}>
       <p>Giỏ tài khoản đã được kiểm tra.</p>
-      <p>{totalItems} sản phẩm · Tạm tính {formatVND(totalPrice)}</p>
+      <p>
+        {totalItems} sản phẩm · Tạm tính {formatVND(totalPrice)}
+      </p>
       <Link to="/cart" className="text-primary underline">
         Quay lại giỏ hàng
       </Link>
-    </section>
+    </CheckoutContent>
   );
 }
 
@@ -167,15 +169,14 @@ function CartCheckoutEntry({ userId }: { userId: string | null }) {
   }
 
   return (
-    <section className="space-y-3">
-      <h1 className="text-2xl font-bold">Thanh toán</h1>
+    <CheckoutContent userId={null}>
       <p>Giỏ guest có {cart.totalItems} sản phẩm.</p>
       <p>Tạm tính {formatVND(cart.totalPrice)}</p>
       <p>Giá và tồn kho sẽ được xác nhận khi đặt hàng.</p>
       <Link to="/cart" className="text-primary underline">
         Quay lại giỏ hàng
       </Link>
-    </section>
+    </CheckoutContent>
   );
 }
 
@@ -200,8 +201,10 @@ function BuyNowCheckoutEntry({
   }
 
   return (
-    <section className="space-y-3">
-      <h1 className="text-2xl font-bold">Thanh toán</h1>
+    <CheckoutContent
+      key={entry.startedUserId ?? "guest"}
+      userId={entry.startedUserId}
+    >
       <p>Mua ngay: {entry.snapshot.productName}</p>
       <p>SKU: {entry.snapshot.sku}</p>
       <p>Số lượng: {entry.directItem.quantity}</p>
@@ -217,7 +220,7 @@ function BuyNowCheckoutEntry({
       >
         Quay lại sản phẩm
       </Link>
-    </section>
+    </CheckoutContent>
   );
 }
 

@@ -7,6 +7,7 @@ import {
   emptyAddressValues,
   type AddressFormValues,
 } from "../schemas";
+import { AddressGeographyFields } from "./AddressGeographyFields";
 
 interface AddressFormProps {
   initialValues?: AddressFormValues;
@@ -33,22 +34,10 @@ const fields = [
     autoComplete: "tel",
   },
   {
-    name: "province",
-    label: "Tỉnh/thành phố",
-    type: "text",
-    autoComplete: "address-level1",
-  },
-  {
     name: "district",
     label: "Khu vực/quận/huyện",
     type: "text",
     autoComplete: "address-level2",
-  },
-  {
-    name: "ward",
-    label: "Xã/phường",
-    type: "text",
-    autoComplete: "off",
   },
   {
     name: "specificAddress",
@@ -72,6 +61,8 @@ export function AddressForm({
 
   const {
     register,
+    control,
+    setValue,
     handleSubmit,
     formState: { errors, isSubmitting: formSubmitting },
   } = useForm<AddressFormValues>({
@@ -126,6 +117,14 @@ export function AddressForm({
             </div>
           );
         })}
+
+        <AddressGeographyFields
+          idPrefix={idPrefix}
+          control={control}
+          register={register}
+          setValue={setValue}
+          errors={errors}
+        />
 
         {showDefault && (
           <label className="flex items-center gap-2 text-sm">

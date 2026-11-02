@@ -1,6 +1,6 @@
 # Phase 3 — Tiến độ và kế hoạch tiếp tục
 
-> Cập nhật: 01/11/2026. Người dùng đã bổ sung guard dấu merge và xác nhận thử toàn bộ trường hợp C7. Lint, build và `git diff --check` đạt; tiếp tục **Nhóm 3 — C6 và C8**.
+> Cập nhật: 02/11/2026. C7 đã được người dùng xác nhận hoàn thành. Người dùng đã tự thêm schema/form và CRUD sổ địa chỉ C6; kiểm tra tĩnh đạt. Phần còn lại C6 + C8 được hướng dẫn bằng code trong chat để người dùng tự thêm và gom một commit; chưa xác nhận hoàn thành tích hợp.
 > Mục đích: giúp người dùng và AI tiếp tục đúng tiến độ, dùng lại code đã có và hạn chế sửa lại checkout.
 > Tài liệu gốc: [frontend_master_plan.md — Phase 3](frontend_master_plan.md#phase-3--transaction-flow-cart-address-checkout-payment).
 
@@ -299,3 +299,16 @@ Chưa kiểm tra / khác biệt với plan:
 Commit (nếu có):
 Bước tiếp theo cụ thể:
 ```
+
+### Bàn giao ngày 02/11/2026 — Nhóm 3
+
+- Bổ sung sau khi người dùng tự thêm code: CheckoutContent và AddressGeographyFields đã có trong source. Theo yêu cầu sửa trực tiếp mới nhất, AI đã bỏ hai trường province/ward bị render trùng trong mảng fields của AddressForm; hai trường này do AddressGeographyFields quản lý. Build (gồm typecheck) và git diff --check đạt; vẫn cảnh báo chunk JS khoảng 698 kB. Chưa xác nhận các ca thử UI/backend C6/C8.
+
+- Cách phối hợp: mặc định AI gửi code trong chat để người dùng tự thêm. Người dùng đã yêu cầu sửa trực tiếp lỗi trường trùng và cho phép commit phần code hiện tại; cập nhật trực tiếp phase3.md được cho phép.
+- Source đã có: address/types.ts, api.ts, queries.ts (hook useGetAddresses), schemas.ts, AddressForm, AddressCard, AddressesPage; route /account/addresses với RequireAuth và link trong UserMenu.
+- AddressesPage đã xóa formError/actionError khi mở thêm hoặc sửa; handleSave quản lý formError, thao tác xóa/đặt mặc định quản lý actionError.
+- Kiểm tra đã chạy trên source C6 hiện có: typecheck, lint, build, git diff --check đạt. Build cảnh báo chunk JavaScript khoảng 691 kB. Chưa thử CRUD bằng tài khoản trên browser/backend.
+- Source hiện có thêm CheckoutContent và AddressGeographyFields; đã nối ba nhánh checkout thành công vào UI địa chỉ chung. Build (gồm typecheck), lint và git diff --check đạt sau khi sửa trường trùng.
+- Địa giới đề xuất: API v2 provinces.open-api.vn cho tỉnh/xã, fallback nhập tay khi lỗi. Backend vẫn bắt buộc district nên giữ ô khu vực/quận/huyện nhập tay; khác checklist selector ba cấp cũ.
+- C8 cần dùng chung CheckoutContent sau guard C7 cho guest cart, user cart và Buy Now; địa chỉ chuẩn bị thành addressId hoặc ba trường recipientName/recipientPhone/shippingAddress. Chưa gửi POST tạo đơn (C10).
+- Bước tiếp theo: thử CRUD, chọn địa chỉ mặc định/khác, nhập tay, lỗi nguồn địa giới và guard phiên theo checklist trong chat. Code được commit theo yêu cầu người dùng; chưa đánh dấu C6/C8 hoàn thành kiểm thử. Sau khi thử đạt, tiếp tục C9/C10.
