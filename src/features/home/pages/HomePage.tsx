@@ -8,7 +8,8 @@ import { ProductGrid } from "@/features/catalog/components/ProductGrid";
 import { ProductSort } from "@/shared/types/enums";
 import { CategoryMenu } from "@/features/catalog/components/CategoryMenu";
 import { BrandStrip } from "@/features/catalog/components/BrandStrip";
-import { ArrowRight, Cpu } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { HeroShowcase } from "../components/HeroShowcase";
 
 export function HomePage() {
   const categoryQuery = useGetCategories();
@@ -56,16 +57,7 @@ export function HomePage() {
             </Link>
           </div>
 
-          <div
-            aria-hidden="true"
-            className="relative mx-auto hidden size-44 place-items-center lg:grid"
-          >
-            <div className="absolute inset-2 rotate-12 rounded-3xl border border-primary/25" />
-            <div className="absolute inset-5 -rotate-6 rounded-2xl border border-violet-400/35" />
-            <div className="grid size-24 place-items-center rounded-2xl border border-primary/40 bg-background shadow-lg">
-              <Cpu className="size-12 text-primary" strokeWidth={1.25} />
-            </div>
-          </div>
+          <HeroShowcase />
         </div>
       </section>
 

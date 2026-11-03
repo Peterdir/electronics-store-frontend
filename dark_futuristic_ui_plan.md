@@ -1,12 +1,14 @@
 # Kế hoạch nâng cấp Dark Futuristic cho Electronics Store
 
-**Ngày khảo sát:** 02/11/2026 · **Trạng thái:** Đã khảo sát và lập kế hoạch. Các giai đoạn triển khai bên dưới đang chờ thực hiện.
+**Ngày khảo sát** 02/11/2026 · **Cập nhật tiến độ** 03/11/2026.
+
+Đã commit theme nền tối, storefront/catalog và giao diện giao dịch/tài khoản/admin trên nhánh `dev`. Các component UI bổ sung của giai đoạn 1 và phần motion/hero 3D còn chờ triển khai. Các ca kiểm tra trên trình duyệt với backend còn chờ xác nhận.
 
 Ưu tiên nền tối và component dùng chung trước, áp dụng lên trang chủ và catalog, sau đó mới thêm hero 3D. Người mua có thể xoay một cảnh công nghệ ở trang chủ. Card sản phẩm tạo chiều sâu bằng CSS. Giỏ hàng, checkout, tài khoản và admin dùng cùng ngôn ngữ thị giác, ưu tiên khả năng đọc và thao tác chính xác.
 
 Khảo sát dựa trên mã nguồn và cấu hình. ESLint và kiểm tra TypeScript cho ứng dụng lẫn cấu hình Vite đều đạt tại thời điểm khảo sát. Số liệu bundle lấy từ bản build có sẵn. Hiển thị trên thiết bị và các luồng cần backend được kiểm chứng từ giai đoạn 0.
 
-## 1. Kiến trúc UI hiện tại
+## 1. Kiến trúc UI tại thời điểm khảo sát 02/11/2026
 
 | Khu vực | Hiện trạng và ý nghĩa đối với thiết kế |
 |---|---|
@@ -37,14 +39,64 @@ Khảo sát dựa trên mã nguồn và cấu hình. ESLint và kiểm tra TypeS
 
 ## 4. Lộ trình triển khai
 
-Đánh dấu từng giai đoạn sau khi đạt điều kiện nghiệm thu tương ứng.
+Các ô đã đánh dấu thể hiện công việc đã thực hiện hoặc kiểm tra đã đạt. Chỉ xác nhận nghiệm thu giao diện sau khi hoàn thành các ca thử tương ứng trên trình duyệt.
 
-- [ ] **Giai đoạn 0 — Ghi nhận giao diện hiện tại.** Chụp màn hình đại diện ở 390, 768 và 1440 px. Ghi lại hành vi bàn phím, trạng thái tải/lỗi và kích thước bundle. Bản `dist` tại thời điểm khảo sát có một file JS chính **698,1 kB**, khoảng **213,6 kB gzip**. Đối chiếu các route hiện hữu và [cấu hình CI](.github/workflows/auth-checks.yml).
-- [ ] **Giai đoạn 1 — Theme và UI chung.** Chỉnh [index.html](index.html), [index.css](src/index.css), cấu hình hiển thị `Toaster` trong [providers.tsx](src/app/providers.tsx) và [button.tsx](src/components/ui/button.tsx). Thêm `input.tsx`, `select.tsx`, `surface.tsx`, `status-notice.tsx` vào [thư mục UI](src/components/ui). Duyệt nút, trường nhập, focus, disabled, lỗi và toast trên nền tối.
-- [ ] **Giai đoạn 2 — Storefront và catalog.** Chỉnh [StorefrontLayout](src/app/layouts/StorefrontLayout.tsx), [HomePage](src/features/home/pages/HomePage.tsx), [catalog components](src/features/catalog/components) và [catalog pages](src/features/catalog/pages). Ưu tiên `ProductCard`, `DiscoveryTile`, `ProductFilters`, `SearchBar`, `ProductGallery`, `CompareTray` và `CompareTable`. Duyệt trang chủ với hero tĩnh, danh sách, chi tiết và so sánh. Kiểm tra ảnh lỗi, tên dài, giá và nút so sánh độc lập với link mở sản phẩm.
-  - [ ] **Logo thương hiệu trên nền tối.** Kiểm tra logo đen có nền trong suốt, logo nhiều màu và ảnh lỗi ở mục “Thương hiệu nổi bật”. Dùng nền sáng trung tính riêng cho vùng ảnh logo cần tăng tương phản. Kiểm tra cả trạng thái hover, màu gốc của logo, tên thương hiệu và ảnh danh mục.
-- [ ] **Giai đoạn 3 — Giao dịch, tài khoản và admin.** Chỉnh giao diện [Cart](src/features/cart/components), [CheckoutContent](src/features/checkout/components/CheckoutContent.tsx), [Address](src/features/address/components), [Auth](src/features/auth) và [AdminLayout](src/app/layouts/AdminLayout.tsx). Trọng tâm là `CartItemRow`, `CartSummary`, `CartMergeReview`, `AddressForm`, `AddressGeographyFields` và các form xác thực. Duyệt khoảng cách, trạng thái lỗi/chờ và mật độ hiển thị của admin. Nghiệm thu checkout đến bước xác nhận địa chỉ hiện có.
-- [ ] **Giai đoạn 4 — Motion và hero 3D.** Trong [feature Home](src/features/home), thêm `components/HeroShowcase.tsx` cho HTML và hình tĩnh, `components/HeroScene.tsx` cho WebGL. Cập nhật `HomePage`, [manifest](package.json) và [lockfile](package-lock.json). Chỉ tải chunk 3D sau thao tác “Xem 3D”. Dùng một canvas, render theo nhu cầu, giữ hình tĩnh khi WebGL lỗi hoặc người dùng chọn giảm chuyển động. Kiểm tra Network khi vào thẳng catalog, giỏ và checkout. [Render theo nhu cầu](https://r3f.docs.pmnd.rs/advanced/scaling-performance)
+### Giai đoạn 0 — Ghi nhận giao diện hiện tại
+
+- [x] Đọc mã nguồn, đối chiếu cấu hình và chạy lint/build nền, bao gồm TypeScript.
+- [x] Ghi nhận bundle có sẵn lúc khảo sát, JS chính **698,1 kB**, khoảng **213,6 kB gzip**.
+- [ ] Chụp màn hình trước nâng cấp ở 390, 768 và 1440 px. Chưa có bộ ảnh được ghi nhận trong đợt khảo sát.
+- [ ] Ghi nhận kết quả thử bàn phím, trạng thái tải/lỗi và các luồng với backend.
+
+### Giai đoạn 1 — Theme và UI chung
+
+Commit **`020e935`** — `feat(ui): establish dark futuristic theme (phase 1)`.
+
+- [x] Áp `lang="vi"`, theme tối từ `html` và tiêu đề Electronics Store trong [index.html](index.html).
+- [x] Thiết lập bảng màu graphite/cyan, `color-scheme: dark` và token cho card, input, focus, chart, sidebar trong [index.css](src/index.css).
+- [x] Đồng bộ Sonner với `theme="dark"` trong [providers.tsx](src/app/providers.tsx).
+- [x] Lưu kế hoạch nâng cấp vào project.
+- [x] Bổ sung utility `form-control` cho input/select của auth và address trong commit giai đoạn 3.
+- [ ] Bổ sung `Input`, `Select`, `Surface`, `StatusNotice` theo đề xuất ban đầu. [Thư mục UI](src/components/ui) hiện có `Button`. Phần chuẩn hóa control đã triển khai qua CSS utility và các phần tử native.
+- [ ] Hoàn tất kiểm tra trực quan nút, focus, disabled, lỗi, toast và tương phản chữ.
+
+### Giai đoạn 2 — Storefront và catalog
+
+Commit **`a4cc552`** — `feat(ui): refresh storefront and catalog (phase 2)`.
+
+- [x] Đồng bộ header/footer và cách menu xuống hàng trong [StorefrontLayout](src/app/layouts/StorefrontLayout.tsx).
+- [x] Làm mới hero tĩnh của [HomePage](src/features/home/pages/HomePage.tsx), gồm gradient cyan/tím, biểu tượng chip và nút xem sản phẩm.
+- [x] Làm mới `ProductCard`, bố cục tên/giá và hiệu ứng hover ảnh cho thiết bị có chuột, có xét giảm chuyển động.
+- [x] Đồng bộ `CategoryMenu`, `BrandStrip` và `DiscoveryTile` với lưới responsive, khung, tiêu đề, hover/focus và tên tối đa hai dòng.
+- [x] Bổ sung nền sáng riêng cho ảnh logo thương hiệu để tăng tương phản cho logo đen.
+- [x] Đồng bộ bộ lọc, ô tìm kiếm và dropdown gợi ý.
+- [x] Làm mới gallery, viền thumbnail đang chọn và khối thông tin sản phẩm.
+- [x] Đồng bộ khay so sánh và khung bảng có cuộn ngang.
+- [x] ESLint các component đã chỉnh, build và kiểm tra diff đạt tại thời điểm hoàn thành code.
+- [ ] Nghiệm thu hiển thị ở 390, 768 và 1440 px. Thử logo đen/nhiều màu/trắng trong suốt, ảnh lỗi, tên dài, tìm kiếm tiếng Việt, bàn phím, lọc/phân trang, đổi biến thể và so sánh 2–4 sản phẩm.
+
+### Giai đoạn 3 — Giao dịch, tài khoản và admin
+
+Commit **`89ba9c0`** — `feat(ui): unify cart, checkout, account and admin styles (phase 3)`. Gồm 23 file.
+
+- [x] Đồng bộ `CartItemRow`, ảnh sản phẩm, xuống dòng nội dung/nhóm thao tác, `CartSummary`, tổng tiền và nút checkout.
+- [x] Làm mới trạng thái giỏ trống và phần `CartMergeReview`.
+- [x] Đồng bộ `AddressCard`, badge mặc định, khung xác nhận xóa, form thêm/sửa và tiêu đề responsive của sổ địa chỉ.
+- [x] Dùng chung `form-control` cho input/select địa chỉ, địa giới và các form auth, gồm focus, lỗi và disabled.
+- [x] Đồng bộ khung thông tin checkout, địa chỉ được chọn và thông báo địa chỉ sẵn sàng.
+- [x] Đồng bộ khung các trang xác thực/hồ sơ và kích thước nút gửi chính của form auth/địa chỉ.
+- [x] Cho `UserMenu` xuống hàng trên màn hình nhỏ và thêm focus cho liên kết địa chỉ.
+- [x] Đồng bộ header/sidebar admin và khung trang tổng quan.
+- [x] Lint, build gồm TypeScript và `git diff --check` đạt. Bundle JS chính **702,65 kB**, khoảng **216,62 kB gzip**. Vẫn có cảnh báo chunk lớn hơn 500 kB.
+- [ ] Kiểm tra trên trình duyệt với backend, gồm sửa số lượng giỏ, merge giỏ, CRUD địa chỉ, chuyển saved/manual và giữ bản nháp checkout, xác thực/phân quyền và responsive.
+
+### Giai đoạn 4 — Motion và hero 3D
+
+- [ ] Thêm `components/HeroShowcase.tsx` cho HTML/hình tĩnh và `components/HeroScene.tsx` cho WebGL trong [feature Home](src/features/home).
+- [ ] Cập nhật `HomePage`, [manifest](package.json) và [lockfile](package-lock.json) với các dependency đã đề xuất, đối chiếu lại peer dependency trước khi cài.
+- [ ] Chỉ tải chunk 3D sau thao tác “Xem 3D”, dùng một canvas render theo nhu cầu.
+- [ ] Hỗ trợ kéo/phím mũi tên, hình tĩnh khi WebGL lỗi hoặc người dùng chọn giảm chuyển động.
+- [ ] Kiểm tra Network khi vào thẳng catalog, giỏ và checkout, cùng các kiểm tra hiệu năng và khả năng truy cập. [Render theo nhu cầu](https://r3f.docs.pmnd.rs/advanced/scaling-performance)
 
 **Mốc duyệt thiết kế chính là cuối giai đoạn 2.** Đánh giá phong cách trên trang chủ, danh sách và chi tiết sản phẩm với dữ liệu thực tế trước khi đưa WebGL vào dự án.
 
