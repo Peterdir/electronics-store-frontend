@@ -4,7 +4,7 @@ import { Link } from "react-router"
 export function LoginPage() {
     return (
         <div className="flex items-center justify-center">
-            <section className="mx-auto w-full max-w-md rounded-xl border border-border bg-card p-6 text-card-foreground shadow-sm">
+            <section className="mx-auto w-full max-w-md rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm sm:p-8">
                 <h1 className="text-2xl font-bold">
                     Đăng nhập
                 </h1>

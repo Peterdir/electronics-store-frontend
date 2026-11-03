@@ -43,7 +43,7 @@ function VerificationContent({ token }: { token: string }) {
                 "Không thể xác thực email. Vui lòng thử lại."
 
     return (
-        <section className="mx-auto w-full max-w-md space-y-4 rounded-xl border border-border bg-card p-6 text-card-foreground shadow-sm">
+        <section className="mx-auto w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm sm:p-8">
             <h1 className="text-2xl font-bold">
                 Xác thực email
             </h1>

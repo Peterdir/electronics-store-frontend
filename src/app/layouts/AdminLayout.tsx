@@ -3,8 +3,8 @@ import { UserMenu } from "@/features/auth/components/UserMenu"
 
 export function AdminLayout() {
     return (
-        <div className="dark min-h-screen bg-muted/30 text-foreground">
-            <header className="border-b bg-background">
+        <div className="min-h-screen bg-background text-foreground">
+            <header className="border-b border-border bg-card">
                 <div className="mx-auto flex min-h-16 max-w-screen-2xl flex-wrap items-center justify-between gap-4 px-4 py-3 sm:px-6">
                     <Link
                         to="/admin"
@@ -29,7 +29,7 @@ export function AdminLayout() {
                 </div>
             </header>
             <div className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-screen-2xl md:grid-cols-[15rem_minmax(0,1fr)]">
-                <aside className="border-b bg-background p-4 md:border-b-0 md:border-r">
+                <aside className="border-b border-border bg-card p-4 md:border-b-0 md:border-r">
                     <p
                         className="px-3 pb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
                     >

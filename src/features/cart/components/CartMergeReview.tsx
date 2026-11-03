@@ -87,7 +87,7 @@ export function CartMergeReview({
   return (
     <section
       aria-label="Sản phẩm cần đối chiếu sau khi đồng bộ"
-      className="space-y-3 rounded-md border p-4"
+      className="space-y-4 rounded-2xl border border-primary/30 bg-card p-5 sm:p-6"
     >
       <h2 className="font-semibold">Cần đối chiếu giỏ hàng</h2>
       <p className="text-sm">
@@ -115,7 +115,7 @@ export function CartMergeReview({
           return (
             <li
               key={`${attempt.userId}:${attempt.variantId}`}
-              className="space-y-2 rounded-md border p-3"
+              className="space-y-3 rounded-xl border border-border bg-background p-4 wrap-anywhere"
             >
               <p>{attempt.name}: đã thử chuyển {attempt.quantity} chiếc.</p>
               {belongsToCurrentUser ? (

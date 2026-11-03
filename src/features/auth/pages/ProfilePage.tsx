@@ -11,7 +11,7 @@ export function ProfilePage() {
     const hasSession = Boolean(token && !isExpired(token))
 
     return (
-        <section className="mx-auto w-full max-w-2xl rounded-xl border border-border bg-card p-6 text-card-foreground shadow-sm">
+        <section className="mx-auto w-full max-w-2xl rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm sm:p-8">
             <h1 className="text-2xl font-bold">
                 Hồ sơ tài khoản
             </h1>

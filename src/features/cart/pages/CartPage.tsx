@@ -132,7 +132,7 @@ export function CartPage() {
       )}
 
       {rows.length === 0 ? (
-        <div className="space-y-3">
+        <div className="space-y-3 rounded-2xl border border-border bg-card p-6">
           <p>Giỏ hàng của bạn đang trống</p>
           <Link to="/products" className="text-primary underline">
             Tiếp tục mua sắm

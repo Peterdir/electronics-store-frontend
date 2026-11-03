@@ -40,10 +40,10 @@ export function CartSummary({
     (!token || (Boolean(userId) && !isExpired(token)));
 
   return (
-    <aside className="space-y-3 rounded-md border p-4">
+    <aside className="space-y-4 rounded-2xl border border-border bg-card p-5 sm:p-6">
       <h2 className="text-lg font-semibold">Tóm tắt giỏ hàng</h2>
-      <p>Tổng số lượng: {totalItems}</p>
-      <p>Tạm tính: {formatVND(totalPrice)}</p>
+      <p className="text-sm text-muted-foreground">Tổng số lượng: {totalItems}</p>
+      <p className="text-xl font-semibold tabular-nums text-primary">Tạm tính: {formatVND(totalPrice)}</p>
 
       {hasIssues && (
         <p role="alert" className="text-sm text-destructive">
@@ -62,7 +62,7 @@ export function CartSummary({
           type="button"
           disabled={disabled}
           onClick={onClear}
-          className="text-destructive underline disabled:opacity-40"
+          className="min-h-11 rounded-lg px-2 text-sm text-destructive underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-40"
         >
           Xóa tất cả
         </button>
@@ -71,7 +71,7 @@ export function CartSummary({
           <Link
             to="/checkout?source=cart"
             state={{ startedUserId: token ? userId : null }}
-            className="inline-block rounded-md bg-primary px-4 py-2 text-primary-foreground"
+            className="inline-flex min-h-11 items-center justify-center rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             Tiến hành thanh toán
           </Link>
@@ -79,7 +79,7 @@ export function CartSummary({
           <button
             type="button"
             disabled
-            className="rounded-md bg-primary px-4 py-2 text-primary-foreground opacity-50"
+            className="min-h-11 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground opacity-50"
           >
             Tiến hành thanh toán
           </button>

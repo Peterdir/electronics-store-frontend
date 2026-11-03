@@ -24,7 +24,7 @@ export function PasswordInput({
                 id={id}
                 type={showPassword ? "text" : "password"}
                 autoComplete={autoComplete}
-                className="h-10 w-full rounded-md border border-input bg-background pl-3 pr-20 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring" 
+                className="form-control pr-20"
             />
 
             <Button

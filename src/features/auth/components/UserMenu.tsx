@@ -27,7 +27,7 @@ export function UserMenu() {
     }
 
     return (
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 max-w-full flex-wrap items-center gap-3">
             <span
                 title={user.email}
                 className="max-w-48 truncate text-sm font-medium"
@@ -44,7 +44,7 @@ export function UserMenu() {
 
             <Link
                 to="/account/addresses"
-                className="text-sm text-muted-foreground hover:text-primary"
+                className="rounded-sm text-sm text-muted-foreground hover:text-primary focus-visible:outline-2 focus-visible:outline-ring"
             >
                 Địa chỉ
             </Link>

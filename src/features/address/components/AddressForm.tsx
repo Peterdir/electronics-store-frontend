@@ -102,7 +102,7 @@ export function AddressForm({
                 aria-describedby={
                   error ? `${id}-error` : undefined
                 }
-                className="w-full rounded-md border border-input bg-background px-3 py-2"
+                className="form-control"
               />
 
               {error && (
@@ -143,7 +143,7 @@ export function AddressForm({
         )}
 
         <div className="flex flex-wrap gap-2">
-          <Button type="submit" disabled={busy}>
+          <Button type="submit" disabled={busy} className="min-h-11">
             {busy ? "Đang lưu..." : submitLabel}
           </Button>
 
@@ -151,6 +151,7 @@ export function AddressForm({
             <Button
               type="button"
               variant="outline"
+              className="min-h-11"
               onClick={onCancel}
             >
               Hủy

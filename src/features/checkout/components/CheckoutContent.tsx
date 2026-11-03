@@ -53,9 +53,9 @@ export function CheckoutContent({ userId, children }: Props) {
     <section className="mx-auto max-w-3xl space-y-6">
       <h1 className="text-2xl font-bold">Thanh toán</h1>
 
-      <div className="space-y-3">{children}</div>
+      <div className="space-y-3 rounded-2xl border border-border bg-card p-5 tabular-nums sm:p-6">{children}</div>
 
-      <section className="space-y-4 rounded-xl border p-4">
+      <section className="space-y-5 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <h2 className="text-lg font-semibold">
           Địa chỉ nhận hàng
         </h2>
@@ -123,7 +123,7 @@ export function CheckoutContent({ userId, children }: Props) {
                   {addresses.data.map((address) => (
                     <label
                       key={address.id}
-                      className="flex cursor-pointer gap-3 rounded-md border p-3"
+                      className="flex min-w-0 cursor-pointer gap-3 rounded-xl border border-border bg-background p-4 transition-colors hover:border-primary/50 focus-within:ring-2 focus-within:ring-ring has-[:checked]:border-primary has-[:checked]:bg-primary/5"
                     >
                       <input
                         type="radio"
@@ -137,7 +137,7 @@ export function CheckoutContent({ userId, children }: Props) {
                         }
                       />
 
-                      <span className="text-sm">
+                      <span className="min-w-0 text-sm wrap-anywhere">
                         <span className="font-medium">
                           {address.fullName} · {address.phone}
                         </span>
@@ -182,7 +182,7 @@ export function CheckoutContent({ userId, children }: Props) {
         {addressFields && (
           <div
             role="status"
-            className="space-y-1 rounded-md border border-primary/30 p-3 text-sm"
+            className="space-y-2 rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm wrap-anywhere"
           >
             <p className="font-medium text-primary">
               Địa chỉ nhận hàng đã sẵn sàng.

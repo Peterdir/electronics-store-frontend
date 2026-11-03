@@ -3,7 +3,7 @@ import { RegisterForm } from "../components/RegisterForm"
 
 export function RegisterPage() {
     return (
-        <section className="mx-auto w-full max-w-md rounded-xl border border-border bg-card p-6 text-card-foreground shadow-sm">
+        <section className="mx-auto w-full max-w-md rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm sm:p-8">
             <h1 className="text-2xl font-bold">Tạo tài khoản</h1>
 
             <p className="mt-2 text-sm text-muted-foreground">

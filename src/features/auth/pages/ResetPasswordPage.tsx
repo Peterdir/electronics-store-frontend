@@ -62,7 +62,7 @@ function ResetPasswordContent({ token }: { token: string }) {
     }
 
     return (
-        <section className="mx-auto w-full max-w-md rounded-xl border border-border bg-card p-6 text-card-foreground shadow-sm">
+        <section className="mx-auto w-full max-w-md rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm sm:p-8">
             <h1 className="text-2xl font-bold">Đặt lại mật khẩu</h1>
             {!token ? (
                 <p role="alert" className="mt-4 text-sm text-destructive">
@@ -115,7 +115,7 @@ function ResetPasswordContent({ token }: { token: string }) {
                         <p className="text-sm text-muted-foreground">
                             Ít nhất 8 ký tự, gồm chữ hoa, chữ thường, số và ký tự @#$%^&amp;+=.
                         </p>
-                        <Button type="submit" className="w-full">
+                        <Button type="submit" className="min-h-11 w-full">
                             {reset.isPending ? "Đang đặt lại..." : "Đặt lại mật khẩu"}
                         </Button>
                     </fieldset>
