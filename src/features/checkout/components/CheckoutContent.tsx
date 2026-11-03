@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useId, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { AddressForm } from "@/features/address/components/AddressForm";
 import { useGetAddresses } from "@/features/address/queries";
@@ -8,14 +8,34 @@ import {
   type AddressFormValues,
 } from "@/features/address/schemas";
 import type { ID } from "@/shared/types/common";
+import { z } from "zod";
 
 interface Props {
   userId: ID | null;
   children: ReactNode;
 }
 
+const contactEmailSchema = z
+  .string()
+  .trim()
+  .max(254, "Email tối đa 254 ký tự.")
+  .email("Email không hợp lệ.")
+  .optional();
+
 export function CheckoutContent({ userId, children }: Props) {
   const addresses = useGetAddresses();
+  const emailId = useId();
+  const [contactEmail, setContactEmail] = useState("");
+  const [emailTouched, setEmailTouched] = useState(false);
+
+  const emailResult = contactEmailSchema.safeParse(
+    contactEmail.trim() || undefined,
+  );
+
+  const emailError =
+    emailTouched && !emailResult.success
+      ? emailResult.error.issues[0]?.message
+      : undefined;
 
   const [mode, setMode] = useState<"saved" | "manual">(
     userId === null ? "manual" : "saved",
@@ -40,7 +60,6 @@ export function CheckoutContent({ userId, children }: Props) {
     mode === "manual" ||
     emptyAddressBook;
 
-  // C10 sẽ ghép các trường này vào CheckoutRequest.
   const addressFields = useManualAddress
     ? manualValues
       ? toManualCheckoutAddress(manualValues)
@@ -54,6 +73,61 @@ export function CheckoutContent({ userId, children }: Props) {
       <h1 className="text-2xl font-bold">Thanh toán</h1>
 
       <div className="space-y-3 rounded-2xl border border-border bg-card p-5 tabular-nums sm:p-6">{children}</div>
+
+      <section className="space-y-4 rounded-2xl border border-border bg-card p-5 sm:p-6">
+        <h2 className="text-lg font-semibold">
+          Thông tin liên hệ
+        </h2>
+
+        <div className="space-y-2">
+          <label
+            htmlFor={emailId}
+            className="block text-sm font-medium"
+          >
+            Email nhận thông tin đơn hàng
+            <span className="ml-1 font-normal text-muted-foreground">
+              (không bắt buộc)
+            </span>
+          </label>
+
+          <input
+            id={emailId}
+            name="contactEmail"
+            type="email"
+            autoComplete="email"
+            placeholder="ban@example.com"
+            value={contactEmail}
+            onChange={(event) => setContactEmail(event.target.value)}
+            onBlur={() => setEmailTouched(true)}
+            aria-invalid={Boolean(emailError)}
+            aria-describedby={
+              emailError
+                ? `${emailId}-help ${emailId}-error`
+                : `${emailId}-help`
+            }
+            className="form-control"
+          />
+
+          <p
+            id={`${emailId}-help`}
+            className="text-sm text-muted-foreground"
+          >
+            {userId === null
+              ? "Bạn có thể cung cấp email để nhận thông tin đơn hàng."
+              : "Để trống để sử dụng email của tài khoản."}
+          </p>
+
+          {emailError && (
+            <p
+              id={`${emailId}-error`}
+              role="alert"
+              className="text-sm text-destructive"
+            >
+              {emailError}
+            </p>
+          )}
+        </div>
+      </section>
 
       <section className="space-y-5 rounded-2xl border border-border bg-card p-5 sm:p-6">
         <h2 className="text-lg font-semibold">
@@ -164,7 +238,6 @@ export function CheckoutContent({ userId, children }: Props) {
           </>
         )}
 
-        {/* Giữ form mounted để chuyển chế độ không mất bản nháp. */}
         <div hidden={!useManualAddress}>
           <AddressForm
             initialValues={emptyAddressValues}
@@ -173,7 +246,6 @@ export function CheckoutContent({ userId, children }: Props) {
               setManualValues(values);
             }}
             onValuesEdited={() => {
-              // Người dùng sửa thì cần xác nhận lại bản mới.
               setManualValues(null);
             }}
           />
