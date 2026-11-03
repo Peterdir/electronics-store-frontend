@@ -45,7 +45,7 @@ export function CompareTable({ products }: CompareTableProps) {
   ];
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="max-w-full overflow-x-auto rounded-2xl border border-border bg-card">
       <table className="w-full min-w-[700px] border-collapse text-left text-sm">
         <caption className="sr-only">So sánh sản phẩm</caption>
 

@@ -14,12 +14,12 @@ export function ProductCard({ product }: ProductCardProps) {
     const detailUrl = `/products/${product.id}`;
 
     return (
-        <article className="overflow-hidden rounded-lg border border-border bg-card">
-            <div className="aspect-square w-full">
+        <article className="product-card flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-border bg-card transition-colors duration-150 hover:border-primary/50 focus-within:border-primary/60">
+            <div className="aspect-square w-full overflow-hidden bg-muted">
                 <Link
                     to={detailUrl}
                     aria-label={`Xem chi tiết ${product.name}`}
-                    className="block aspect-square w-full"
+                    className="block h-full w-full focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
                 >
                 {imageUrl && !imageFailed ? (
                     <img
@@ -27,7 +27,7 @@ export function ProductCard({ product }: ProductCardProps) {
                         alt={product.name}
                         loading="lazy"
                         onError={() => setImageFailed(true)}
-                        className="h-full w-full object-cover"
+                        className="product-card-image h-full w-full object-contain p-3"
                     />
                 ) : (
                     <div className="flex h-full items-center justify-center bg-muted text-sm text-muted-foreground">
@@ -37,16 +37,16 @@ export function ProductCard({ product }: ProductCardProps) {
                 </Link>
             </div>
 
-            <div className="space-y-2 p-4">
+            <div className="flex flex-1 flex-col items-start gap-2 p-4">
                 <p className="text-xs text-muted-foreground">
                     {product.brandName ?? product.categoryName}
                 </p>
 
-                <Link to={detailUrl} className="font-medium">
+                <Link to={detailUrl} className="line-clamp-2 min-h-12 wrap-anywhere font-medium leading-6 hover:text-primary focus-visible:outline-2 focus-visible:outline-ring">
                     {product.name}
                 </Link>
 
-                <p className="font-semibold text-primary">
+                <p className="mt-auto pt-2 text-lg font-semibold tabular-nums text-primary">
                     {formatVND(product.basePrice)}
                 </p>
 

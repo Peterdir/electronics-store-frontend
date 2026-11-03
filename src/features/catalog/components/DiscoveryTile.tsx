@@ -6,6 +6,7 @@ interface DiscoveryTileProps {
   imageUrl: string | null;
   to: string;
   imageFit?: "cover" | "contain";
+  imageClassName?: string;
 }
 
 export function DiscoveryTile({
@@ -13,15 +14,16 @@ export function DiscoveryTile({
   imageUrl,
   to,
   imageFit = "cover",
+  imageClassName = "",
 }: DiscoveryTileProps) {
   const [imageFailed, setImageFailed] = useState(false);
 
   return (
     <Link
       to={to}
-      className="flex aspect-square w-28 min-w-0 flex-col overflow-hidden rounded-lg bg-transparent transition-colors hover:bg-muted focus-visible:outline-2 focus-visible:outline-primary"
+      className="flex h-full min-w-0 flex-col gap-3 rounded-xl border border-border bg-background/50 p-3 transition-colors duration-150 hover:border-primary/50 hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
-      <div className="flex min-h-0 flex-1 items-center justify-center p-3">
+      <div className="flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg bg-muted">
         {imageUrl && !imageFailed ? (
           <img
             src={imageUrl}
@@ -30,14 +32,14 @@ export function DiscoveryTile({
             onError={() => setImageFailed(true)}
             className={`h-full w-full ${
               imageFit === "contain" ? "object-contain" : "object-cover"
-            }`}
+            } ${imageClassName}`}
           />
         ) : (
-          <span className="text-sm text-muted-foreground">Chưa có ảnh</span>
+          <span className="px-2 text-center text-sm text-muted-foreground">Chưa có ảnh</span>
         )}
       </div>
 
-      <span className="px-2 py-3 text-center text-sm font-medium">
+      <span className="line-clamp-2 min-h-10 wrap-anywhere text-center text-sm font-medium leading-5">
         {name}
       </span>
     </Link>
