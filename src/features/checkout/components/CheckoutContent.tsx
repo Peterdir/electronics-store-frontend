@@ -41,8 +41,7 @@ export function CheckoutContent({ userId, children }: Props) {
     userId === null ? "manual" : "saved",
   );
   const [selectedId, setSelectedId] = useState<ID | null>(null);
-  const [manualValues, setManualValues] =
-    useState<AddressFormValues | null>(null);
+  const [manualValues, setManualValues] = useState<AddressFormValues | null>(null);
 
   const selectedAddress = addresses.isSuccess
     ? addresses.data.find((item) => item.id === selectedId) ??
