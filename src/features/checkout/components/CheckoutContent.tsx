@@ -9,9 +9,14 @@ import {
 } from "@/features/address/schemas";
 import type { ID } from "@/shared/types/common";
 import { z } from "zod";
+import { shippingOptions, type ShippingMethod } from "../checkoutOptions";
+import { PaymentMethod } from "@/shared/types/enums";
+import { CouponInput, PaymentMethodSelector, ShippingMethodSelector } from "./CheckoutOptions";
+import { OrderSummaryPanel } from "./OrderSummaryPanel";
 
 interface Props {
   userId: ID | null;
+  subtotal: number,
   children: ReactNode;
 }
 
@@ -22,11 +27,18 @@ const contactEmailSchema = z
   .email("Email không hợp lệ.")
   .optional();
 
-export function CheckoutContent({ userId, children }: Props) {
+export function CheckoutContent({ userId, subtotal, children }: Props) {
   const addresses = useGetAddresses();
   const emailId = useId();
   const [contactEmail, setContactEmail] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
+  const [shippingMethod, setShippingMethod] = useState<ShippingMethod>("STANDARD");
+
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(PaymentMethod.COD);
+
+  const [couponCode, setCouponCode] = useState("");
+
+  const shippingFee = shippingOptions[shippingMethod].fee;
 
   const emailResult = contactEmailSchema.safeParse(
     contactEmail.trim() || undefined,
@@ -282,6 +294,28 @@ export function CheckoutContent({ userId, children }: Props) {
           </div>
         )}
       </section>
+
+      <section className="space-y-6 rounded-2xl border border-border bg-card p-5 sm:p-6">
+        <ShippingMethodSelector
+          value={shippingMethod}
+          onChange={setShippingMethod}
+        />
+
+        <PaymentMethodSelector
+          value={paymentMethod}
+          onChange={setPaymentMethod}
+        />
+
+        <CouponInput
+          value={couponCode}
+          onChange={setCouponCode}
+        />
+      </section>
+
+      <OrderSummaryPanel
+        subtotal={subtotal}
+        shippingFee={shippingFee}
+      />
     </section>
   );
 }

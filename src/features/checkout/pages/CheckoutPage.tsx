@@ -83,7 +83,11 @@ function UserCartValidation({
   }
 
   return (
-    <CheckoutContent key={userId} userId={userId}>
+    <CheckoutContent 
+      key={userId} 
+      userId={userId} 
+      subtotal={totalPrice}
+    >
       <p>Giỏ tài khoản đã được kiểm tra.</p>
       <p>
         {totalItems} sản phẩm · Tạm tính {formatVND(totalPrice)}
@@ -169,7 +173,10 @@ function CartCheckoutEntry({ userId }: { userId: string | null }) {
   }
 
   return (
-    <CheckoutContent userId={null}>
+    <CheckoutContent 
+      userId={null}
+      subtotal={cart.totalPrice}
+    >
       <p>Giỏ guest có {cart.totalItems} sản phẩm.</p>
       <p>Tạm tính {formatVND(cart.totalPrice)}</p>
       <p>Giá và tồn kho sẽ được xác nhận khi đặt hàng.</p>
@@ -204,6 +211,9 @@ function BuyNowCheckoutEntry({
     <CheckoutContent
       key={entry.startedUserId ?? "guest"}
       userId={entry.startedUserId}
+      subtotal={
+        entry.snapshot.unitPrice * entry.directItem.quantity
+      }
     >
       <p>Mua ngay: {entry.snapshot.productName}</p>
       <p>SKU: {entry.snapshot.sku}</p>

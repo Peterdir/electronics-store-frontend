@@ -1,6 +1,6 @@
 # Phase 3 — Tiến độ và kế hoạch tiếp tục
 
-> Cập nhật: 02/11/2026. C7 đã được người dùng xác nhận hoàn thành. Người dùng đã tự thêm schema/form và CRUD sổ địa chỉ C6; kiểm tra tĩnh đạt. Phần còn lại C6 + C8 được hướng dẫn bằng code trong chat để người dùng tự thêm và gom một commit; chưa xác nhận hoàn thành tích hợp.
+> Cập nhật: 04/11/2026. Người dùng xác nhận đã kiểm thử C6/C8 và chức năng hiện ổn định. C6 hoàn thành; phần chọn/nhập địa chỉ hiện có của C8 đã được xác nhận. Phần gửi địa chỉ trong request tạo đơn sẽ nối và kiểm tra cùng C10. Bước tiếp theo: C9, sau đó C10 + chốt tích hợp C8/C11.
 > Mục đích: giúp người dùng và AI tiếp tục đúng tiến độ, dùng lại code đã có và hạn chế sửa lại checkout.
 > Tài liệu gốc: [frontend_master_plan.md — Phase 3](frontend_master_plan.md#phase-3--transaction-flow-cart-address-checkout-payment).
 
@@ -15,7 +15,7 @@
 
 ## 2. Trạng thái hiện tại
 
-Người dùng xác nhận hoàn thành C1–C5; C4 đã thử trên web và C5 đã kiểm tra hết theo xác nhận ngày 29/10/2026. Ngày 01/11/2026, người dùng xác nhận đã bổ sung guard và thử toàn bộ trường hợp C7. Code C7 ban đầu và lối vào Buy Now của C11 đã commit; guard C7 mới còn trong working tree:
+Người dùng xác nhận hoàn thành C1–C5; C4 đã thử trên web và C5 đã kiểm tra hết theo xác nhận ngày 29/10/2026. Ngày 01/11/2026, người dùng xác nhận đã bổ sung guard và thử toàn bộ trường hợp C7. Đối chiếu ngày 04/11/2026: guard C7, code sổ địa chỉ và UI địa chỉ checkout đều đã commit; working tree sạch trước khi cập nhật tài liệu này:
 
 | Mốc | Kết quả | Commit |
 |---|---|---|
@@ -24,7 +24,9 @@ Người dùng xác nhận hoàn thành C1–C5; C4 đã thử trên web và C5 
 | C3 | `/cart`, ba component con, đổi số lượng bằng nút/bàn phím, xóa, tổng tiền, lỗi và cảnh báo | `0662960 feat(cart): build cart page and item controls` |
 | C4 | Link `/cart` và badge số lượng guest/user trong header; người dùng xác nhận đã thử trên web | `cd1c50e feat(cart): add header entry and merge guest cart after login` |
 | C5 | Người dùng xác nhận đã kiểm tra toàn bộ C5 và hoàn thành; chưa cung cấp log method/status chi tiết để ghi biên bản | Cùng commit `cd1c50e` |
-| C7 | Hoàn thành code route/CTA, nguồn cart/Buy Now, validate giỏ user, guard phiên và guard dấu merge; người dùng xác nhận đã thử các trường hợp C7, chưa cung cấp log method/status/UI từng nhánh | `dc2257f` cho phần đầu; guard mới chưa commit |
+| C7 | Hoàn thành code route/CTA, nguồn cart/Buy Now, validate giỏ user, guard phiên và guard dấu merge; người dùng xác nhận đã thử các trường hợp C7, chưa cung cấp log method/status/UI từng nhánh | `dc2257f` cho phần đầu; `fd865b9` cho guard dấu merge |
+| C6 | Hoàn thành; người dùng xác nhận đã kiểm thử, chức năng ổn định ngày 04/11/2026; chưa cung cấp log chi tiết | `78a9316`, `ccba4ef`, `33b77f9` |
+| C8 | Người dùng xác nhận đã kiểm thử, chức năng chọn/nhập địa chỉ hiện ổn định ngày 04/11/2026; đã chuẩn bị `addressFields`, phần gửi request đặt đơn kiểm tra cùng C10 | `756f874`; có bổ sung UI/email ở các commit sau |
 | C11 | Đã có lối vào Buy Now với variant/số lượng đang chọn; chưa đặt đơn hoặc xác nhận giỏ được giữ nguyên sau tạo đơn | Cùng commit `dc2257f` |
 
 Kiểm tra được ghi nhận: phiên C3 đạt build, lint và `git diff --check`; sau khi thêm C4–C5, `npm run build`, `npm run lint`, `npm run typecheck` và `git diff --check` đều đạt. Build còn cảnh báo chunk JavaScript lớn hơn 500 kB, không làm build thất bại. C4 đã được người dùng thử trên web nhưng chưa ghi chi tiết từng thao tác; C5 được người dùng xác nhận hoàn thành, chưa có biên bản merge thành công, lỗi một phần, timeout và đăng nhập lại để ghi method/status chi tiết. Không suy ra kết quả kiểm thử từ commit hoặc kiểm tra tĩnh.
@@ -35,6 +37,8 @@ Kiểm tra lại code C7 tại `dc2257f` ngày 31/10/2026: `npm run build` và `
 
 Ngày 01/11/2026: đã review diff guard mới; `npm run lint`, `npm run build` (bao gồm `tsc -b`) và `git diff --check` đều đạt. Build vẫn cảnh báo chunk JS > 500 kB. Người dùng xác nhận đã thử toàn bộ trường hợp C7 với hệ thống; chưa có log chi tiết để ghi method/status/UI từng nhánh. Đây là xác nhận kiểm thử của người dùng, không phải kết quả tự chạy browser/backend trong phiên này.
 
+Ngày 04/11/2026: người dùng xác nhận “tôi đã kiểm thử C6/C8, hiện tại chức năng ổn định”. Ghi nhận C6 hoàn thành và C8 đạt kiểm thử chức năng hiện có. Chưa có log method/status/UI từng nhánh; không suy ra đã gửi payload tạo đơn vì C10 chưa triển khai. Không giao lại kiểm thử C6/C8 làm điều kiện bắt đầu C9.
+
 Các điểm cần giữ lại khi tiếp tục:
 
 - Giỏ guest dùng `ec.guestCart` trong Zustand persist. Giá/tồn kho trong snapshot là số liệu lúc thêm hàng, không phải tồn kho thời gian thực.
@@ -44,7 +48,7 @@ Các điểm cần giữ lại khi tiếp tục:
 - Bản C3 hiện khóa thao tác khi mutation pending, nhập số lượng lưu khi Enter/blur. Debounce stepper 400 ms ghi trong master plan chưa được triển khai; không coi đây là tính năng đã có. Chỉ bổ sung khi nhiệm vụ cần hoặc người dùng yêu cầu, rồi ghi rõ kết quả.
 - Merge C5 gọi sau login hoặc verify-email thành công, không chạy từ render/effect. Mỗi `POST /api/cart/items` cộng số lượng; `ec.cartMerge` lưu dấu item chưa rõ kết quả để tránh tự gửi lại sau timeout/refresh. Dấu này cần người dùng đối chiếu với server cart; frontend không bảo đảm exactly-once nếu backend chưa hỗ trợ idempotency.
 - Trong lúc merge, `useCart()` khóa thêm/sửa/xóa giỏ; `CartPage` hiện trạng thái và khu vực đối chiếu khi có dấu tồn đọng. `CartCheckoutEntry` đã chặn cả merge đang chạy và dấu merge tồn đọng khi mở lại checkout đã vào trước đó.
-- C6 và C8–C13 chưa được xác nhận hoàn thành; C7 đã được người dùng xác nhận hoàn thành, C11 mới có lối vào. Chưa có feature address/payment hoặc hành vi tạo đơn để dùng lại.
+- C6 và chức năng địa chỉ hiện có của C8 đã được người dùng kiểm thử, xác nhận ổn định. Dùng lại feature address và UI/state checkout hiện có; nối dữ liệu địa chỉ vào request đặt đơn cùng C10. C9 đã có code UI/state và đạt typecheck/lint/build, chưa xác nhận thử UI; VNPay vẫn khóa đến C12. C10 và C12 chưa triển khai; C11 mới có lối vào và preview, C13 chưa chốt.
 
 ## 3. Bản đồ code để AI tìm đúng chỗ
 
@@ -67,6 +71,9 @@ Các điểm cần giữ lại khi tiếp tục:
 | `src/features/catalog/components/ProductPurchaseOptions.tsx` | Variant/số lượng, thêm giỏ và nút Mua ngay không thêm vào cart |
 | `src/features/checkout/entry.ts` | Kiểu và kiểm tra navigation state cho nguồn cart/Buy Now |
 | `src/features/checkout/pages/CheckoutPage.tsx` | Guard nguồn/phiên/giỏ, gọi validate cho user cart và hiện preview tạm tính |
+| `src/features/address/{types,api,queries,schemas}.ts` | DTO/API CRUD, cache theo userId, schema và hàm chuyển payload sổ địa chỉ/checkout nhập tay |
+| `src/features/address/components/` và `pages/AddressesPage.tsx` | Form/schema dùng chung, địa giới tỉnh/xã có fallback nhập tay, card và UI CRUD |
+| `src/features/checkout/components/CheckoutContent.tsx` | UI địa chỉ chung sau guard; chọn địa chỉ lưu/nhập tay, email tùy chọn; chưa có shipping/payment/coupon hoặc submit đơn |
 | `src/shared/api/client.ts` | Axios, interceptor, `meta.noPublicRetry` |
 | `src/shared/api/queryKeys.ts` | Query key hiện có; bổ sung khi feature dùng đến |
 | `src/lib/format.ts` | `formatVND` |
@@ -75,7 +82,7 @@ Backend tham chiếu trong môi trường hiện tại: `../ecommerce-backend`. 
 
 ## 4. Thứ tự mới và ước lượng
 
-Ước lượng là giờ tập trung, gồm code, giải thích ngắn, review và thử backend thông thường. Không gồm sửa môi trường backend/VNPay bị lỗi hoặc thiết kế lại UI. Tổng khoảng **28–42 giờ**; dự trù **34–50 giờ** khi có lỗi tích hợp. Deadline người dùng đã nêu: hết Chủ nhật **01/11/2026**; kiểm tra lại thời gian còn lại khi tiếp tục.
+Ước lượng ban đầu là giờ tập trung, gồm code, giải thích ngắn, review và thử backend thông thường. Không gồm sửa môi trường backend/VNPay bị lỗi hoặc thiết kế lại UI. Tổng ban đầu khoảng **28–42 giờ**; dự trù **34–50 giờ** khi có lỗi tích hợp; đây không phải ước lượng phần còn lại tại 04/11/2026. Deadline cũ hết Chủ nhật **01/11/2026** đã qua; chưa có deadline mới.
 
 | Thứ tự | Nhóm | Mốc gốc | Độ khó | Ước lượng |
 |---|---|---|---|---:|
@@ -140,14 +147,18 @@ Vệ sinh commit còn thiếu: bỏ bốn dòng khoảng trắng cuối dòng tr
 
 **Phụ thuộc:** khung checkout nhóm 2.
 
-- [ ] Đối chiếu DTO/API địa chỉ; thêm query key theo userId và hook khi bắt đầu dùng.
-- [ ] Chốt nguồn dữ liệu tỉnh/huyện/xã và format khớp backend trước khi dựng selector; không tự giả định có endpoint địa giới.
-- [ ] Dựng form/schema dùng chung cho tên, điện thoại, địa chỉ và các trường địa giới.
-- [ ] `/account/addresses` yêu cầu đăng nhập; hỗ trợ list/loading/error/empty, thêm/sửa/xóa/đặt mặc định.
-- [ ] Không cho xóa địa chỉ mặc định theo contract backend; mutation trả `MessageResponse` thì invalidate danh sách.
-- [ ] Checkout guest nhập tay; user chọn địa chỉ mặc định/khác hoặc nhập tay.
-- [ ] Viết hàm chuyển dữ liệu form sang từng payload; không gắn form dùng chung cố định vào một endpoint.
-- [ ] Checkout gửi `addressId` hoặc đủ `recipientName`, `recipientPhone`, `shippingAddress` theo chế độ.
+- [x] Đã đối chiếu `AddressController`, `AddressRequest`, `AddressResponse`, `AddressServiceImpl`; có API/hook CRUD và query key `[...qk.addresses, userId]`.
+- [x] Đã chọn API v2 `provinces.open-api.vn` cho tỉnh/xã, lưu tên dạng string và fallback nhập tay khi lỗi; `district` nhập tay vì DTO backend vẫn bắt buộc. Người dùng xác nhận C6/C8 hiện ổn định; chưa có biên bản riêng từng nhánh địa giới.
+- [x] Đã có `addressSchema`, `AddressForm`, `AddressGeographyFields` dùng chung; kiểm tra trường bắt buộc và regex điện thoại khớp backend.
+- [x] Đã có route `/account/addresses` bọc `RequireAuth`, link trong `UserMenu`; UI list/loading/error/empty, thêm/sửa/xóa/đặt mặc định.
+- [x] `AddressCard` khóa xóa mặc định; các mutation trả `MessageResponse` invalidate danh sách đúng userId. Backend cũng chặn xóa mặc định.
+- [x] `CheckoutContent` dùng chung sau guard cho guest cart/user cart/Buy Now: guest nhập tay, user chọn mặc định/khác hoặc nhập tay; sổ rỗng chuyển nhập tay.
+- [x] Đã có `toAddressRequest` và `toManualCheckoutAddress`; `addressFields` chuẩn bị riêng `{ addressId }` hoặc ba trường nhập tay.
+- [ ] Nối `addressFields` vào `CheckoutRequest` và thực sự gửi `addressId` hoặc đủ `recipientName`, `recipientPhone`, `shippingAddress` theo chế độ — thực hiện cùng C10.
+- [x] Người dùng xác nhận đã kiểm thử C6, chức năng hiện ổn định ngày 04/11/2026; chưa cung cấp biên bản từng thao tác/status để ghi chi tiết.
+- [x] Người dùng xác nhận đã kiểm thử C8, chức năng hiện ổn định ngày 04/11/2026; chưa cung cấp biên bản từng nhánh. Xác nhận payload gửi thật thuộc phần tích hợp C10 còn mở phía trên.
+
+Các đầu việc code đã được review tĩnh; kết quả kiểm thử C6/C8 được ghi nhận từ xác nhận trực tiếp của người dùng. C6 hoàn thành; C8 đã đạt chức năng địa chỉ hiện có, còn kiểm tra dữ liệu gửi trong request đặt đơn cùng C10. Bước tiếp theo là C9.
 
 **Hoàn thành khi:** CRUD backend chạy thật; địa chỉ được chọn/nhập đi đúng vào checkout payload; validation điện thoại và trường bắt buộc hoạt động.
 
@@ -159,10 +170,12 @@ Commit gợi ý: `feat(address): manage customer addresses`, sau đó `feat(chec
 
 **Phụ thuộc:** nguồn hàng nhóm 2 và địa chỉ nhóm 3.
 
-- [ ] Một bộ state/form checkout cho shipping, payment và coupon; tái sử dụng cho cart và Buy Now.
-- [ ] STANDARD/EXPRESS; phí hiện ghi trong plan là 30.000/55.000 VND, đối chiếu backend trước khi dùng.
-- [ ] Preview tổng = tiền hàng + phí giao hàng; tiền cuối cùng lấy từ `CheckoutResponse`.
-- [ ] Coupon chỉ là mã sẽ gửi lúc đặt, không hiển thị đã xác thực/đã giảm khi chưa có API hỗ trợ.
+- [x] Đã có state shipping/payment/coupon trong `CheckoutContent`, dùng chung cho cart và Buy Now; COD mặc định, VNPay khóa đến C12.
+- [x] Đã có selector STANDARD/EXPRESS và cấu hình 30.000/55.000 VND khớp `CheckoutServiceImpl`.
+- [x] `OrderSummaryPanel` tính preview tiền hàng + phí; cả ba nơi render `CheckoutContent` đã truyền `subtotal` đúng nguồn.
+- [ ] Khi nối C10, số tiền xác nhận/success phải lấy từ `CheckoutResponse`.
+- [x] Đã có input coupon và thông báo sẽ kiểm tra khi đặt; chưa tự xác thực hoặc trừ tiền trên preview. Nối mã vào request tại C10.
+- [ ] Thử UI C9: đổi STANDARD/EXPRESS cập nhật tổng; nhập/xóa coupon; COD/VNPay khóa; giữ lựa chọn khi đổi địa chỉ; kiểm tra guest cart/user cart/Buy Now và bàn phím.
 - [ ] Dựng một hàm tạo `CheckoutRequest` theo nguồn hàng và chế độ địa chỉ.
 - [ ] `POST /api/orders/checkout` dùng `meta: { noPublicRetry: true }`; chặn hết phiên và double-submit.
 - [ ] Lỗi đặt hàng giữ dữ liệu form, lỗi coupon cho phép sửa/xóa mã rồi thử lại.
@@ -202,7 +215,7 @@ Commit gợi ý: `feat(payment): handle VNPay redirect and result`.
 - [ ] Giỏ rỗng, thiếu/hết hàng, lỗi địa chỉ/coupon, lỗi mạng, hết phiên, double-submit, callback lặp.
 - [ ] Refresh checkout/success/payment result, điều hướng quay lại và giữ form khi lỗi.
 - [ ] Điện thoại/desktop, tên/giá dài, bàn phím, focus, label input, một h1 và metadata cần thiết.
-- [ ] `npm run build`, `npm run lint`, `git diff --check`; ghi warning nếu có và ý nghĩa của chúng.
+- [x] Kiểm tra source tại 04/11/2026: `npm run build` (gồm `tsc -b`), `npm run lint`, `git diff --check` đạt. Build cảnh báo chunk > 500 kB: index khoảng 707 kB, HeroScene khoảng 1.001 kB; ảnh hưởng kích thước tải, không làm build thất bại. Cần chạy lại sau khi triển khai C9–C12 trước khi chốt C13.
 - [ ] Biên bản luồng thật: thao tác, endpoint/status, phản hồi UI, kết quả và giới hạn.
 - [ ] Cập nhật file này và tiến độ master plan bằng kết quả có bằng chứng.
 
@@ -223,15 +236,15 @@ Commit gợi ý: `chore(checkout): finalize phase 3 verification`.
 
 ## 6. Bàn giao cho lần tiếp theo
 
-| Nội dung | Trạng thái tại 01/11/2026 |
+| Nội dung | Trạng thái tại 04/11/2026 |
 |---|---|
-| Hoàn thành được người dùng xác nhận | C1–C5 và C7; C5/C7 chưa có log chi tiết từng nhánh |
-| Commit gần nhất | `dc2257f` — code C7 ban đầu và lối vào C11; guard dấu merge mới chưa commit |
-| Bước tiếp theo | Nhóm 3: C6 + C8, dùng chung form/schema địa chỉ |
-| Sau bước đó | Nhóm 4: C9 + C10 + chốt C11 |
-| Chưa xác nhận hoàn thành | C6, C8–C13; C11 mới có lối vào |
+| Hoàn thành được người dùng xác nhận | C1–C7; chức năng địa chỉ hiện có của C8 đã kiểm thử ổn định. C5/C7/C6/C8 chưa có log chi tiết từng nhánh |
+| Commit gần nhất | HEAD `3cd8601`; guard C7 đã commit ở `fd865b9`, địa chỉ checkout ở `756f874` |
+| Bước tiếp theo | C9: giao hàng, phương thức thanh toán, coupon và tổng tạm tính. Dùng lại C6/C8 đã được kiểm thử |
+| Sau bước đó | C9: shipping/payment/coupon/tổng; C10: COD/success/cleanup giỏ; chốt C8 và C11 qua payload/đặt đơn thật |
+| Chưa xác nhận hoàn thành | C8 còn tích hợp gửi payload cùng C10; C9 đã có code, còn thử UI và bật VNPay cùng C12; C10/C12 chưa triển khai; C11 một phần, C13 chưa chốt |
 | Phần chuyển tiếp từ C3 | CTA checkout/disable đã nối ở C7; tồn kho guest là snapshot; debounce 400 ms chưa có |
-| Biên bản còn thiếu chi tiết | C5 và C7 đã được người dùng xác nhận hoàn thành; có thể bổ sung method/status/UI từng nhánh khi cần truy vết |
+| Biên bản còn thiếu chi tiết | C5/C7 và kiểm thử C6/C8 đã được người dùng xác nhận; có thể bổ sung method/status/UI từng nhánh khi cần truy vết |
 
 Bàn giao trước khi có xác nhận C5, lưu để tham chiếu lịch sử:
 
@@ -312,3 +325,37 @@ Bước tiếp theo cụ thể:
 - Địa giới đề xuất: API v2 provinces.open-api.vn cho tỉnh/xã, fallback nhập tay khi lỗi. Backend vẫn bắt buộc district nên giữ ô khu vực/quận/huyện nhập tay; khác checklist selector ba cấp cũ.
 - C8 cần dùng chung CheckoutContent sau guard C7 cho guest cart, user cart và Buy Now; địa chỉ chuẩn bị thành addressId hoặc ba trường recipientName/recipientPhone/shippingAddress. Chưa gửi POST tạo đơn (C10).
 - Bước tiếp theo: thử CRUD, chọn địa chỉ mặc định/khác, nhập tay, lỗi nguồn địa giới và guard phiên theo checklist trong chat. Code được commit theo yêu cầu người dùng; chưa đánh dấu C6/C8 hoàn thành kiểm thử. Sau khi thử đạt, tiếp tục C9/C10.
+
+### Bàn giao ngày 04/11/2026 — Đối chiếu tiến độ với source
+
+- Phạm vi phiên này: kiểm tra source và cập nhật `phase3.md`; không sửa code ứng dụng, không commit/push. Các bàn giao ngày cũ ở trên là lịch sử, không thay thế trạng thái hiện tại.
+- Đã đối chiếu: API/DTO/service địa chỉ và `CheckoutRequest`/phí giao hàng trong backend; route, hook, form và ba nhánh checkout trong frontend. Bảy đầu việc code ở Nhóm 3 đã có nhưng chưa tick; đã cập nhật. C6 chưa được xác nhận CRUD chạy thật; C8 chưa gửi payload đặt đơn.
+- Guard C7 đã commit ở `fd865b9`; form/CRUD địa chỉ ở `78a9316`, `ccba4ef`, `33b77f9`; UI địa chỉ checkout ở `756f874`. HEAD khi kiểm tra là `3cd8601`; `phase3.md` đã được Git theo dõi, working tree ban đầu sạch.
+- Kiểm tra đã chạy: `npm run build` (gồm typecheck), `npm run lint`, `git diff --check` đạt. Build còn cảnh báo chunk > 500 kB (index khoảng 707 kB, HeroScene khoảng 1.001 kB). Chưa chạy luồng browser/backend trong phiên này.
+- C8 hiện chuẩn bị `addressFields` nội bộ và có email liên hệ tùy chọn với validation; cả địa chỉ lẫn email chưa được nối vào `CheckoutRequest`. Chưa có API/mutation đặt đơn, selector shipping/payment/coupon, route success hoặc route payment result. Tổng tạm tính hiện có mới là tiền hàng, chưa gồm phí giao hàng.
+- Việc tiếp theo theo thứ tự:
+  1. Thử C6/C8 đang có: CRUD, mặc định/khác/nhập tay, sổ rỗng, validation điện thoại, sửa địa chỉ sau xác nhận, lỗi địa giới/fallback và guard phiên. Ghi kết quả UI/endpoint/status; chỉ chốt C6 khi đạt, giữ phần payload C8 mở đến C10.
+  2. C9: dùng chung state checkout cho shipping/payment/coupon; thêm STANDARD/EXPRESS 30.000/55.000 VND, tổng tiền hàng + phí, coupon chưa xác thực. Chuẩn bị kiểu payment, bật COD trước; bật VNPay khi C12 hoạt động.
+  3. C10 + phần còn lại C8/C11: tạo `CheckoutRequest` đúng nguồn hàng/địa chỉ và `contactEmail` tùy chọn; POST không retry công khai, chặn đổi/hết phiên và double-submit; giữ form khi lỗi; success từ response/sessionStorage; cleanup đúng cart và giữ nguyên giỏ khi Buy Now. Thử đủ bốn luồng COD.
+  4. C12: redirect VNPay và xác nhận callback với backend; sau đó C13 kiểm tra hồi quy, responsive/accessibility và cập nhật tiến độ master plan.
+
+### Bàn giao bổ sung ngày 04/11/2026 — Người dùng xác nhận kiểm thử C6/C8
+
+- Người dùng xác nhận đã kiểm thử C6/C8 và chức năng hiện ổn định. Xác nhận này thay thế trạng thái chưa kiểm thử và bước yêu cầu thử lại C6/C8 trong bàn giao trước.
+- Đã đánh dấu kiểm thử chức năng hiện có; C6 hoàn thành. C8 còn tích hợp `addressFields` vào request tạo đơn cùng C10, không coi xác nhận này là bằng chứng đã gọi API đặt đơn.
+- Chỉ cập nhật tài liệu; không sửa code ứng dụng, không chạy lại build/lint cho thay đổi tài liệu, không commit/push. Chưa có log chi tiết từng nhánh do người dùng cung cấp.
+- Bước tiếp theo: C9 — state checkout dùng chung cho shipping/payment/coupon, STANDARD/EXPRESS 30.000/55.000 VND, tổng tiền hàng + phí giao hàng; coupon chỉ ghi sẽ áp dụng khi đặt. Chuẩn bị kiểu payment, bật COD trước và bật VNPay khi C12 hoạt động. Sau đó C10 + chốt tích hợp C8/C11.
+
+### Review code C9 ngày 04/11/2026
+
+- Người dùng đã thêm `checkoutOptions.ts`, `CheckoutOptions.tsx`, `OrderSummaryPanel.tsx` và nối state/props trong `CheckoutContent`/`CheckoutPage`. Review tĩnh chưa thấy lỗi logic chặn phạm vi C9: phí đúng, tổng suy ra trực tiếp, không giảm giá giả, ba nguồn dùng chung UI và VNPay đang khóa.
+- Đã chạy `npm run typecheck`, `npm run lint`, `npm run build`: đều đạt. Build cảnh báo chunk > 500 kB: index khoảng 711 kB, HeroScene khoảng 1.001 kB; không làm build thất bại.
+- `git diff --check` chưa đạt: khoảng trắng cuối dòng tại `CheckoutPage.tsx` dòng 86, 87, 88, 176. Đây là lỗi định dạng; chưa sửa code thay người dùng trong phiên review này.
+- Chưa chạy browser/backend cho C9; chưa xác nhận UI giữ lựa chọn, bàn phím hoặc các nhánh thực tế. Chưa chốt C9 hoàn thành. Bước tiếp theo: xóa khoảng trắng, thử UI C9; sau khi đạt chuyển C10 + tích hợp C8/C11.
+- Chỉ cập nhật tiến độ tài liệu sau review; không commit/push.
+
+### Điều chỉnh UI giao hàng ngày 04/11/2026
+
+- Theo yêu cầu thu gọn của người dùng, đổi hai card radio giao hàng thành một `select` có tên phương thức và phí. Desktop đặt label và select cùng hàng, mobile xếp label phía trên; dùng lại state/callback và cấu hình phí C9.
+- `npm run lint` và `npm run build` (gồm typecheck) đạt; build vẫn cảnh báo chunk > 500 kB. `git diff --check` còn bốn dòng khoảng trắng cuối dòng đã ghi nhận trong `CheckoutPage.tsx`.
+- Chưa thử trực tiếp trên browser. Khi thử C9, dùng select STANDARD/EXPRESS thay cho radio; kiểm tra phí/tổng cập nhật và thao tác bàn phím. Không commit/push.
