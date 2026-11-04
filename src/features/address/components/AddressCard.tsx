@@ -23,7 +23,7 @@ export function AddressCard({
   onCancelDelete,
 }: Props) {
   return (
-    <article className="space-y-3 rounded-xl border p-4">
+    <article className="min-w-0 space-y-4 rounded-2xl border border-border bg-card p-5 wrap-anywhere">
       <div className="flex justify-between gap-3">
         <div>
           <h2 className="font-semibold">{address.fullName}</h2>
@@ -31,7 +31,7 @@ export function AddressCard({
         </div>
 
         {address.isDefault && (
-          <span className="text-sm text-primary">Mặc định</span>
+          <span className="h-fit shrink-0 rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-xs font-medium text-primary">Mặc định</span>
         )}
       </div>
 
@@ -82,7 +82,7 @@ export function AddressCard({
       )}
 
       {confirmingDelete && (
-        <div className="space-y-2 rounded-md border p-3">
+        <div className="space-y-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
           <p>Xóa địa chỉ này?</p>
 
           <div className="flex gap-2">

@@ -127,7 +127,7 @@ export function AddressesPage() {
 
   return (
     <section className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Sổ địa chỉ</h1>
 
         <Button
@@ -140,7 +140,7 @@ export function AddressesPage() {
       </div>
 
       {mode && (mode.kind === "create" || editing) && (
-        <div className="space-y-4 rounded-xl border p-4">
+        <div className="space-y-5 rounded-2xl border border-border bg-card p-5 sm:p-6">
           <h2 className="text-lg font-semibold">
             {mode.kind === "create"
               ? "Thêm địa chỉ"

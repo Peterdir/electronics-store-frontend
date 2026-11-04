@@ -67,33 +67,97 @@ export function ProductPurchaseOptions({
     colorKey,
     isPhone ? storageKey : undefined,
   ].filter((key): key is string => key !== undefined);
-  
-  function handleSelect(key: string, value: string) {
 
-    const matchingCurrent = variants.filter((variant) =>
-      visibleKeys.every((visibleKey) => {
-        const expected = visibleKey === key ? value : String(selectedVariant?.attributes?.[visibleKey]);
-
-        return String(variant.attributes?.[visibleKey]) === expected;
-      }),
-    );
-
+  function getCandidates(key: string, value: string): VariantResponse[] {
     const matchingValue = variants.filter(
       (variant) => String(variant.attributes?.[key]) === value,
     );
 
-    const candidates = matchingCurrent.length > 0 ? matchingCurrent : matchingValue;
+    if (key === colorKey || !selectedVariant) {
+      return matchingValue;
+    }
 
-    const next = candidates.find((variant) => variant.stock > 0) ?? candidates[0];
+    return matchingValue.filter((variant) =>
+      visibleKeys.every(
+        (otherKey) =>
+          otherKey === key ||
+          String(variant.attributes?.[otherKey]) ===
+            String(selectedVariant.attributes?.[otherKey]),
+      ),
+    );
+  }
+
+  function getDisabledReason(
+    key: string,
+    value: string,
+  ): string | undefined {
+    if (key === colorKey) return undefined;
+
+    const candidates = getCandidates(key, value);
+
+    if (candidates.length === 0) {
+      return "Không có phiên bản";
+    }
+
+    if (!candidates.some((variant) => variant.stock > 0)) {
+      return "Hết hàng";
+    }
+
+    return undefined;
+  }
+  
+  function handleSelect(key: string, value: string) {
+    if (getDisabledReason(key, value) !== undefined) return;
+
+    const candidates = getCandidates(key, value);
+
+    const matchesCurrentSelection = (variant: VariantResponse) =>
+      visibleKeys.every(
+        (otherKey) =>
+          otherKey === key ||
+          String(variant.attributes?.[otherKey]) ===
+            String(selectedVariant?.attributes?.[otherKey]),
+      );
+
+    const next =
+      candidates.find(
+        (variant) =>
+          variant.stock > 0 && matchesCurrentSelection(variant),
+      ) ??
+      candidates.find((variant) => variant.stock > 0) ??
+      candidates.find(matchesCurrentSelection) ??
+      candidates[0];
 
     if (!next) return;
 
+    const previousStorage = storageKey
+      ? selectedVariant?.attributes?.[storageKey]
+      : undefined;
+
+    const nextStorage = storageKey
+      ? next.attributes?.[storageKey]
+      : undefined;
+
     onVariantChange(next.id);
+
     setQuantity((current) =>
       next.stock > 0
-    ? Math.max(1, Math.min(current, next.stock))
-    : 0,
-  );
+        ? Math.max(1, Math.min(current, next.stock))
+        : 0,
+    );
+
+    if (
+      key === colorKey &&
+      storageKey &&
+      visibleKeys.includes(storageKey) &&
+      previousStorage !== undefined &&
+      nextStorage !== undefined &&
+      String(previousStorage) !== String(nextStorage)
+    ) {
+      toast.info(
+        `Dung lượng đã chuyển sang ${String(nextStorage)} theo màu vừa chọn.`,
+      );
+    }
   }
 
   async function handleAddToCart() {
@@ -181,6 +245,7 @@ export function ProductPurchaseOptions({
         selectedVariant={selectedVariant}
         visibleKeys={visibleKeys}
         onSelect={handleSelect}
+        getDisabledReason={getDisabledReason}
       />
 
       <StockIndicator variant={selectedVariant} />
@@ -191,27 +256,29 @@ export function ProductPurchaseOptions({
         onChange={setQuantity}
       />
 
-      <button
-        type="button"
-        onClick={() => void handleAddToCart()}
-        disabled={!selectedVariant || displayedQuantity < 1 || cart.isAdding}
-        className="rounded-md bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50"
-      >
-        {cart.isMerging
-          ? "Đang đồng bộ giỏ hàng…"
-          : cart.isAdding
-            ? "Đang thêm..."
-            : "Thêm vào giỏ"}
-      </button>
+      <div className="grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={() => void handleAddToCart()}
+          disabled={!selectedVariant || displayedQuantity < 1 || cart.isAdding}
+          className="min-h-12 rounded-xl border border-primary/50 bg-primary/5 px-5 py-3 text-sm font-semibold text-primary transition-colors enabled:hover:bg-primary/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {cart.isMerging
+            ? "Đang đồng bộ giỏ hàng…"
+            : cart.isAdding
+              ? "Đang thêm..."
+              : "Thêm vào giỏ"}
+        </button>
 
-      <button
-        type="button"
-        onClick={handleBuyNow}
-        disabled={!canBuyNow}
-        className="rounded-md border px-4 py-2 disabled:opacity-50"
-      >
-        Mua ngay
-      </button>
+        <button
+          type="button"
+          onClick={handleBuyNow}
+          disabled={!canBuyNow}
+          className="min-h-12 rounded-xl border border-primary bg-primary px-5 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/15 transition-colors enabled:hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+        >
+          Mua ngay
+        </button>
+      </div>
     </div>
   );
 }

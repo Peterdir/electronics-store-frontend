@@ -21,7 +21,7 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
 
     return (
         <div className="space-y-3">
-            <div className="flex aspect-square items-center justify-center overflow-hidden rounded-lg border bg-muted">
+            <div className="flex aspect-square items-center justify-center overflow-hidden rounded-2xl border border-border bg-card p-4">
                 {selectedUrl && !selectedImageFailed ? (
                     <img
                         src={selectedUrl}
@@ -45,7 +45,7 @@ export function ProductGallery({ images, name }: ProductGalleryProps) {
                             aria-label={`Xem ảnh ${index + 1} của ${name}`}
                             aria-pressed={selectedIndex === index}
                             onClick={() => setSelectedIndex(index)}
-                            className="h-16 w-16 overflow-hidden rounded-md border bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                            className="h-16 w-16 overflow-hidden rounded-md border bg-muted aria-pressed:border-primary aria-pressed:ring-1 aria-pressed:ring-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                         >
                             {failedUrls.includes(url) ? (
                                 <span className="text-xs text-muted-foreground">Lỗi ảnh</span>

@@ -115,11 +115,11 @@ export function SearchBar({ initialValue, onSearch }: SearchBarProps) {
                     }
                     autoComplete="off"
                     placeholder="Tìm sản phẩm..."
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                    className="h-11 w-full rounded-xl border border-input bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring"
                 />
 
                 {canSuggest && (
-                    <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-md border bg-background shadow-md">
+                    <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-lg">
                         {(isDebouncing ||
                             suggestionsQuery.isFetching) && (
                             <p role="status" className="px-3 py-2 text-sm">

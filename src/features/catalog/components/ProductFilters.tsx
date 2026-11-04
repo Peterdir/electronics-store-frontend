@@ -110,7 +110,7 @@ export function ProductFilters({
         <form
             noValidate
             onSubmit={handleSubmit}
-            className="space-y-4 rounded-md border p-4"
+            className="space-y-5 rounded-2xl border border-border bg-card p-5"
         >
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
                 <label className="space-y-1">

@@ -141,7 +141,7 @@ export function RegisterForm() {
                                     {...inputProps}
                                     type="email"
                                     autoComplete="email"
-                                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                    className="form-control"
                                 />
                             ) : (
                                 <PasswordInput
@@ -168,7 +168,7 @@ export function RegisterForm() {
                     chữ thường, số và ký tự @#$%^&amp;+=.
                 </p>
 
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="min-h-11 w-full">
                     {registration.isPending
                         ? "Đang đăng ký..."
                         : "Đăng ký"}

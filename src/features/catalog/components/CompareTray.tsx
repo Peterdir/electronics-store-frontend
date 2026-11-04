@@ -11,7 +11,7 @@ export function CompareTray() {
   return (
     <section
       aria-label="Danh sách so sánh"
-      className="fixed inset-x-0 bottom-0 z-40 border-t bg-background shadow-lg"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-primary/30 bg-card shadow-lg"
     >
       <div className="mx-auto max-w-7xl space-y-3 px-4 py-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-4">

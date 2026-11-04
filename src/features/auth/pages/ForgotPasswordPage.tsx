@@ -36,7 +36,7 @@ export function ForgotPasswordPage() {
     }
 
     return (
-        <section className="mx-auto w-full max-w-md rounded-xl border border-border bg-card p-6 text-card-foreground shadow-sm">
+        <section className="mx-auto w-full max-w-md rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-sm sm:p-8">
             <h1 className="text-2xl font-bold">
                 Quên mật khẩu
             </h1>
@@ -66,7 +66,7 @@ export function ForgotPasswordPage() {
                             autoComplete="email"
                             aria-invalid={Boolean(errors.email)}
                             aria-describedby={errors.email ? "forgot-email-error" : undefined}
-                            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="form-control"
                         />
                         {errors.email && (
                             <p 
@@ -80,7 +80,7 @@ export function ForgotPasswordPage() {
                     </div>
                     <Button 
                         type="submit" 
-                        className="w-full"
+                        className="min-h-11 w-full"
                     >
                         {request.isPending ? "Đang gửi..." : "Gửi liên kết đặt lại"}
                     </Button>

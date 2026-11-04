@@ -84,7 +84,7 @@ export function LoginForm() {
                     aria-describedby={
                         errors.email ? "login-email-error" : undefined
                     }
-                    className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="form-control"
                 />
 
                 {errors.email && (
@@ -129,7 +129,7 @@ export function LoginForm() {
 
             <Button 
                 type="submit" 
-                className="w-full"
+                className="min-h-11 w-full"
                 disabled={loginMutation.isPending}
             >
                 {loginMutation.isPending ? "Đang đăng nhập..." : "Đăng nhập"}

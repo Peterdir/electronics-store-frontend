@@ -64,14 +64,14 @@ export function CartItemRow({
         onRemove();
     }
     return (
-        <li className="space-y-4 rounded-md border p-4">
+        <li className="space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-5">
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
                 <div className="flex min-w-0 items-center gap-4">
                     {row.imageUrl ? (
                         <img
                             src={row.imageUrl}
                             alt={row.name}
-                            className="h-20 w-20 shrink-0 rounded-md object-cover"
+                            className="h-20 w-20 shrink-0 rounded-xl bg-muted object-contain p-2"
                         />
                     ) : (
                         <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md bg-muted text-xs">
@@ -79,7 +79,7 @@ export function CartItemRow({
                         </div>
                     )}
 
-                    <div className="min-w-0">
+                    <div className="min-w-0 space-y-1 wrap-anywhere">
                         {row.productId ? (
                         <Link
                             to={`/products/${row.productId}`}
@@ -105,7 +105,7 @@ export function CartItemRow({
                     </div>
                 </div>
 
-                <div className="flex w-full items-center gap-3 border-t pt-3 lg:w-auto lg:justify-end lg:border-t-0 lg:pt-0">
+                <div className="flex w-full flex-wrap items-center gap-3 border-t pt-3 lg:w-auto lg:justify-end lg:border-t-0 lg:pt-0">
                     <div className="inline-flex h-9 shrink-0 items-center overflow-hidden rounded-md border">
                         <button
                             type="button"
