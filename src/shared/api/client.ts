@@ -2,7 +2,7 @@ import axios, { type InternalAxiosRequestConfig } from "axios";
 import { env } from "@/shared/config/env";
 import { isExpired } from "@/shared/auth/jwt";
 import { useSession } from "@/shared/auth/session.store";
-import { normalizeError } from "./errors";
+import { ApiError, normalizeError } from "./errors";
 
 // Mở rộng kiểu config để feature có thể chặn public retry.
 declare module "axios" {
@@ -10,6 +10,7 @@ declare module "axios" {
     meta?: { 
       noPublicRetry?: boolean
       authToken?: string
+      checkoutSession?: { userId: string | null; token: string | null }
     };
   }
 }
@@ -53,6 +54,18 @@ api.interceptors.request.use((config) => {
   // Header này chỉ dùng nội bộ, không gửi sang backend.
   config.headers.delete("X-Skip-Auth");
 
+  const checkoutSession = config.meta?.checkoutSession;
+  if (checkoutSession) {
+    const current = useSession.getState();
+    const matches = checkoutSession.userId === null
+      ? !checkoutSession.token && !current.token && !current.user
+      : Boolean(checkoutSession.token && !isExpired(checkoutSession.token) &&
+          current.token === checkoutSession.token && current.user?.id === checkoutSession.userId);
+    if (!matches || skipAuth) {
+      throw new ApiError(401, "Phiên mua hàng đã thay đổi. Hãy bắt đầu lại checkout.");
+    }
+  }
+
   const token = config.meta?.authToken ?? useSession.getState().token;
 
   if (skipAuth || !token || isExpired(token)) {
@@ -81,6 +94,8 @@ function refreshOnce(): Promise<string | null> {
 api.interceptors.response.use(
   (response) => response,
   async (error: unknown) => {
+    // Giữ lỗi từ guard request, không đổi thành lỗi mạng chưa rõ kết quả.
+    if (error instanceof ApiError) throw error;
     // Giữ nguyên lỗi hủy request.
     if (axios.isCancel(error)) throw error;
 
@@ -99,7 +114,9 @@ api.interceptors.response.use(
           : null;
 
       if (sentToken && useSession.getState().token === sentToken) {
-        const newToken = original._retry ? null : await refreshOnce();
+        const newToken = original._retry || original.meta?.checkoutSession
+          ? null
+          : await refreshOnce();
 
         // Trong lúc chờ, người dùng có thể đã đăng nhập phiên mới.
         if (useSession.getState().token === sentToken) {

@@ -43,7 +43,7 @@ function UserCartValidation({
 }) {
   const validation = useCheckoutCartValidation(userId);
 
-  if (validation.isPending || validation.isFetching) {
+  if (validation.isPending) {
     return <p role="status">Đang kiểm tra giỏ hàng…</p>;
   }
 
@@ -83,10 +83,12 @@ function UserCartValidation({
   }
 
   return (
-    <CheckoutContent 
-      key={userId} 
-      userId={userId} 
+    <CheckoutContent
+      key={userId}
+      userId={userId}
+      source={{ kind: "userCart" }}
       subtotal={totalPrice}
+      canSubmit={!validation.isFetching && !validation.isError}
     >
       <p>Giỏ tài khoản đã được kiểm tra.</p>
       <p>
@@ -173,8 +175,12 @@ function CartCheckoutEntry({ userId }: { userId: string | null }) {
   }
 
   return (
-    <CheckoutContent 
+    <CheckoutContent
       userId={null}
+      source={{
+        kind: "guestCart",
+        items: guestItems.map((item) => ({ productVariantId: item.variantId, quantity: item.quantity })),
+      }}
       subtotal={cart.totalPrice}
     >
       <p>Giỏ guest có {cart.totalItems} sản phẩm.</p>
@@ -211,6 +217,7 @@ function BuyNowCheckoutEntry({
     <CheckoutContent
       key={entry.startedUserId ?? "guest"}
       userId={entry.startedUserId}
+      source={{ kind: "buyNow", item: entry.directItem }}
       subtotal={
         entry.snapshot.unitPrice * entry.directItem.quantity
       }

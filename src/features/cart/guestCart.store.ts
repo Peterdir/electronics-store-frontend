@@ -9,6 +9,7 @@ interface GuestCartState {
   setQuantity: (variantId: string, quantity: number) => boolean;
   remove: (variantId: string) => void;
   clear: () => void;
+  consumePurchased: (items: { productVariantId: string; quantity: number }[]) => void;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -140,6 +141,26 @@ export const useGuestCart = create<GuestCartState>()(
       clear: () => {
         set({ items: [] });
         useCartMerge.getState().clearAttempts();
+      },
+
+      consumePurchased: (purchased) => {
+        const quantities = new Map<string, number>();
+        for (const item of purchased) {
+          quantities.set(item.productVariantId, (quantities.get(item.productVariantId) ?? 0) + item.quantity);
+        }
+
+        set((state) => ({
+          items: state.items.flatMap((item) => {
+            const quantity = item.quantity - (quantities.get(item.variantId) ?? 0);
+            return quantity > 0 ? [{ ...item, quantity }] : [];
+          }),
+        }));
+        
+        for (const variantId of quantities.keys()) {
+          if (!get().items.some((item) => item.variantId === variantId)) {
+            useCartMerge.getState().dropVariant(variantId);
+          }
+        }
       },
     }),
     {

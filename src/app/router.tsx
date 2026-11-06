@@ -24,6 +24,7 @@ import { ProductDetailPage } from "@/features/catalog/pages/ProductDetailPage";
 import { ComparePage } from "@/features/catalog/pages/ComparePage";
 import { CartPage } from "@/features/cart/pages/CartPage";
 import { CheckoutPage } from "@/features/checkout/pages/CheckoutPage";
+import { CheckoutSuccessPage } from "@/features/checkout/pages/CheckoutSuccessPage";
 import { AddressesPage } from "@/features/address/pages/AddressesPage";
 
 
@@ -93,6 +94,10 @@ export const router = createBrowserRouter([
             {
                 path: "checkout",
                 Component: CheckoutPage,
+            },
+            {
+                path: "checkout/success/:orderId",
+                Component: CheckoutSuccessPage,
             },
             {
                 path: "account/addresses",
