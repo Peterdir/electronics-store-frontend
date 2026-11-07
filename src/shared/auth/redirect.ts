@@ -32,7 +32,9 @@ export function getLoginDestination(
 
             const allowed =
                 url.pathname === "/" ||
+                url.pathname === "/account" ||
                 url.pathname === "/account/profile" ||
+                url.pathname === "/account/addresses" ||
                 (
                     url.pathname === "/admin" &&
                     canAccessAdmin

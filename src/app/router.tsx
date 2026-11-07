@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import { StorefrontLayout } from "./layouts/StorefrontLayout";
 import { HomePage } from "../features/home/pages/HomePage";
 import { AdminLayout } from "./layouts/AdminLayout";
@@ -27,6 +27,7 @@ import { CheckoutPage } from "@/features/checkout/pages/CheckoutPage";
 import { CheckoutSuccessPage } from "@/features/checkout/pages/CheckoutSuccessPage";
 import { AddressesPage } from "@/features/address/pages/AddressesPage";
 import { PaymentResultPage } from "@/features/payment/pages/PaymentResultPage";
+import { AccountLayout } from "./layouts/AccountLayout";
 
 
 export const router = createBrowserRouter([
@@ -42,14 +43,6 @@ export const router = createBrowserRouter([
                     <GuestOnly>
                         <LoginPage />
                     </GuestOnly>
-                ),
-            },
-            {
-                path: "account/profile",
-                element: (
-                    <RequireAuth>
-                        <ProfilePage />
-                    </RequireAuth>
                 ),
             },
             {
@@ -101,12 +94,26 @@ export const router = createBrowserRouter([
                 Component: CheckoutSuccessPage,
             },
             {
-                path: "account/addresses",
+                path: "account",
                 element: (
                     <RequireAuth>
-                        <AddressesPage />
+                        <AccountLayout />
                     </RequireAuth>
                 ),
+                children: [
+                    {
+                        index: true,
+                        element: <Navigate to="profile" replace />,
+                    },
+                    {
+                        path: "profile",
+                        Component: ProfilePage,
+                    },
+                    {
+                        path: "addresses",
+                        Component: AddressesPage,
+                    },
+                ],
             },
             {
                 path: "payment/result",

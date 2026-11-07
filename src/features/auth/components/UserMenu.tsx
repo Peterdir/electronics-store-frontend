@@ -36,17 +36,10 @@ export function UserMenu() {
             </span>
 
             <Link
-                to="/account/profile"
+                to="/account"
                 className="shrink-0 rounded-sm text-sm text-muted-foreground transition-colors hover:text-primary outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
                 Tài khoản
-            </Link>
-
-            <Link
-                to="/account/addresses"
-                className="rounded-sm text-sm text-muted-foreground hover:text-primary focus-visible:outline-2 focus-visible:outline-ring"
-            >
-                Địa chỉ
             </Link>
 
             <Button
