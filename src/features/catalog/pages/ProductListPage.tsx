@@ -1,10 +1,11 @@
-import { useGetProducts } from "../queries";
+import { useGetCategories, useGetProducts } from "../queries";
+import { Button } from "@/components/ui/button";
 import { ProductGrid } from "../components/ProductGrid";
 import { useSearchParams } from "react-router";
 import { Pagination } from "../components/Pagination";
 import { useEffect } from "react";
 import { SearchBar } from "../components/SearchBar";
-import { ProductSort } from "@/shared/types/enums";
+import { ActiveStatus, ProductSort } from "@/shared/types/enums";
 import type { ID } from "@/shared/types/common";
 import {
     ProductFilters,
@@ -28,8 +29,7 @@ function parseUrlPrice(value: string | null): number | undefined {
 
     const price = Number(value);
     return Number.isSafeInteger(price) && 
-        price >= 0 &&
-        price % 1000 === 0
+        price >= 0
         ? price
         : undefined;
 }
@@ -44,12 +44,19 @@ function parseSort(value: string | null): ProductSort {
 
 export function ProductListPage() {
     const [searchParams, setSearchParams] = useSearchParams();
+    const categoriesQuery = useGetCategories();
+    const categories = categoriesQuery.data?.filter(
+        (category) => category.status === ActiveStatus.ACTIVE,
+    ) ?? [];
 
     const keyword = (searchParams.get("q") ?? "").trim();
-    const categoryId = parseId(searchParams.get("categoryId"));
+    const requestedCategoryId = parseId(searchParams.get("categoryId"));
+    const categoryId = categories.find((category) => category.id === requestedCategoryId)?.id
+        ?? categories[0]?.id;
+    const hasSelectedCategory = categoryId !== undefined && requestedCategoryId === categoryId;
     const brandId = parseId(searchParams.get("brandId"));
-    const minPrice = parseUrlPrice(searchParams.get("minPrice"));
-    const maxPrice = parseUrlPrice(searchParams.get("maxPrice"));
+    const minPrice = hasSelectedCategory ? parseUrlPrice(searchParams.get("minPrice")) : undefined;
+    const maxPrice = hasSelectedCategory ? parseUrlPrice(searchParams.get("maxPrice")) : undefined;
     const sort = parseSort(searchParams.get("sort"));
 
     const rawPage = searchParams.get("page");
@@ -65,12 +72,26 @@ export function ProductListPage() {
         sort,
         page: currentPage - 1, 
         size: 12
-    });
+    }, categoriesQuery.isSuccess && hasSelectedCategory);
+
+    useEffect(() => {
+        if (!categoriesQuery.isSuccess || !categoryId || hasSelectedCategory) return;
+
+        setSearchParams((currentParams) => {
+            const nextParams = new URLSearchParams(currentParams);
+            nextParams.set("categoryId", categoryId);
+            nextParams.delete("minPrice");
+            nextParams.delete("maxPrice");
+            nextParams.set("page", "1");
+            return nextParams;
+        }, { replace: true });
+    }, [categoriesQuery.isSuccess, categoryId, hasSelectedCategory, setSearchParams]);
 
     useEffect(() => {
         const totalPages = productsQuery.data?.totalPages;
 
         if (
+            !hasSelectedCategory ||
             productsQuery.isError ||
             productsQuery.isPlaceholderData ||
             totalPages === undefined
@@ -93,6 +114,7 @@ export function ProductListPage() {
         );
         }, [
             currentPage,
+            hasSelectedCategory,
             productsQuery.data?.totalPages,
             productsQuery.isError,
             productsQuery.isPlaceholderData,
@@ -124,15 +146,11 @@ export function ProductListPage() {
         });
     }
 
-    function applyFilters(filters: ProductFilterValues) {
+    function applyFilters(filters: ProductFilterValues, options?: { replace?: boolean }) {
         setSearchParams((currentParams) => {
             const nextParams = new URLSearchParams(currentParams);
 
-            if (filters.categoryId) {
-                nextParams.set("categoryId", filters.categoryId);
-            } else {
-                nextParams.delete("categoryId");
-            }
+            nextParams.set("categoryId", filters.categoryId);
 
             if (filters.brandId) {
                 nextParams.set("brandId", filters.brandId);
@@ -160,7 +178,7 @@ export function ProductListPage() {
 
             nextParams.set("page", "1");
             return nextParams;
-        });
+        }, { replace: options?.replace ?? false });
     }
 
     return (
@@ -169,23 +187,25 @@ export function ProductListPage() {
 
             <div className="grid items-start gap-6 lg:grid-cols-[17rem_minmax(0,1fr)]">
                 <aside className="self-start lg:sticky lg:top-6">
-                    <ProductFilters
-                        key={[
-                            categoryId ?? "",
-                            brandId ?? "",
-                            minPrice ?? "",
-                            maxPrice ?? "",
-                            sort,
-                        ].join("|")}
-                        initialValues={{
-                            categoryId,
-                            brandId,
-                            minPrice,
-                            maxPrice,
-                            sort,
-                        }}
-                        onApply={applyFilters}
-                    />
+                    {categoriesQuery.isPending ? (
+                        <p role="status">Đang tải danh mục…</p>
+                    ) : categoriesQuery.isError ? (
+                        <div role="alert" className="space-y-2">
+                            <p>Không tải được danh mục.</p>
+                            <Button type="button" variant="outline" onClick={() => void categoriesQuery.refetch()}>
+                                Thử lại
+                            </Button>
+                        </div>
+                    ) : categoryId ? (
+                        <ProductFilters
+                            key={categoryId}
+                            values={{ categoryId, brandId, minPrice, maxPrice, sort }}
+                            categories={categories}
+                            onChange={applyFilters}
+                        />
+                    ) : (
+                        <p>Chưa có danh mục đang hoạt động.</p>
+                    )}
                 </aside>
 
                 <div className="min-w-0 space-y-6">
@@ -195,7 +215,11 @@ export function ProductListPage() {
                         onSearch={searchProducts}
                     />
 
-                    {productsQuery.isPending ? (
+                    {categoriesQuery.isError ? (
+                        <p>Vui lòng tải lại danh mục để xem sản phẩm.</p>
+                    ) : categoriesQuery.isSuccess && !categoryId ? (
+                        <p>Chưa có sản phẩm để hiển thị.</p>
+                    ) : !hasSelectedCategory || productsQuery.isPending ? (
                         <p role="status">Đang tải sản phẩm…</p>
                     ) : productsQuery.isError ? (
                         <div aria-live="polite">

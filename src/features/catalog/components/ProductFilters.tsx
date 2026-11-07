@@ -1,12 +1,13 @@
+import { useEffect, useEffectEvent, useId, useState } from "react";
+import { Button } from "@/components/ui/button";
 import type { ID } from "@/shared/types/common";
 import { ActiveStatus, ProductSort } from "@/shared/types/enums";
-import { useGetBrands, useGetCategories } from "../queries";
-import { useState, type SubmitEvent } from "react";
-import { Button } from "@/components/ui/button";
-
+import { useCategoryPriceBounds, useGetBrands } from "../queries";
+import type { CategoryResponse } from "../types";
+import { buildCategoryPriceRanges, parsePriceRange, type PriceRange } from "../priceFilters";
 
 export interface ProductFilterValues {
-  categoryId?: ID;
+  categoryId: ID;
   brandId?: ID;
   minPrice?: number;
   maxPrice?: number;
@@ -14,276 +15,195 @@ export interface ProductFilterValues {
 }
 
 interface ProductFiltersProps {
-  initialValues: ProductFilterValues;
-  onApply: (values: ProductFilterValues) => void;
+  values: ProductFilterValues;
+  categories: CategoryResponse[];
+  onChange: (values: ProductFilterValues, options?: { replace?: boolean }) => void;
 }
 
-function parsePriceInput(value: string): number | undefined | null {
-  if (value.trim() === "") return undefined;
-
-  const thousands = Number(value);
-  const priceInVnd = thousands * 1000;
-
-  return Number.isSafeInteger(thousands) &&
-        thousands >= 0 &&
-        Number.isSafeInteger(priceInVnd)
-        ? priceInVnd
-        : null;
+interface PriceDraft {
+  minPrice: string;
+  maxPrice: string;
 }
 
 function formatPriceInput(value: string): string {
-    return value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
-export function ProductFilters({
-  initialValues,
-  onApply,
-}: ProductFiltersProps) {
-    const categoriesQuery = useGetCategories();
-    const brandsQuery = useGetBrands();
+export function ProductFilters({ values, categories, onChange }: ProductFiltersProps) {
+  const brandsQuery = useGetBrands();
+  const boundsQuery = useCategoryPriceBounds(values.categoryId);
+  const priceErrorId = useId();
+  const bounds = boundsQuery.data;
+  const brands = brandsQuery.data?.filter((brand) => brand.status === ActiveStatus.ACTIVE) ?? [];
+  const priceRanges = bounds ? buildCategoryPriceRanges(bounds) : [];
+  const pricesDisabled = !bounds;
 
-    const [categoryId, setCategoryId] = useState(initialValues.categoryId ?? "",);
-    const [brandId, setBrandId] = useState(initialValues.brandId ?? "");
-    const [minPrice, setMinPrice] = useState(
-        initialValues.minPrice === undefined
-            ? ""
-            : String(initialValues.minPrice / 1000),
-    );
-    const [maxPrice, setMaxPrice] = useState(
-        initialValues.maxPrice === undefined
-            ? ""
-            : String(initialValues.maxPrice / 1000),
-    )
-    const [sort, setSort] = useState<ProductSort>(initialValues.sort);
-    const [error, setError] = useState<string | null>(null);
+  const [priceDraft, setPriceDraft] = useState<PriceDraft | null>(null);
+  const [previousPrices, setPreviousPrices] = useState({
+    minPrice: values.minPrice,
+    maxPrice: values.maxPrice,
+  });
 
-    const categories = categoriesQuery.data?.
-        filter((category) => category.status === ActiveStatus.ACTIVE,
-        ) ?? [];
-    
-    const brands = brandsQuery.data?.
-        filter((brand) => brand.status === ActiveStatus.ACTIVE,
-        ) ?? [];
+  if (previousPrices.minPrice !== values.minPrice || previousPrices.maxPrice !== values.maxPrice) {
+    setPreviousPrices({ minPrice: values.minPrice, maxPrice: values.maxPrice });
+    setPriceDraft(null);
+  }
 
-    function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
-        event.preventDefault();
+  const minPrice = priceDraft?.minPrice ?? String(values.minPrice ?? bounds?.minPrice ?? "");
+  const maxPrice = priceDraft?.maxPrice ?? String(values.maxPrice ?? bounds?.maxPrice ?? "");
+  const parsedPrices = parsePriceRange(minPrice, maxPrice);
+  const priceError = parsedPrices.valid ? null : parsedPrices.error;
 
-        const parsedMinPrice = parsePriceInput(minPrice);
-        const parsedMaxPrice = parsePriceInput(maxPrice);
+  function applyPriceRange(range: Pick<PriceRange, "minPrice" | "maxPrice">, replace = false) {
+    const nextMinPrice = range.minPrice === bounds?.minPrice ? undefined : range.minPrice;
+    const nextMaxPrice = range.maxPrice === bounds?.maxPrice ? undefined : range.maxPrice;
 
-        if (parsedMinPrice === null || parsedMaxPrice === null) {
-            setError("Giá phải là số nguyên không âm")
-            return;
-        }
+    if (nextMinPrice === values.minPrice && nextMaxPrice === values.maxPrice) return;
+    onChange({ ...values, minPrice: nextMinPrice, maxPrice: nextMaxPrice }, { replace });
+  }
 
-        if (parsedMinPrice !== undefined && 
-            parsedMaxPrice !== undefined &&
-            parsedMinPrice > parsedMaxPrice
-        ) {
-            setError("Giá tối thiểu không được lớn hơn giá tối đa")
-            return;
-        }
+  const applyDraftPrices = useEffectEvent(() => {
+    const result = parsePriceRange(minPrice, maxPrice);
+    if (result.valid) applyPriceRange(result, true);
+  });
 
-        setError(null);
+  useEffect(() => {
+    if (!priceDraft || priceError || pricesDisabled) return;
+    const timeoutId = window.setTimeout(() => applyDraftPrices(), 350);
+    return () => window.clearTimeout(timeoutId);
+  }, [priceDraft, priceError, pricesDisabled]);
 
-        onApply({
-            categoryId: categoryId || undefined,
-            brandId: brandId || undefined,
-            minPrice: parsedMinPrice,
-            maxPrice: parsedMaxPrice,
-            sort,
-        });
-    }
+  function changePrice(field: keyof PriceDraft, input: string) {
+    const rawValue = input.replace(/\./g, "");
+    if (!/^\d*$/.test(rawValue)) return;
+    setPriceDraft({ minPrice, maxPrice, [field]: rawValue });
+  }
 
-    function clearFilters() {
-        setCategoryId("");
-        setBrandId("");
-        setMinPrice("");
-        setMaxPrice("");
-        setSort(ProductSort.NEWEST);
-        setError(null);
+  function clearFilters() {
+    setPriceDraft(null);
+    onChange({ categoryId: values.categoryId, sort: ProductSort.NEWEST });
+  }
 
-        onApply({ sort: ProductSort.NEWEST });
-    }
+  return (
+    <div className="space-y-5 rounded-2xl border border-border bg-card p-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
+        <label className="space-y-1">
+          <span className="block text-sm font-medium">Danh mục</span>
+          <select
+            value={values.categoryId}
+            onChange={(event) => {
+              setPriceDraft(null);
+              onChange({
+                ...values,
+                categoryId: event.target.value,
+                minPrice: undefined,
+                maxPrice: undefined,
+              });
+            }}
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+          >
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>{category.name}</option>
+            ))}
+          </select>
+        </label>
 
-    return (
-        <form
-            noValidate
-            onSubmit={handleSubmit}
-            className="space-y-5 rounded-2xl border border-border bg-card p-5"
-        >
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                <label className="space-y-1">
-                    <span className="block text-sm font-medium">
-                        Danh mục
-                    </span>
+        <label className="space-y-1">
+          <span className="block text-sm font-medium">Thương hiệu</span>
+          <select
+            value={values.brandId ?? ""}
+            onChange={(event) => onChange({ ...values, brandId: event.target.value || undefined })}
+            disabled={brandsQuery.isPending || brandsQuery.isError}
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value="">Tất cả thương hiệu</option>
+            {brands.map((brand) => (
+              <option key={brand.id} value={brand.id}>{brand.name}</option>
+            ))}
+          </select>
+        </label>
 
-                    <select
-                        value={categoryId}
-                        onChange={(event) => setCategoryId(event.target.value)}
-                        disabled={categoriesQuery.isPending || categoriesQuery.isError}
-                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                    >
-                        <option value="">Tất cả danh mục</option>
+        {priceRanges.length > 0 && (
+          <fieldset className="space-y-3 sm:col-span-2 lg:col-span-1">
+            <legend className="mb-2 text-sm font-medium">Khoảng giá</legend>
+            <p className="text-xs text-muted-foreground">Chọn một khoảng giá</p>
+            {priceRanges.map((range) => {
+              const rangeMin = range.minPrice === bounds?.minPrice ? undefined : range.minPrice;
+              const rangeMax = range.maxPrice === bounds?.maxPrice ? undefined : range.maxPrice;
+              const checked = !priceDraft && values.minPrice === rangeMin && values.maxPrice === rangeMax;
 
-                        {categories.map((category) => (
-                            <option key={category.id} value={category.id}>
-                                {category.name}
-                            </option>
-                        ))}
-                    </select>
+              return (
+                <label key={range.label} className="flex cursor-pointer items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(event) => {
+                      setPriceDraft(null);
+                      applyPriceRange(event.target.checked ? range : {});
+                    }}
+                    className="mt-0.5 size-4 shrink-0 accent-primary"
+                  />
+                  <span>{range.label}</span>
                 </label>
+              );
+            })}
+          </fieldset>
+        )}
 
-                <label className="space-y-1">
-                    <span className="block text-sm ">
-                        Thương hiệu
-                    </span>
-
-                    <select
-                        value={brandId}
-                        onChange={(event) => setBrandId(event.target.value)}
-                        disabled={brandsQuery.isPending || brandsQuery.isError}
-                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                    >
-                        <option value="">
-                            Tất cả thương hiệu
-                        </option>
-
-                        {brands.map((brand) => (
-                            <option key={brand.id} value={brand.id}>
-                                {brand.name}
-                            </option>
-                        ))}
-                    </select>
-                </label>
-
-                <label className="space-y-1">
-                    <span className="text-sm font-medium">
-                        Giá từ
-                    </span>
-
-                    <div className="relative">
-                        <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatPriceInput(minPrice)}
-                            onChange={(event) => {
-                                const rawValue = event.target.value.replace(/\./g, "");
-
-                                if (/^\d*$/.test(rawValue)) {
-                                    setMinPrice(rawValue);
-                                }
-
-                                setError(null);
-                            }}
-                            className="h-10 w-full rounded-md border border-input bg-background px-3 pr-13.25 text-right text-sm"
-                        />
-
-                        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
-                            .000 ₫
-                        </span>
-                    </div>
-                </label>
-
-                <label className="space-y-1">
-                    <span className="block text-sm font-medium">
-                        Giá đến
-                    </span>
-
-                    <div className="relative">
-                        <input
-                            type="text"
-                            inputMode="numeric"
-                            value={formatPriceInput(maxPrice)}
-                            onChange={(event) => {
-                                const rawValue = event.target.value.replace(/\./g, "");
-
-                                if (/^\d*$/.test(rawValue)) {
-                                    setMaxPrice(rawValue);
-                                }
-
-                                setError(null);
-                            }}
-                            className="h-10 w-full rounded-md border border-input bg-background px-3 pr-13.25 text-right text-sm"
-                        />
-
-                        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">
-                            .000 ₫
-                        </span>
-                    </div>    
-                </label>
-
-                <label className="space-y-1">
-                    <span className="text-sm font-medium">Sắp xếp</span>
-                    <select
-                        value={sort}
-                        onChange={(event) =>
-                            setSort(event.target.value as ProductSort)
-                        }
-                        className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                    >
-                        <option value={ProductSort.NEWEST}>Mới nhất</option>
-                        <option value={ProductSort.PRICE_ASC}>Giá tăng dần</option>
-                        <option value={ProductSort.PRICE_DESC}>Giá giảm dần</option>
-                        <option value={ProductSort.RATING_DESC}>Đánh giá cao</option>
-                        <option value={ProductSort.NAME_ASC}>Tên A–Z</option>
-                    </select>
-                </label>
+        {(["minPrice", "maxPrice"] as const).map((field) => (
+          <label key={field} className="space-y-1">
+            <span className="block text-sm font-medium">{field === "minPrice" ? "Giá từ" : "Giá đến"}</span>
+            <div className="relative">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={formatPriceInput(field === "minPrice" ? minPrice : maxPrice)}
+                onChange={(event) => changePrice(field, event.target.value)}
+                disabled={pricesDisabled}
+                aria-invalid={Boolean(priceError)}
+                aria-describedby={priceError ? priceErrorId : undefined}
+                className="h-10 w-full rounded-md border border-input bg-background px-3 pr-8 text-right text-sm disabled:opacity-50"
+              />
+              <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-muted-foreground">₫</span>
             </div>
+          </label>
+        ))}
 
-            {categoriesQuery.isPending && (
-                <p role="status">Đang tải danh mục…</p>
-            )}
+        <label className="space-y-1">
+          <span className="block text-sm font-medium">Sắp xếp</span>
+          <select
+            value={values.sort}
+            onChange={(event) => onChange({ ...values, sort: event.target.value as ProductSort })}
+            className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+          >
+            <option value={ProductSort.NEWEST}>Mới nhất</option>
+            <option value={ProductSort.PRICE_ASC}>Giá tăng dần</option>
+            <option value={ProductSort.PRICE_DESC}>Giá giảm dần</option>
+            <option value={ProductSort.RATING_DESC}>Đánh giá cao</option>
+            <option value={ProductSort.NAME_ASC}>Tên A–Z</option>
+          </select>
+        </label>
+      </div>
 
-            {categoriesQuery.isError && (
-                <div role="alert" className="flex items-center gap-2">
-                    <span>
-                        Không tải được danh mục.
-                    </span>
-
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => void categoriesQuery.refetch()}
-                    >
-                        Thử lại
-                    </Button>
-                </div>
-            )}
-
-            {brandsQuery.isPending && (
-                <p role="status">Đang tải thương hiệu…</p>
-            )}
-
-            {brandsQuery.isError && (
-                <div role="alert" className="flex items-center gap-2">
-                    <span>
-                        Không tải được thương hiệu.
-                    </span>
-
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => void brandsQuery.refetch()}
-                    >
-                        Thử lại
-                    </Button>
-                </div>
-            )}
-
-
-            {error && (
-                <p role="alert" className="text-sm text-destructive">
-                    {error}
-                </p>
-            )}
-
-            <div className="flex gap-2">
-                <Button type="submit">Áp dụng</Button>
-                <Button type="button" variant="outline" onClick={clearFilters}>
-                    Xóa lọc
-                </Button>
-            </div>
-        </form>
-    )
+      {boundsQuery.isPending && <p role="status">Đang tải khoảng giá…</p>}
+      {boundsQuery.isError && (
+        <div role="alert" className="space-y-2">
+          <p>Không tải được khoảng giá của danh mục.</p>
+          <Button type="button" variant="outline" onClick={() => void boundsQuery.refetch()}>Thử lại</Button>
+        </div>
+      )}
+      {boundsQuery.isSuccess && bounds === null && (
+        <p className="text-sm text-muted-foreground">Danh mục chưa có sản phẩm để chọn khoảng giá.</p>
+      )}
+      {brandsQuery.isPending && <p role="status">Đang tải thương hiệu…</p>}
+      {brandsQuery.isError && (
+        <div role="alert" className="space-y-2">
+          <p>Không tải được thương hiệu.</p>
+          <Button type="button" variant="outline" onClick={() => void brandsQuery.refetch()}>Thử lại</Button>
+        </div>
+      )}
+      {priceError && <p id={priceErrorId} role="alert" className="text-sm text-destructive">{priceError}</p>}
+      <Button type="button" variant="outline" onClick={clearFilters}>Xóa lọc</Button>
+    </div>
+  );
 }

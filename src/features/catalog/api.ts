@@ -2,6 +2,8 @@ import { api } from "@/shared/api/client";
 import type { BrandResponse, CategoryResponse, GetProductsRequest, ProductCompareResponse, ProductDetailsResponse, ProductResponse, SuggestionResponse } from "./types";
 import type { ID, Page } from "@/shared/types/common";
 import { normalizePage, type BackendPage } from "@/shared/api/pagination";
+import { ProductSort } from "@/shared/types/enums";
+
 
 
 export async function getProducts(
@@ -66,4 +68,33 @@ export async function getProductCompare(
   );
 
   return response.data;
+}
+
+export async function getCategoryPriceBounds(categoryId: ID) {
+  const [lowestPage, highestPage] = await Promise.all([
+    getProducts({
+      categoryId,
+      sort: ProductSort.PRICE_ASC,
+      page: 0,
+      size: 1,
+    }),
+    getProducts({
+      categoryId,
+      sort: ProductSort.PRICE_DESC,
+      page: 0,
+      size: 1,
+    }),
+  ]);
+
+  const lowestProduct = lowestPage.items[0];
+  const highestProduct = highestPage.items[0];
+
+  if (!lowestProduct || !highestProduct) {
+    return null;
+  }
+
+  return {
+    minPrice: lowestProduct.basePrice,
+    maxPrice: highestProduct.basePrice,
+  };
 }
