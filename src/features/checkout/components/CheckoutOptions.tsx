@@ -122,16 +122,16 @@ export function PaymentMethodSelector({
         <span>Thanh toán khi nhận hàng (COD)</span>
       </label>
 
-      <label className="flex items-center gap-3 rounded-xl border border-border p-4 text-muted-foreground">
+      <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-border p-4 has-[:checked]:border-primary">
         <input
           type="radio"
           name={name}
           value={PaymentMethod.VNPAY}
           checked={value === PaymentMethod.VNPAY}
-          disabled
+          onChange={() => onChange(PaymentMethod.VNPAY)}
         />
 
-        <span>VNPay — sắp hỗ trợ</span>
+        <span>Thanh toán qua VNPay</span>
       </label>
     </fieldset>
   );

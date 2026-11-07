@@ -62,6 +62,12 @@ export function CheckoutSuccessPage() {
         <h1 className="text-2xl font-bold">Đặt hàng thành công</h1>
         <p>Mã đơn: <strong className="break-all">{order.orderId}</strong></p>
         <p>{order.paymentMethod === PaymentMethod.COD ? "Thanh toán khi nhận hàng (COD)" : "Thanh toán VNPay"} · {paymentStatusLabels[order.paymentStatus]}</p>
+        {order.paymentMethod === PaymentMethod.VNPAY && (
+          <p className="text-sm text-muted-foreground">
+            Trạng thái trên được ghi nhận lúc tạo đơn.
+            Kết quả thanh toán được xác nhận riêng khi quay về từ VNPay.
+          </p>
+        )}
         <p className="text-sm text-muted-foreground">Đặt lúc {new Date(order.createdAt).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}</p>
       </div>
 

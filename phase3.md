@@ -1,6 +1,6 @@
 # Phase 3 — Tiến độ và kế hoạch tiếp tục
 
-> Cập nhật: 05/11/2026. Người dùng xác nhận UI C9 hoạt động ổn. Theo yêu cầu triển khai trực tiếp, đã thêm code C10: payload địa chỉ/nguồn hàng, POST COD, guard phiên, lưu xác nhận, trang success và cleanup giỏ. Bước tiếp theo: thử bốn luồng COD với backend/trình duyệt để chốt tích hợp C8/C10/C11. VNPay tiếp tục khóa đến C12.
+> Cập nhật: 07/11/2026. Người dùng xác nhận đã kiểm thử VNPay thành công và yêu cầu kết thúc nhiệm vụ C12. Ghi nhận C12 hoàn thành theo xác nhận này; C1–C11 đã được chốt trong phạm vi giỏ, địa chỉ và COD trước đó. Code đạt kiểm tra tĩnh và 15 kiểm tra logic/giả lập ở phiên triển khai; chưa có biên bản chi tiết từng nhánh thanh toán thật. Bước tiếp theo: C13 — hồi quy tổng thể và chốt Phase 3.
 > Mục đích: giúp người dùng và AI tiếp tục đúng tiến độ, dùng lại code đã có và hạn chế sửa lại checkout.
 > Tài liệu gốc: [frontend_master_plan.md — Phase 3](frontend_master_plan.md#phase-3--transaction-flow-cart-address-checkout-payment).
 
@@ -15,7 +15,7 @@
 
 ## 2. Trạng thái hiện tại
 
-Người dùng xác nhận hoàn thành C1–C5; C4 đã thử trên web và C5 đã kiểm tra hết theo xác nhận ngày 29/10/2026. Ngày 01/11/2026, người dùng xác nhận đã bổ sung guard và thử toàn bộ trường hợp C7. Đối chiếu ngày 04/11/2026: guard C7, code sổ địa chỉ và UI địa chỉ checkout đều đã commit; working tree sạch trước khi cập nhật tài liệu này:
+Người dùng xác nhận hoàn thành C1–C5; C4 đã thử trên web và C5 đã kiểm tra hết theo xác nhận ngày 29/10/2026. C7 được xác nhận ngày 01/11/2026; C6 và UI địa chỉ C8 ngày 04/11/2026; UI C9 ngày 05/11/2026. Ngày 06/11/2026, người dùng xác nhận chức năng đặt hàng đã kiểm thử xong và chạy ổn định, chốt C10 cùng phần tích hợp C8/C11. HEAD hiện là `6a4485b`; working tree sạch trước lần cập nhật tài liệu này. Đây là xác nhận tổng thể của người dùng, chưa có log method/status/UI từng nhánh:
 
 | Mốc | Kết quả | Commit |
 |---|---|---|
@@ -26,8 +26,11 @@ Người dùng xác nhận hoàn thành C1–C5; C4 đã thử trên web và C5 
 | C5 | Người dùng xác nhận đã kiểm tra toàn bộ C5 và hoàn thành; chưa cung cấp log method/status chi tiết để ghi biên bản | Cùng commit `cd1c50e` |
 | C7 | Hoàn thành code route/CTA, nguồn cart/Buy Now, validate giỏ user, guard phiên và guard dấu merge; người dùng xác nhận đã thử các trường hợp C7, chưa cung cấp log method/status/UI từng nhánh | `dc2257f` cho phần đầu; `fd865b9` cho guard dấu merge |
 | C6 | Hoàn thành; người dùng xác nhận đã kiểm thử, chức năng ổn định ngày 04/11/2026; chưa cung cấp log chi tiết | `78a9316`, `ccba4ef`, `33b77f9` |
-| C8 | Người dùng xác nhận đã kiểm thử, chức năng chọn/nhập địa chỉ hiện ổn định ngày 04/11/2026; đã chuẩn bị `addressFields`, phần gửi request đặt đơn kiểm tra cùng C10 | `756f874`; có bổ sung UI/email ở các commit sau |
-| C11 | Đã có lối vào Buy Now với variant/số lượng đang chọn; chưa đặt đơn hoặc xác nhận giỏ được giữ nguyên sau tạo đơn | Cùng commit `dc2257f` |
+| C8 | Hoàn thành: UI địa chỉ được xác nhận ngày 04/11/2026; tích hợp request đặt đơn được chốt cùng xác nhận C10 ngày 06/11/2026 | `756f874`, `6a4485b`; có bổ sung UI/email ở các commit khác |
+| C9 | Shipping/payment/coupon và tổng preview; người dùng xác nhận UI ổn ngày 05/11/2026. VNPay tiếp tục ở C12 | `4abac2a` |
+| C10 | Đặt COD, guard phiên/request lặp, success và cleanup giỏ; người dùng xác nhận kiểm thử xong, chạy ổn định ngày 06/11/2026 | `6a4485b feat(checkout): place COD orders and show confirmation` |
+| C11 | Lối vào và đặt đơn Buy Now đã nối; ghi nhận hoàn thành cùng xác nhận kiểm thử chức năng ngày 06/11/2026, chưa có biên bản riêng từng luồng | `dc2257f`, `6a4485b` |
+| C12 | Hoàn thành theo xác nhận kiểm thử thành công của người dùng ngày 07/11/2026; có redirect/callback VNPay và các trạng thái kết quả. Chưa có log chi tiết từng nhánh; hồi quy bổ sung ở C13 | Chưa commit; gợi ý `feat(payment): handle VNPay redirect and result` |
 
 Kiểm tra được ghi nhận: phiên C3 đạt build, lint và `git diff --check`; sau khi thêm C4–C5, `npm run build`, `npm run lint`, `npm run typecheck` và `git diff --check` đều đạt. Build còn cảnh báo chunk JavaScript lớn hơn 500 kB, không làm build thất bại. C4 đã được người dùng thử trên web nhưng chưa ghi chi tiết từng thao tác; C5 được người dùng xác nhận hoàn thành, chưa có biên bản merge thành công, lỗi một phần, timeout và đăng nhập lại để ghi method/status chi tiết. Không suy ra kết quả kiểm thử từ commit hoặc kiểm tra tĩnh.
 
@@ -39,6 +42,10 @@ Ngày 01/11/2026: đã review diff guard mới; `npm run lint`, `npm run build` 
 
 Ngày 04/11/2026: người dùng xác nhận “tôi đã kiểm thử C6/C8, hiện tại chức năng ổn định”. Ghi nhận C6 hoàn thành và C8 đạt kiểm thử chức năng hiện có. Chưa có log method/status/UI từng nhánh; không suy ra đã gửi payload tạo đơn vì C10 chưa triển khai. Không giao lại kiểm thử C6/C8 làm điều kiện bắt đầu C9.
 
+Ngày 06/11/2026: người dùng xác nhận “Tôi đã test xong chức năng, đã chạy ổn định”. Trong phạm vi nhiệm vụ đặt COD vừa triển khai và checklist đã hướng dẫn, ghi nhận C10 cùng phần tích hợp C8/C11 hoàn thành theo xác nhận của người dùng. Xác nhận này thay thế trạng thái chờ kiểm thử trong các bàn giao ngày 05/11/2026. Chưa có log request/status hoặc biên bản tách từng trường hợp; phiên cập nhật tài liệu này không tự chạy lại browser/backend.
+
+Ngày 07/11/2026: sau thay đổi bỏ dấu `#` trong `vnp_OrderInfo` backend, người dùng xác nhận “đã test thành công” và yêu cầu cập nhật tài liệu để kết thúc nhiệm vụ C12. Ghi nhận C12 hoàn thành theo xác nhận của người dùng, thay thế trạng thái chờ sandbox/lỗi 71 trong các bàn giao trước. Chưa có log request/status, paymentStatus/TransactionLog hoặc biên bản riêng cho thành công/hủy/thất bại/IPN. Không khẳng định dấu `#` là nguyên nhân trực tiếp của lỗi 71, hoặc merchant đã được phê duyệt bởi VNPay, chỉ từ kết quả thử lại.
+
 Các điểm cần giữ lại khi tiếp tục:
 
 - Giỏ guest dùng `ec.guestCart` trong Zustand persist. Giá/tồn kho trong snapshot là số liệu lúc thêm hàng, không phải tồn kho thời gian thực.
@@ -48,7 +55,8 @@ Các điểm cần giữ lại khi tiếp tục:
 - Bản C3 hiện khóa thao tác khi mutation pending, nhập số lượng lưu khi Enter/blur. Debounce stepper 400 ms ghi trong master plan chưa được triển khai; không coi đây là tính năng đã có. Chỉ bổ sung khi nhiệm vụ cần hoặc người dùng yêu cầu, rồi ghi rõ kết quả.
 - Merge C5 gọi sau login hoặc verify-email thành công, không chạy từ render/effect. Mỗi `POST /api/cart/items` cộng số lượng; `ec.cartMerge` lưu dấu item chưa rõ kết quả để tránh tự gửi lại sau timeout/refresh. Dấu này cần người dùng đối chiếu với server cart; frontend không bảo đảm exactly-once nếu backend chưa hỗ trợ idempotency.
 - Trong lúc merge, `useCart()` khóa thêm/sửa/xóa giỏ; `CartPage` hiện trạng thái và khu vực đối chiếu khi có dấu tồn đọng. `CartCheckoutEntry` đã chặn cả merge đang chạy và dấu merge tồn đọng khi mở lại checkout đã vào trước đó.
-- C6 và chức năng địa chỉ hiện có của C8 đã được người dùng kiểm thử, xác nhận ổn định. C9 được người dùng xác nhận UI ổn ngày 05/11/2026. Code C10 đã nối địa chỉ C8, COD và Buy Now C11; chưa thử đơn thật với backend/trình duyệt. VNPay vẫn khóa đến C12; C13 chưa chốt.
+- C6/C8/C9/C10/C11 đã được ghi nhận hoàn thành trong phạm vi địa chỉ và COD theo xác nhận của người dùng; C12 hoàn thành theo xác nhận kiểm thử VNPay ngày 07/11/2026. Lựa chọn VNPay đã mở. Tiếp tục C13 để hồi quy sau tích hợp thanh toán, không giao lại triển khai C12 từ đầu.
+- Email checkout hiện chỉ được lưu vào `contact_email`; backend chưa gửi email xác nhận tạo đơn. Đơn guest được lưu trong database với `user_id = null`; sessionStorage chỉ là bản xác nhận tạm trên trình duyệt. Xác nhận chức năng ổn định không đồng nghĩa đã có gửi email; gửi email chưa thuộc phần triển khai C10 hiện có.
 
 ## 3. Bản đồ code để AI tìm đúng chỗ
 
@@ -73,10 +81,12 @@ Các điểm cần giữ lại khi tiếp tục:
 | `src/features/checkout/pages/CheckoutPage.tsx` | Guard nguồn/phiên/giỏ, gọi validate cho user cart và hiện preview tạm tính |
 | `src/features/address/{types,api,queries,schemas}.ts` | DTO/API CRUD, cache theo userId, schema và hàm chuyển payload sổ địa chỉ/checkout nhập tay |
 | `src/features/address/components/` và `pages/AddressesPage.tsx` | Form/schema dùng chung, địa giới tỉnh/xã có fallback nhập tay, card và UI CRUD |
-| `src/features/checkout/components/CheckoutContent.tsx` | UI chung địa chỉ/email/shipping/payment/coupon; validation và nút đặt COD, giữ form khi lỗi |
+| `src/features/checkout/components/CheckoutContent.tsx` | UI chung địa chỉ/email/shipping/payment/coupon; validation, đặt COD/VNPay, redirect sau tạo đơn và khóa gửi lại khi điều hướng lỗi |
 | `src/features/checkout/{types,buildCheckoutRequest,api,queries,session}.ts` | Schema response, payload theo nguồn hàng, API/mutation không retry, guard phiên, khóa request trong tab và cleanup giỏ |
 | `src/features/checkout/confirmation.storage.ts` và `pages/CheckoutSuccessPage.tsx` | Lưu/đọc response theo orderId và chủ đơn; success dùng số tiền backend, có fallback khi thiếu dữ liệu |
-| `scripts/verify-checkout.cjs` | Chín kiểm tra logic/adapter giả lập bằng Node; không thay thế kiểm thử backend/browser |
+| `src/features/payment/{api,queries,redirect}.ts` | Dựng URL redirect đúng backend/orderId; API xác nhận giữ nguyên query và bỏ token; query hạn chế retry/refetch/request lặp |
+| `src/features/payment/pages/PaymentResultPage.tsx` và `components/PaymentResultView.tsx` | Route public `/payment/result`; hiển thị chờ/thành công/hủy/thất bại/chưa xác định từ kết quả backend và CTA mua sắm |
+| `scripts/verify-checkout.cjs` | 15 kiểm tra logic/adapter/QueryObserver giả lập bằng Node cho COD/VNPay; không thay thế kiểm thử backend/browser |
 | `src/shared/api/client.ts` | Axios, interceptor, `meta.noPublicRetry` |
 | `src/shared/api/queryKeys.ts` | Query key hiện có; bổ sung khi feature dùng đến |
 | `src/lib/format.ts` | `formatVND` |
@@ -125,7 +135,7 @@ Gom theo nhóm để dùng lại state/component và kiểm tra tích hợp sớ
 
 - [x] Code `/checkout` và CTA từ `/cart`; khóa khi giỏ rỗng, có lỗi tồn kho hoặc đang xử lý.
 - [x] Code phân biệt nguồn cart/Buy Now độc lập với trạng thái đăng nhập (`CheckoutEntry.kind` và `startedUserId`).
-- [x] Code nút Mua ngay lấy variant/số lượng đang chọn và điều hướng không thêm vào giỏ. Chưa thử giữ nguyên giỏ sau tạo đơn.
+- [x] Nút Mua ngay lấy variant/số lượng đang chọn và điều hướng không thêm vào giỏ; C11 đã nối đặt COD và được chốt theo xác nhận kiểm thử chức năng ngày 06/11/2026, chưa có biên bản riêng từng nhánh.
 - [x] Code giỏ user gọi `POST /api/cart/validate-checkout`, có nhánh `issues` và link quay lại giỏ.
 - [x] Code nhánh Buy Now không dùng server cart ở checkout.
 - [x] Code fallback khi thiếu/hỏng navigation state Buy Now; có link quay lại.
@@ -140,9 +150,9 @@ Gom theo nhóm để dùng lại state/component và kiểm tra tích hợp sớ
 | User cart | Không gửi | Có | Đồng bộ lại server cart, backend tự clear |
 | Buy Now guest/user | Có | Không | Giữ giỏ hiện có |
 
-**Hoàn thành nhóm:** người dùng xác nhận nguồn/guard/CTA đã hoạt động đúng qua thử thật; C7 hoàn thành. C11 mới hoàn thành toàn bộ khi đặt được đơn Buy Now ở nhóm 4.
+**Trạng thái nhóm:** C7 hoàn thành theo xác nhận trước đó. Phần đặt COD của C11 ở nhóm 4 đã được chốt theo xác nhận kiểm thử chức năng ngày 06/11/2026.
 
-Đã commit code: `dc2257f feat(checkout): validate cart entry and support buy-now source`; giữ checklist C11 mở đến khi thử đặt đơn.
+Đã commit code nguồn/guard: `dc2257f feat(checkout): validate cart entry and support buy-now source`; phần đặt đơn và cleanup đúng nguồn ở `6a4485b`.
 
 Vệ sinh commit còn thiếu: bỏ bốn dòng khoảng trắng cuối dòng trong `ProductPurchaseOptions.tsx`; `git diff --check` trên working tree sạch không phát hiện khoảng trắng đã nằm trong commit cũ, nên dùng `git show --check HEAD` để kiểm tra commit này.
 
@@ -157,11 +167,11 @@ Vệ sinh commit còn thiếu: bỏ bốn dòng khoảng trắng cuối dòng tr
 - [x] `AddressCard` khóa xóa mặc định; các mutation trả `MessageResponse` invalidate danh sách đúng userId. Backend cũng chặn xóa mặc định.
 - [x] `CheckoutContent` dùng chung sau guard cho guest cart/user cart/Buy Now: guest nhập tay, user chọn mặc định/khác hoặc nhập tay; sổ rỗng chuyển nhập tay.
 - [x] Đã có `toAddressRequest` và `toManualCheckoutAddress`; `addressFields` chuẩn bị riêng `{ addressId }` hoặc ba trường nhập tay.
-- [ ] Nối `addressFields` vào `CheckoutRequest` và thực sự gửi `addressId` hoặc đủ `recipientName`, `recipientPhone`, `shippingAddress` theo chế độ — thực hiện cùng C10.
+- [x] Đã nối `addressFields` vào `CheckoutRequest`: `addressId` hoặc đủ `recipientName`, `recipientPhone`, `shippingAddress` theo chế độ; chốt tích hợp C8 cùng xác nhận kiểm thử C10 ngày 06/11/2026.
 - [x] Người dùng xác nhận đã kiểm thử C6, chức năng hiện ổn định ngày 04/11/2026; chưa cung cấp biên bản từng thao tác/status để ghi chi tiết.
-- [x] Người dùng xác nhận đã kiểm thử C8, chức năng hiện ổn định ngày 04/11/2026; chưa cung cấp biên bản từng nhánh. Xác nhận payload gửi thật thuộc phần tích hợp C10 còn mở phía trên.
+- [x] Người dùng xác nhận UI C8 ổn ngày 04/11/2026 và chức năng đặt hàng ổn ngày 06/11/2026; phần tích hợp C8/C10 đã chốt theo xác nhận này, chưa có biên bản từng nhánh.
 
-Các đầu việc code đã được review tĩnh; kết quả kiểm thử C6/C8 được ghi nhận từ xác nhận trực tiếp của người dùng. C6 hoàn thành; C8 đã đạt chức năng địa chỉ hiện có, còn kiểm tra dữ liệu gửi trong request đặt đơn cùng C10. Bước tiếp theo là C9.
+Các đầu việc code đã được review tĩnh; kết quả kiểm thử được ghi nhận từ xác nhận trực tiếp của người dùng. C6 và C8 hoàn thành, bao gồm tích hợp địa chỉ vào request đặt COD. Bước tiếp theo hiện tại là C13 sau khi C12 được chốt ngày 07/11/2026; không giao lại nhóm địa chỉ từ đầu.
 
 **Hoàn thành khi:** CRUD backend chạy thật; địa chỉ được chọn/nhập đi đúng vào checkout payload; validation điện thoại và trường bắt buộc hoạt động.
 
@@ -173,21 +183,23 @@ Commit gợi ý: `feat(address): manage customer addresses`, sau đó `feat(chec
 
 **Phụ thuộc:** nguồn hàng nhóm 2 và địa chỉ nhóm 3.
 
-- [x] Đã có state shipping/payment/coupon trong `CheckoutContent`, dùng chung cho cart và Buy Now; COD mặc định, VNPay khóa đến C12.
+- [x] Đã có state shipping/payment/coupon trong `CheckoutContent`, dùng chung cho cart và Buy Now; COD mặc định, VNPay đã được mở ở C12.
 - [x] Đã có selector STANDARD/EXPRESS và cấu hình 30.000/55.000 VND khớp `CheckoutServiceImpl`.
 - [x] `OrderSummaryPanel` tính preview tiền hàng + phí; cả ba nơi render `CheckoutContent` đã truyền `subtotal` đúng nguồn.
-- [x] Code C10 lấy số tiền xác nhận/success từ `CheckoutResponse`; chưa đối chiếu đơn thật.
-- [x] Đã có input coupon và thông báo sẽ kiểm tra khi đặt; chưa tự xác thực hoặc trừ tiền trên preview. Nối mã vào request tại C10.
+- [x] C10 lấy số tiền xác nhận/success từ `CheckoutResponse`; chức năng đặt hàng đã được người dùng xác nhận ổn ngày 06/11/2026, chưa có bản đối chiếu số tiền từng đơn.
+- [x] Đã có input coupon, nối mã vào request C10; backend kiểm tra và áp dụng khi đặt. Preview chưa tự trừ giảm giá.
 - [x] Ngày 05/11/2026, người dùng xác nhận đã thử UI C9 (đổi giao hàng/phí/tổng, nhập coupon, chọn COD), hoạt động ổn. Chưa có biên bản riêng cho từng nguồn hàng, giữ lựa chọn khi đổi địa chỉ và bàn phím; kiểm tra hồi quy các nhánh này cùng C10/C13. VNPay vẫn khóa đến C12.
 - [x] Đã có `buildCheckoutRequest` theo nguồn hàng và chế độ địa chỉ; kiểm tra logic bằng Node đạt.
-- [x] Code `POST /api/orders/checkout` dùng `meta: { noPublicRetry: true }`, `retry: false`, `networkMode: "always"`; guard session tại dispatch và khóa request trong tab. Kiểm tra adapter giả lập đạt; chưa thử nhấn lặp trên browser.
-- [x] Code giữ state form khi lỗi, hiện message backend; timeout/5xx khóa gửi lại trên trang hiện tại vì chưa rõ kết quả. Chưa thử UI lỗi coupon/mạng thật.
+- [x] Code `POST /api/orders/checkout` dùng `meta: { noPublicRetry: true }`, `retry: false`, `networkMode: "always"`; guard session tại dispatch và khóa request trong tab. Kiểm tra adapter giả lập đạt; người dùng xác nhận chức năng ổn ngày 06/11/2026, chưa có log nhấn lặp riêng.
+- [x] Code giữ state form khi lỗi, hiện message backend; timeout/5xx khóa gửi lại trên trang hiện tại vì chưa rõ kết quả. Chức năng được xác nhận ổn ngày 06/11/2026; chưa có biên bản riêng lỗi coupon/mạng.
 - [x] Code chỉ cleanup sau response hợp lệ: guest trừ số lượng đã gửi, user cart invalidate đúng userId, Buy Now giữ giỏ. Kiểm tra logic giả lập đạt.
 - [x] Đã lưu response trong sessionStorage, kiểm tra schema/orderId/chủ đơn khi hiển thị `/checkout/success/:orderId`; navigation state làm fallback khi storage bị chặn.
-- [x] Code có fallback khi thiếu/hỏng xác nhận; không tự POST hoặc dựng đơn giả trên trang success. Chưa thử reload thực tế trên browser.
-- [ ] Thử COD với guest cart, user cart, Buy Now guest và Buy Now user; xác nhận Buy Now giữ nguyên giỏ.
+- [x] Code có fallback khi thiếu/hỏng xác nhận; không tự POST hoặc dựng đơn giả trên trang success. Người dùng xác nhận chức năng ổn ngày 06/11/2026; chưa có biên bản riêng ca reload/fallback.
+- [x] Phạm vi COD gồm guest cart, user cart, Buy Now guest và Buy Now user, cleanup đúng nguồn và giữ giỏ khi Buy Now. Ghi nhận hoàn thành theo xác nhận kiểm thử tổng thể của người dùng ngày 06/11/2026; chưa có biên bản tách từng luồng.
 
 **Hoàn thành khi:** bốn luồng COD chạy thật và không double-submit; lỗi không làm mất form/giỏ. Đây là lúc chốt đầy đủ C11.
+
+**Trạng thái:** Nhóm 4 hoàn thành trong phạm vi COD theo xác nhận của người dùng ngày 06/11/2026. C8/C10/C11 đã chốt; chi tiết method/status/UI từng trường hợp chưa được cung cấp. C12 được chốt theo xác nhận ngày 07/11/2026; C13 vẫn mở cho hồi quy tổng thể.
 
 **VNPay:** có thể chuẩn bị kiểu payment từ đây; chỉ bật lựa chọn VNPay khi nhóm 5 đã có hành vi hoạt động.
 
@@ -197,15 +209,22 @@ Commit gợi ý: `feat(checkout): add shipping payment and order preview`, `feat
 
 **Phụ thuộc:** API tạo đơn và xử lý response nhóm 4. Kiểm tra sớm cấu hình backend/sandbox để phát hiện trở ngại môi trường.
 
-- [ ] Dùng lại checkout, không tạo form/payload đặt hàng thứ hai cho VNPay.
-- [ ] Redirect toàn trang từ `paymentUrl` backend trả; đối chiếu URL tương đối/tuyệt đối với config hiện tại.
-- [ ] `/payment/result` giữ nguyên query `vnp_*` để gửi return endpoint backend.
-- [ ] Callback có tác dụng cập nhật thanh toán: tránh request lặp do render, retry hoặc focus; kiểm tra hành vi StrictMode và reload.
-- [ ] Cache query với `staleTime: Infinity`/`retry: false` không bảo đảm chỉ gọi một lần qua reload, tab khác hoặc phiên mới. Xác nhận khả năng xử lý lặp/idempotency của backend trước khi tuyên bố bảo đảm đó.
-- [ ] Hiển thị thành công/hủy/thất bại dựa trên kết quả backend; không tin riêng query string để kết luận đã thanh toán.
-- [ ] Có đường tiếp tục mua sắm hoặc xem đơn phù hợp với quyền/routes hiện có; không gắn CTA dẫn tới route chưa triển khai.
+- [x] Code dùng lại checkout, không tạo form/payload thứ hai; radio VNPay đã mở. Kiểm tra giả lập mutation đủ bốn luồng COD và VNPay, cleanup đúng nguồn và lưu xác nhận trước redirect.
+- [x] Code redirect toàn trang từ `paymentUrl`; kiểm tra URL tương đối/tuyệt đối đúng backend và orderId, từ chối URL thiếu/sai origin/sai endpoint. Người dùng đã cung cấp URL redirect sandbox và sau đó xác nhận thử thành công ngày 07/11/2026.
+- [x] `/payment/result` giữ nguyên query để gửi return endpoint; kiểm tra Axios adapter xác nhận không tái mã hóa query, không gửi token hoặc header nội bộ.
+- [x] Query tắt retry, retry-on-mount, refetch-on-mount/focus/reconnect; cache vô hạn. Kiểm tra QueryObserver subscribe/unsubscribe trong lúc request chạy và mount lại sau thành công/lỗi đạt. Đây là giả lập vòng đời query, chưa phải thử React StrictMode trong trình duyệt.
+- [x] Đã đối chiếu source backend: return/IPN dùng transaction và khóa dòng `findByIdForUpdate`; đơn PAID được bỏ qua, callback trùng kiểm tra trước ghi TransactionLog. Cache frontend không bảo đảm chỉ gọi một lần qua reload/tab khác; chưa xác nhận idempotency bằng backend thật.
+- [x] Code hiển thị thành công/hủy/thất bại/chưa xác định dựa trên response backend; mã 24 chỉ phân loại hủy sau xác minh có orderId. Không kết luận thanh toán thành công từ query; lỗi mạng và response không hợp lệ giữ trạng thái chưa xác định.
+- [x] CTA tiếp tục mua sắm về `/products`, route có thật. Trang xác nhận ghi rõ trạng thái VNPay trong snapshot là lúc tạo đơn.
+- [x] Người dùng xác nhận kiểm thử VNPay thành công ngày 07/11/2026 và yêu cầu kết thúc C12; chưa cung cấp biên bản riêng từng request hoặc từng nhánh. Đây là xác nhận người dùng, không phải kết quả AI tự chạy sandbox.
+- [ ] Hồi quy C13: thành công/hủy/thất bại, chữ ký/số tiền sai; ghi endpoint/status và kết quả UI/database cho các nhánh chưa có biên bản.
+- [ ] Hồi quy C13: StrictMode, focus, reload, callback lặp và nhiều tab với backend thật; đối chiếu paymentStatus/TransactionLog, IPN công khai và bốn nguồn guest cart/user cart/Buy Now guest/user. Chưa đánh dấu các ca này đã chạy từ xác nhận tổng thể.
+
+Cấu hình đã đối chiếu trong source: Vite port 3000; backend dùng `VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET`, `VNPAY_RETURN_URL` (mặc định `http://localhost:3000/payment/result`); frontend dùng `VITE_BACKEND_ORIGIN` cho redirect. Chưa kiểm tra giá trị môi trường đang chạy; hash secret chỉ thuộc backend.
 
 **Hoàn thành khi:** có kết quả redirect và callback thật cho các nhánh có thể thử; ghi rõ nhánh sandbox/môi trường chưa xác nhận. Không suy ra thanh toán thành công từ việc mở được trang VNPay.
+
+**Trạng thái chốt ngày 07/11/2026:** C12 hoàn thành theo xác nhận kiểm thử thành công của người dùng và yêu cầu kết thúc nhiệm vụ. Không ghi nhận đã quan sát đầy đủ các nhánh lỗi, callback/IPN hoặc database; các ca hồi quy bổ sung chuyển C13. Không yêu cầu triển khai lại C12. Lỗi 71 trước đó được giữ trong lịch sử, không còn là trở ngại đang chờ xử lý theo xác nhận mới nhất.
 
 Commit gợi ý: `feat(payment): handle VNPay redirect and result`.
 
@@ -239,15 +258,15 @@ Commit gợi ý: `chore(checkout): finalize phase 3 verification`.
 
 ## 6. Bàn giao cho lần tiếp theo
 
-| Nội dung | Trạng thái cập nhật tại 05/11/2026 |
+| Nội dung | Trạng thái cập nhật tại 07/11/2026 |
 |---|---|
-| Hoàn thành được người dùng xác nhận | C1–C7; chức năng địa chỉ hiện có của C8 đã kiểm thử ổn định. C5/C7/C6/C8 chưa có log chi tiết từng nhánh |
-| Commit gần nhất | HEAD `4abac2a`; C9 shipping/payment/preview đã commit, guard C7 ở `fd865b9`, địa chỉ checkout ở `756f874` |
-| Bước tiếp theo | Thử bốn luồng COD thật, địa chỉ/coupon/phiên/lỗi mạng và refresh success; code C10 đã có |
-| Sau bước đó | Chốt tích hợp C8/C10/C11 khi thử đạt; C12 nối VNPay, sau đó C13 hồi quy |
-| Chưa xác nhận hoàn thành | C8/C10/C11 đã nối code nhưng chưa xác nhận đơn thật; C9 đạt UI hiện có; C12 chưa triển khai, C13 chưa chốt |
+| Hoàn thành được người dùng xác nhận | C1–C12: giỏ, địa chỉ, COD và VNPay; C12 được chốt ngày 07/11/2026. Chưa có log chi tiết từng nhánh |
+| Commit gần nhất | HEAD `6a4485b feat(checkout): place COD orders and show confirmation`; C9 ở `4abac2a` |
+| Bước tiếp theo | C13 — hồi quy giỏ/địa chỉ/COD/VNPay, responsive/accessibility; bổ sung biên bản các nhánh lỗi/callback lặp/IPN và đối chiếu TransactionLog |
+| Sau bước đó | Chốt Phase 3 và cập nhật tiến độ master plan khi đạt C13 |
+| Chưa xác nhận hoàn thành | C13 chưa chốt; không coi chốt C12 là hoàn thành toàn bộ Phase 3. Email xác nhận đặt đơn chưa được backend gửi, không ghi nhận là chức năng đã có |
 | Phần chuyển tiếp từ C3 | CTA checkout/disable đã nối ở C7; tồn kho guest là snapshot; debounce 400 ms chưa có |
-| Biên bản còn thiếu chi tiết | C5/C7 và kiểm thử C6/C8 đã được người dùng xác nhận; có thể bổ sung method/status/UI từng nhánh khi cần truy vết |
+| Biên bản còn thiếu chi tiết | C5/C7/C6/C8, COD C10/C11 và VNPay C12 đã được người dùng xác nhận; chưa có method/status/UI từng nhánh để truy vết |
 
 Bàn giao trước khi có xác nhận C5, lưu để tham chiếu lịch sử:
 
@@ -384,3 +403,51 @@ Bước tiếp theo cụ thể:
 - Kiểm tra cuối: `npm run verify:checkout` đạt 9/9; `npm run lint`, `npm run build` (bao gồm typecheck) và `git diff --check` đạt. Build cảnh báo chunk > 500 kB (index khoảng 838 kB, HeroScene khoảng 1.000 kB).
 - Chưa chạy trình duyệt/backend thật; chưa chốt C8/C10/C11. Khóa request hiện ở trong tab và khóa lỗi chưa rõ kết quả ở trang hiện tại; không bảo đảm exactly-once sau reload/tab khác nếu backend chưa có idempotency. Giỏ guest nhiều tab vẫn theo cơ chế persist hiện có, chưa có đồng bộ giao dịch xuyên tab.
 - Không commit/push. Tiếp theo: thử bốn luồng COD thật và các ca lỗi ở checklist Nhóm 4 trước C12.
+
+### Bàn giao ngày 06/11/2026 — Người dùng xác nhận hoàn thành kiểm thử COD
+
+- Người dùng xác nhận: “Tôi đã test xong chức năng, đã chạy ổn định”, yêu cầu cập nhật `phase3.md`. Ghi nhận hoàn thành C10 và tích hợp C8/C11 trong phạm vi chức năng COD vừa triển khai; C9 đã được xác nhận trước đó. Không yêu cầu thử lại COD làm điều kiện bắt đầu C12.
+- Đây là xác nhận kiểm thử tổng thể của người dùng, chưa có log request/status hoặc biên bản riêng cho bốn luồng và các nhánh lỗi. Không ghi thành kết quả AI tự chạy hoặc khẳng định đã quan sát từng ca cụ thể. C13 vẫn dành cho hồi quy sau khi nối VNPay.
+- HEAD khi kiểm tra: `6a4485b feat(checkout): place COD orders and show confirmation`; working tree ban đầu sạch. Tài liệu đã cập nhật phần trạng thái, checklist Nhóm 2–4 và bảng bàn giao; giữ các ghi nhận ngày cũ để tham chiếu lịch sử.
+- Giữ rõ giới hạn đã trao đổi: đơn guest lưu tại database, không gắn tài khoản (`user_id = null`); frontend giữ bản xác nhận tạm ở sessionStorage. Email nhập tại checkout được lưu vào `contact_email`, backend hiện chưa gửi email xác nhận tạo đơn. Không đánh dấu tính năng email hoàn thành theo xác nhận kiểm thử COD.
+- Chỉ sửa tài liệu; không sửa source ứng dụng, không chạy lại build/lint/browser/backend, không commit/push. Kiểm tra `git diff --check` cho thay đổi tài liệu trước khi bàn giao.
+- Bước tiếp theo: C12 — đối chiếu API/config VNPay backend, dùng lại payload và mutation checkout; xử lý `paymentUrl`, route `/payment/result` và kết quả backend trước khi bật VNPay. Sau C12 thực hiện C13.
+
+### Bàn giao bổ sung ngày 06/11/2026 — Nối redirect trong handlePlaceOrder
+
+- Theo yêu cầu sửa trực tiếp, đã nối `handlePlaceOrder` trong `CheckoutContent.tsx` với helper `getVnpayRedirectUrl` người dùng đã thêm: COD mở trang xác nhận, VNPAY redirect toàn trang. Giữ validation, guard phiên, khóa request lặp và xử lý lỗi chưa rõ kết quả; không điều hướng nếu component đã unmount trong lúc chờ.
+- Sau khi có response tạo đơn, khóa submit kể cả khi điều hướng lỗi; hiện mã đơn và link mở lại cổng thanh toán nếu đã có URL hợp lệ. Cập nhật nhãn nút theo phương thức và trạng thái đã tạo đơn.
+- Kiểm tra: `npm run build` (gồm typecheck), `npm run lint` và `git diff --check` đạt. Build còn cảnh báo chunk > 500 kB. Chưa chạy browser/backend/sandbox; chưa chạy `verify:checkout` trong phiên này.
+- C12 chưa hoàn thành: radio VNPay vẫn khóa; kiểm tra cũ trong `scripts/verify-checkout.cjs` vẫn kỳ vọng payload VNPAY bị từ chối, cần cập nhật theo contract mới. Tiếp tục các bước hướng dẫn còn lại và thử callback thật trước khi chốt C12. Không commit/push.
+
+### Bàn giao bổ sung ngày 06/11/2026 — Rà soát và bổ sung phần code C12 còn thiếu
+
+- Người dùng yêu cầu kiểm tra code C12 đã tự thêm và bổ sung phần thiếu. Đã đọc toàn bộ feature payment, router, checkout, interceptor, cấu hình và source xử lý callback backend; giữ các thay đổi có sẵn của người dùng.
+- Phần chính đã có: builder nhận VNPAY, redirect sau tạo đơn, API return public giữ query nguyên vẹn, query hạn chế request lặp, route public và UI các trạng thái. Không cần tạo luồng đặt đơn mới.
+- Bổ sung: mở radio VNPay và callback đổi phương thức trong `CheckoutOptions.tsx`; giải thích snapshot trạng thái thanh toán ở `CheckoutSuccessPage.tsx`; cập nhật kiểm tra cũ từ từ chối VNPAY sang từ chối phương thức không hợp lệ.
+- Mở rộng script Node sẵn có, không cài framework: mutation đủ bốn luồng COD/VNPay, payload/ID, URL redirect, query callback nguyên vẹn và không token, HTTP 401/500/timeout không retry và không xóa phiên, response backend/schema, QueryObserver mount lại/focus/reconnect sau thành công và lỗi.
+- Kết quả: `npm run verify:checkout` đạt 15/15; `npm run lint`, `npm run build` (gồm typecheck) và `git diff --check` đạt. Build vẫn cảnh báo chunk > 500 kB (index khoảng 841 kB, HeroScene khoảng 1.000 kB).
+- Chưa chạy trình duyệt/backend/VNPay sandbox, chưa kiểm tra giao dịch hoặc TransactionLog thật. Không suy ra kiểm thử StrictMode/reload/backend idempotency đã đạt từ kiểm tra QueryObserver. C12 đã đủ phần code theo checklist hiện tại nhưng chờ thử thật trước khi chốt; không commit/push.
+
+### Bàn giao ngày 07/11/2026 — Sandbox trả lỗi phê duyệt terminal
+
+- Người dùng đã thử redirect sandbox và cung cấp URL tạo thanh toán có đủ query, TmnCode `OSDJ38NS`, thời gian tạo 00:18:36 và hết hạn 00:33:36 ngày 07/11/2026 (GMT+7). Không lưu lại toàn bộ URL có chữ ký trong tài liệu.
+- Người dùng xác nhận TmnCode/SecretKey khớp email VNPay; URL trang lỗi cuối cùng là `https://sandbox.vnpayment.vn/paymentv2/Payment/Error.html?code=71`, hiển thị “Website này chưa được phê duyệt”. Đây là kết quả do người dùng cung cấp, không phải giao dịch AI tự chạy.
+- Mã 71 phù hợp với “Terminal chưa được duyệt” trong [tài liệu kỹ thuật thanh toán định kỳ VNPay](https://sandbox.vnpayment.vn/apis/files/VNPAYGW_RecurringPayment_Techspec2.1.0-VN.pdf). Nguồn này thuộc sản phẩm định kỳ; thông báo trực tiếp từ trang lỗi sandbox của người dùng là bằng chứng chính cho hướng xử lý trạng thái phê duyệt merchant hiện tại. Chưa truy cập được trạng thái merchant trên hệ thống quản trị VNPay.
+- Bước tiếp theo: phản hồi email VNPay, cung cấp TmnCode và URL/mã lỗi 71 để yêu cầu kiểm tra phê duyệt/kích hoạt terminal sandbox; hỏi rõ URL IPN cần đăng ký. Backend đã có `/api/payments/vnpay/ipn`, nhưng chưa xác nhận IPN công khai được đăng ký với VNPay. Không suy ra thiếu IPN chính là nguyên nhân chưa duyệt.
+- Chưa có kết quả thanh toán thành công/hủy/thất bại hoặc callback/IPN thật; C12 vẫn chờ kiểm thử sau khi VNPay xử lý trạng thái terminal. Việc bỏ dấu `#` trong OrderInfo hoặc chuẩn hóa IPv6 loopback là kiểm tra riêng, chưa có bằng chứng chúng gây lỗi 71. Không sửa source hoặc commit/push trong lần cập nhật này.
+
+### Bổ sung ngày 07/11/2026 — Bỏ dấu # trong nội dung thanh toán
+
+- Theo yêu cầu người dùng, đã đổi đúng dòng dựng `vnp_OrderInfo` trong backend `VnPayServiceImpl.java` từ `Thanh toan don hang #` thành `Thanh toan don hang `, giữ nguyên mã đơn và cơ chế ký URL. Chưa thay đổi xử lý IP.
+- Đã đọc lại dòng sau khi sửa và kiểm tra `git diff --check` của file backend đạt; không chạy build hoặc sandbox cho thay đổi chuỗi này. Cần khởi động lại backend và tạo lại link để thử. Chưa có bằng chứng thay đổi này xử lý lỗi 71; trạng thái phê duyệt terminal vẫn cần VNPay kiểm tra. Không commit/push.
+
+### Bàn giao ngày 07/11/2026 — Người dùng xác nhận kiểm thử thành công, chốt C12
+
+- Người dùng xác nhận “đã test thành công”, sau đó yêu cầu nội dung commit C12 và cập nhật `phase3.md` để kết thúc nhiệm vụ. Ghi nhận C12 hoàn thành theo xác nhận này; thay thế trạng thái chờ sandbox/lỗi 71 của các bàn giao trước. Không khẳng định riêng việc bỏ dấu `#` đã trực tiếp gây ra hay sửa lỗi 71.
+- Phạm vi frontend: mở phương thức VNPay, dùng lại payload/mutation checkout theo nguồn hàng; redirect toàn trang sau khi lưu xác nhận và cleanup đúng nguồn; kiểm tra URL backend/orderId; route public `/payment/result`; gửi query nguyên vẹn, bỏ token và không retry; query hạn chế gọi lặp; UI chờ/thành công/hủy/thất bại/chưa xác định cùng đường tiếp tục mua sắm. Giữ khóa tạo đơn khi redirect lỗi và ghi rõ trạng thái snapshot trên success.
+- Backend tham chiếu có thay đổi riêng: bỏ dấu `#` trong nội dung `vnp_OrderInfo`, giữ mã đơn và cơ chế ký. Backend thuộc repository khác, không gộp thay đổi đó vào commit frontend.
+- Kiểm tra đã có từ phiên triển khai: `npm run verify:checkout` đạt 15/15; lint, build (gồm typecheck) và diff check đạt; build còn cảnh báo chunk > 500 kB. Phiên chốt này chỉ cập nhật tài liệu, đối chiếu source/diff và soạn nội dung commit; không chạy lại build/lint/sandbox.
+- Kết quả chạy thật là xác nhận của người dùng; chưa có log request/status/UI riêng các nhánh hủy/thất bại/sai chữ ký, bằng chứng PAID/TransactionLog hoặc IPN công khai để ghi chi tiết. Không suy ra đã thử hết các ca này; kiểm tra bổ sung ở C13.
+- Commit frontend gợi ý: `feat(payment): handle VNPay redirect and result`. Commit backend riêng cho thay đổi nội dung: `fix(payment): remove hash character from VNPay order info`. Chưa thực hiện commit/push theo yêu cầu chỉ soạn nội dung.
+- Bước tiếp theo: C13 — hồi quy tổng thể và chốt Phase 3. Không giao lại code C12 hoặc giữ lỗi 71 như trở ngại đang chờ xác nhận.

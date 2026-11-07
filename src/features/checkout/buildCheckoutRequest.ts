@@ -13,7 +13,9 @@ interface Input {
 }
 
 export function buildCheckoutRequest(input: Input): CheckoutRequest {
-  if (input.paymentMethod !== PaymentMethod.COD) {
+  if (input.paymentMethod !== PaymentMethod.COD &&
+    input.paymentMethod !== PaymentMethod.VNPAY
+  ) {
     throw new Error("Phương thức thanh toán này chưa được hỗ trợ.");
   }
   if (input.shippingMethod !== "STANDARD" && input.shippingMethod !== "EXPRESS") {

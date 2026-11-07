@@ -1,10 +1,11 @@
-/* Kiểm tra logic C10 bằng Node, không cài thêm test framework hoặc gọi backend. */
+/* Kiểm tra logic C10/C12 bằng Node, không cài thêm test framework hoặc gọi backend. */
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
 const fs = require("node:fs");
 const path = require("node:path");
 const ts = require("typescript");
 const axios = require("axios");
+const { QueryClient, QueryObserver, focusManager, onlineManager } = require("@tanstack/react-query");
 
 const root = path.resolve(__dirname, "..");
 const token = (subject = "user-1", expires = Date.now() + 60_000) =>
@@ -33,9 +34,9 @@ function fixture() {
   const queryClient = { invalidateQueries: async (options) => { invalidations.push(options); } };
   const mocks = {
     "@/shared/auth/session.store": { useSession },
-    "@/shared/config/env": { env: { API_BASE_URL: "https://checkout.test" } },
+    "@/shared/config/env": { env: { API_BASE_URL: "https://checkout.test", BACKEND_ORIGIN: "https://checkout.test" } },
     "@/features/cart/cartMerge.store": { useCartMerge: { getState: () => mergeState } },
-    "@tanstack/react-query": { useMutation: (options) => options, useQueryClient: () => queryClient },
+    "@tanstack/react-query": { useMutation: (options) => options, useQuery: (options) => options, useQueryClient: () => queryClient },
   };
   const cache = new Map();
   function load(specifier, parent = path.join(root, "src", "index.ts")) {
@@ -101,7 +102,7 @@ test("Payload: bốn luồng COD, ID string, đúng địa chỉ và bỏ trư�
   assert.equal(Object.hasOwn(minimal, "contactEmail"), false);
   assert.equal(minimal.recipientName, "Nguyễn Văn A");
   assert.throws(() => build(input({ kind: "guestCart", items: [] })));
-  assert.throws(() => build({ ...input(sources[0]), paymentMethod: "VNPAY" }));
+  assert.throws(() => build({ ...input(sources[0]), paymentMethod: "INVALID" }));
   assert.throws(() => build({ ...input(sources[0]), contactEmail: "invalid" }));
   assert.throws(() => build(input({ kind: "buyNow", item: { ...item, quantity: 0 } })));
 });
@@ -173,21 +174,32 @@ test("API 401/timeout không retry; guest gửi không kèm Authorization", asyn
   assert.equal(requests, 2);
 });
 
-test("Mutation: cả bốn luồng cleanup đúng nguồn, không retry, không xếp hàng offline", async () => {
-  for (const kind of ["guestCart", "userCart", "buyNowGuest", "buyNowUser"]) {
+test("Mutation: bốn luồng COD/VNPAY cleanup đúng nguồn, không retry, không xếp hàng offline", async () => {
+  for (const [kind, paymentMethod] of ["guestCart", "userCart", "buyNowGuest", "buyNowUser"].flatMap(
+    (kind) => ["COD", "VNPAY"].map((method) => [kind, method]),
+  )) {
     const env = fixture();
     const session = kind === "userCart" || kind === "buyNowUser" ? env.login() : { userId: null, token: null };
     const source = kind.startsWith("buyNow") ? { kind: "buyNow", item } : kind === "userCart" ? { kind } : { kind, items: [item] };
     const { useGuestCart } = env.load("@/features/cart/guestCart.store");
     useGuestCart.getState().add(guestItem(item.productVariantId, 2));
     const { api } = env.load("@/shared/api/client");
-    api.defaults.adapter = async (config) => ({ data: order(session.userId === null), status: 200, statusText: "OK", headers: {}, config });
+    api.defaults.adapter = async (config) => ({
+      data: {
+        ...order(session.userId === null),
+        paymentMethod,
+        paymentUrl: paymentMethod === "VNPAY" ? `/api/payments/vnpay/create?orderId=${order().orderId}` : null,
+      },
+      status: 200, statusText: "OK", headers: {}, config,
+    });
     const mutation = env.load("@/features/checkout/queries").usePlaceOrder();
-    const payload = env.load("@/features/checkout/buildCheckoutRequest").buildCheckoutRequest(input(source));
+    const payload = env.load("@/features/checkout/buildCheckoutRequest").buildCheckoutRequest({ ...input(source), paymentMethod });
     const result = await mutation.mutationFn({ payload, source, session });
     assert.equal(mutation.retry, false);
     assert.equal(mutation.networkMode, "always");
     assert.equal(result.confirmation.order.totalPrice, 245_000);
+    assert.equal(result.confirmation.order.paymentMethod, paymentMethod);
+    assert.equal(env.load("@/features/checkout/confirmation.storage").readConfirmation(order().orderId, session.userId).order.paymentMethod, paymentMethod);
     assert.equal(useGuestCart.getState().items.length, kind === "guestCart" ? 0 : 1);
     assert.equal(env.invalidations.length, kind === "userCart" ? 1 : 0);
     if (kind === "userCart") assert.deepEqual(env.invalidations[0].queryKey, ["cart", "user-1"]);
@@ -249,4 +261,143 @@ test("Lỗi storage/cache sau HTTP thành công không biến thành lỗi đặ
   assert.equal(result.stored, false);
   assert.equal(result.cartSyncFailed, true);
   assert.equal(result.confirmation.order.orderId, order().orderId);
+});
+
+test("VNPay: payload giữ đúng nguồn, địa chỉ và ID string", () => {
+  const { load } = fixture();
+  const { buildCheckoutRequest: build } = load("@/features/checkout/buildCheckoutRequest");
+  for (const source of [{ kind: "guestCart", items: [item] }, { kind: "userCart" }, { kind: "buyNow", item }]) {
+    for (const selected of [address, { addressId: "987654321012345681" }]) {
+      const cod = build(input(source, selected));
+      const vnpay = build({ ...input(source, selected), paymentMethod: "VNPAY" });
+      assert.deepEqual(vnpay, { ...cod, paymentMethod: "VNPAY" });
+    }
+  }
+});
+
+test("VNPay: URL tương đối/tuyệt đối đúng backend; chặn thiếu URL, sai origin/đơn/endpoint", () => {
+  const { load } = fixture();
+  const { getVnpayRedirectUrl } = load("@/features/payment/redirect");
+  const paymentUrl = `/api/payments/vnpay/create?orderId=${order().orderId}`;
+  const expected = `https://checkout.test${paymentUrl}`;
+  for (const url of [paymentUrl, expected]) {
+    assert.equal(getVnpayRedirectUrl({ ...order(), paymentMethod: "VNPAY", paymentUrl: url }), expected);
+  }
+  for (const url of [
+    null, "", `https://other.test${paymentUrl}`, `//other.test${paymentUrl}`,
+    "javascript:alert(1)", "/api/payments/vnpay/create?orderId=wrong",
+    `/other?orderId=${order().orderId}`, `https://user:password@checkout.test${paymentUrl}`,
+  ]) {
+    assert.throws(() => getVnpayRedirectUrl({ ...order(), paymentUrl: url }));
+  }
+});
+
+const callbackSearch = `?vnp_TxnRef=${order().orderId}&vnp_OrderInfo=Don+hang%20%2B%26&vnp_ResponseCode=00&vnp_SecureHash=test`;
+
+test("VNPay: callback giữ nguyên query; bỏ token và không gửi header nội bộ", async () => {
+  const { load, login, state } = fixture();
+  const session = login();
+  const { api } = load("@/shared/api/client");
+  let requests = 0;
+  api.defaults.adapter = async (config) => {
+    requests++;
+    assert.equal(config.method, "get");
+    assert.equal(config.url, `/api/payments/vnpay/return${callbackSearch}`);
+    assert.equal(config.headers.get("Authorization"), undefined);
+    assert.equal(config.headers.get("X-Skip-Auth"), undefined);
+    return { data: { success: true, message: "Payment successful!", orderId: order().orderId }, status: 200, headers: {}, config };
+  };
+  const result = await load("@/features/payment/api").verifyVnpayReturn(callbackSearch);
+  assert.equal(result.success, true);
+  assert.equal(result.orderId, order().orderId);
+  assert.equal(requests, 1);
+  assert.equal(state.token, session.token);
+});
+
+test("VNPay: lỗi HTTP/timeout không retry và không xóa phiên đăng nhập", async () => {
+  const { load, login, state } = fixture();
+  const session = login();
+  const { api } = load("@/shared/api/client");
+  const { verifyVnpayReturn } = load("@/features/payment/api");
+  let requests = 0;
+  for (const status of [401, 500, 0]) {
+    api.defaults.adapter = async (config) => {
+      requests++;
+      const response = status ? { status, data: { message: "Failure" }, headers: {}, config } : undefined;
+      throw new axios.AxiosError("Failure", status ? "ERR_BAD_RESPONSE" : "ECONNABORTED", config, null, response);
+    };
+    await assert.rejects(verifyVnpayReturn(callbackSearch), (error) => error.status === status);
+    assert.equal(state.token, session.token);
+  }
+  assert.equal(requests, 3);
+});
+
+test("VNPay: query báo 00 vẫn giữ kết quả backend; response thành công thiếu mã đơn bị từ chối", async () => {
+  const { load } = fixture();
+  const { api } = load("@/shared/api/client");
+  const { verifyVnpayReturn } = load("@/features/payment/api");
+  for (const result of [
+    { success: false, message: "Verification failed" },
+    { success: false, message: "Payment cancelled", orderId: order().orderId },
+    { success: false, message: "Payment failed", orderId: order().orderId },
+  ]) {
+    api.defaults.adapter = async (config) => ({ data: result, status: 200, headers: {}, config });
+    assert.deepEqual(await verifyVnpayReturn(callbackSearch), result);
+  }
+  for (const result of [
+    { success: true, message: "Payment successful!" },
+    { success: "true", message: "Payment successful!", orderId: order().orderId },
+    { success: true, message: "Payment successful!", orderId: 123 },
+  ]) {
+    api.defaults.adapter = async (config) => ({ data: result, status: 200, headers: {}, config });
+    await assert.rejects(verifyVnpayReturn(callbackSearch), (error) => error.status === 0);
+  }
+});
+
+test("VNPay: observer mount lại/focus/reconnect không gọi lặp kể cả sau lỗi", async () => {
+  for (const fails of [false, true]) {
+    const { load } = fixture();
+    const { api } = load("@/shared/api/client");
+    const options = load("@/features/payment/queries").useVnpayReturn(callbackSearch, true);
+    const client = new QueryClient();
+    client.mount();
+    let requests = 0;
+    let finishRequest;
+    api.defaults.adapter = (config) => {
+      requests++;
+      return new Promise((resolve, reject) => {
+        finishRequest = () => fails
+          ? reject(new axios.AxiosError("Timeout", "ECONNABORTED", config))
+          : resolve({ data: { success: true, message: "Paid", orderId: order().orderId }, status: 200, headers: {}, config });
+      });
+    };
+    let unsubscribe = () => {};
+    try {
+      // Mô phỏng subscribe → unsubscribe → subscribe trong lúc request đang chạy.
+      unsubscribe = new QueryObserver(client, options).subscribe(() => {});
+      await new Promise((resolve) => setImmediate(resolve));
+      unsubscribe();
+      unsubscribe = new QueryObserver(client, options).subscribe(() => {});
+      const pending = client.getQueryCache().find({ queryKey: options.queryKey, exact: true }).promise;
+      finishRequest();
+      if (fails) await assert.rejects(pending);
+      else await pending;
+
+      unsubscribe();
+      unsubscribe = new QueryObserver(client, options).subscribe(() => {});
+      focusManager.setFocused(false);
+      focusManager.setFocused(true);
+      onlineManager.setOnline(false);
+      onlineManager.setOnline(true);
+      await new Promise((resolve) => setImmediate(resolve));
+      assert.equal(requests, 1);
+      assert.equal(client.getQueryState(options.queryKey).status, fails ? "error" : "success");
+    } finally {
+      unsubscribe();
+      client.unmount();
+      client.clear();
+      focusManager.setFocused(undefined);
+      onlineManager.setOnline(true);
+    }
+  }
 });

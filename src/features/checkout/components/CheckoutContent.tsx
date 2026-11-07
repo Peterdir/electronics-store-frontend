@@ -20,6 +20,7 @@ import { buildCheckoutRequest } from "../buildCheckoutRequest";
 import { usePlaceOrder } from "../queries";
 import { isCheckoutSessionCurrent } from "../session";
 import type { CheckoutSource } from "../types";
+import { getVnpayRedirectUrl } from "@/features/payment/redirect";
 
 interface Props {
   userId: ID | null;
@@ -44,6 +45,7 @@ export function CheckoutContent({ userId, subtotal, source, canSubmit = true, ch
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [outcomeUnknown, setOutcomeUnknown] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [paymentRedirectUrl, setPaymentRedirectUrl] = useState<string | null>(null);
   const busy = placeOrder.isPending || completed;
   useEffect(() => {
     mounted.current = true;
@@ -102,8 +104,11 @@ export function CheckoutContent({ userId, subtotal, source, canSubmit = true, ch
 
   async function handlePlaceOrder() {
     if (submitting.current || busy || outcomeUnknown || !canSubmit) return;
+
     setEmailTouched(true);
     setSubmitError(null);
+    setPaymentRedirectUrl(null);
+
     if (!addressFields) {
       setSubmitError("Vui lòng chọn hoặc xác nhận địa chỉ nhận hàng.");
       return;
@@ -115,6 +120,7 @@ export function CheckoutContent({ userId, subtotal, source, canSubmit = true, ch
 
     const session = { userId, token: useSession.getState().token };
     submitting.current = true;
+
     try {
       const payload = buildCheckoutRequest({
         source,
@@ -125,15 +131,29 @@ export function CheckoutContent({ userId, subtotal, source, canSubmit = true, ch
         contactEmail: emailResult.data ?? "",
       });
       const result = await placeOrder.mutateAsync({ payload, session, source });
-      if (!isCheckoutSessionCurrent(session)) return;
-      if (mounted.current) setCompleted(true);
+      if (!mounted.current || !isCheckoutSessionCurrent(session)) return;
+
+      const order = result.confirmation.order;
+      setCompleted(true);
+
       try {
-        await navigate(`/checkout/success/${result.confirmation.order.orderId}`, {
+        if (order.paymentMethod === PaymentMethod.VNPAY) {
+          const url = getVnpayRedirectUrl(order);
+          setPaymentRedirectUrl(url);
+          window.location.assign(url);
+          return;
+        }
+
+        await navigate(`/checkout/success/${order.orderId}`, {
           replace: true,
           state: result,
         });
       } catch {
-        if (mounted.current) setSubmitError(`Đơn ${result.confirmation.order.orderId} đã được tạo. Không thể mở trang xác nhận; vui lòng giữ lại mã đơn.`);
+        if (mounted.current) {
+          setSubmitError(
+            `Đơn ${order.orderId} đã được tạo nhưng chưa mở được trang tiếp theo. Vui lòng giữ lại mã đơn.`,
+          );
+        }
       }
     } catch (error) {
       if (!mounted.current) return;
@@ -397,8 +417,22 @@ export function CheckoutContent({ userId, subtotal, source, canSubmit = true, ch
           disabled={busy || outcomeUnknown || !canSubmit}
           onClick={() => void handlePlaceOrder()}
         >
-          {busy ? "Đang xử lý đơn hàng..." : "Đặt hàng COD"}
+          {completed
+            ? "Đơn đã được tạo"
+            : placeOrder.isPending
+              ? "Đang xử lý đơn hàng..."
+              : paymentMethod === PaymentMethod.VNPAY
+                ? "Đặt hàng và thanh toán VNPay"
+                : "Đặt hàng COD"}
         </Button>
+        {submitError && paymentRedirectUrl && (
+          <a
+            href={paymentRedirectUrl}
+            className="inline-block text-primary underline"
+          >
+            Mở cổng thanh toán cho đơn đã tạo
+          </a>
+        )}
       </div>
     </section>
   );
