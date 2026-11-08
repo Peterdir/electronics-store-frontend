@@ -51,3 +51,23 @@ export const resetPasswordSchema = z.object({
 )
 
 export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>
+
+
+export const profileSchema = z.object({
+    fullName: z
+        .string()
+        .trim()
+        .min(1, "Vui lòng nhập họ và tên."),
+
+    phone: z
+        .string()
+        .trim()
+        .refine(
+            (value) =>
+                value === "" ||
+                /^(0|\+84)[0-9]{9}$/.test(value),
+            "Số điện thoại phải có dạng 0912345678 hoặc +84912345678.",
+        ),
+})
+
+export type ProfileFormValues = z.infer<typeof profileSchema>

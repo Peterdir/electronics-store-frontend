@@ -2,7 +2,7 @@
 
 > Ngày lập: **07/11/2026**. Đối chiếu frontend tại HEAD `7df522e`; working tree sạch trước khi tạo tài liệu.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase3.md](phase3.md), source frontend và source tham chiếu tại `../ecommerce-backend`.
-> **Điểm tiếp tục — cập nhật 08/11/2026: kiểm thử trình duyệt để chốt D1 — AccountLayout và điều hướng tài khoản.** D1 đã có code, review source và lint/build/typecheck đạt; chưa có xác nhận kiểm thử trình duyệt. Người dùng quyết định bỏ qua D0 như một mốc riêng; đối chiếu API và chuẩn bị dữ liệu ngay tại chức năng sử dụng. Chưa có mốc Phase 4 nào được ghi nhận hoàn thành đầy đủ.
+> **Điểm tiếp tục — cập nhật 08/11/2026: kiểm thử backend/trình duyệt để chốt D2 — chỉnh sửa hồ sơ.** D2 đã có form và tích hợp API; kiểm tra tĩnh và kiểm tra logic Node được ghi ở bàn giao cuối tài liệu. D1 vẫn chờ xác nhận kiểm thử trình duyệt. Người dùng quyết định bỏ qua D0 như một mốc riêng; đối chiếu API và chuẩn bị dữ liệu ngay tại chức năng sử dụng. Chưa có mốc Phase 4 nào được ghi nhận hoàn thành đầy đủ.
 > Phase 3: C1–C12 đã được chốt trong phạm vi ghi ở `phase3.md`; C12 hoàn thành theo xác nhận thử VNPay của người dùng ngày 07/11/2026. **C13 còn hồi quy tổng thể**, không tự đánh dấu Phase 3 hoàn tất và không giao lại code C12. Có thể bắt đầu phần tài khoản độc lập; kiểm tra các luồng checkout/payment liên quan khi tích hợp D5–D8 và chốt D13.
 
 ## 1. Cách thực hiện
@@ -151,7 +151,7 @@ Không đặt token vào query key. Nếu giữ dữ liệu trang trước, ch�
 |---|---|---|---|
 | D0 | Contract và dữ liệu kiểm tra được ghi rõ | Source hiện tại | Bỏ qua mốc riêng theo quyết định người dùng ngày 08/11/2026; kiểm tra tại từng chức năng, chưa ghi nhận đã thử API |
 | D1 | AccountLayout, route lồng nhau, quay lại đúng trang sau login | Auth hiện có | Đã code và review ngày 08/11/2026; lint/build/typecheck đạt; chờ xác nhận kiểm thử trình duyệt |
-| D2 | Sửa hồ sơ | D1 | Chưa làm |
+| D2 | Sửa hồ sơ | D1 | Đã code ngày 08/11/2026; lint/build và 7 kiểm tra Node đạt; chờ kiểm thử backend/trình duyệt |
 | D3 | Đổi mật khẩu | D1 | Chưa làm |
 | D4 | Lịch sử đơn, lọc/phân trang | D1 | Chưa làm |
 | D5 | Chi tiết đơn, trạng thái và đường vào từ checkout | D4 | Chưa làm |
@@ -211,6 +211,8 @@ Thứ tự thực hiện từ 08/11/2026: D1 → D2 → D3 → D4 → D5 → D6 
 **Kiểm tra:** hồ sơ có null, họ tên toàn khoảng trắng, SĐT sai, xóa SĐT cũ, fieldErrors, mất mạng giữ form, pending chặn submit, response muộn sau đổi tài khoản không ghi nhầm.
 
 **Commit:** `feat(account): edit customer profile`.
+
+**Cập nhật — 08/11/2026:** người dùng đã bổ sung types/schema/API/hooks và yêu cầu triển khai phần còn lại. Đã thêm ProfileForm, nối ProfilePage và kiểm tra logic bằng `npm run verify:profile`. Form giữ nội dung khi refetch nền/lỗi, khóa gửi lặp, map fieldErrors và bỏ field phone khi xóa SĐT. PUT thành công nhưng GET lại lỗi có nút tải lại chỉ gửi GET, không gửi lại PUT. Chưa xác nhận API thật hoặc reload trình duyệt; xem bàn giao cuối tài liệu.
 
 ### D3 — Đổi mật khẩu
 
@@ -383,7 +385,7 @@ Tất cả hàng dưới đây **chưa chạy trong lượt lập kế hoạch**
 | Nhóm | Ca tối thiểu | Bằng chứng cần ghi |
 |---|---|---|
 | Route/session | Guest vào deep link, login quay lại; đổi A → B khi request đang chờ | URL cuối, dữ liệu hiển thị, không ghi cache nhầm |
-| Hồ sơ | GET → PUT → GET; field lỗi và xóa SĐT | Payload/status, dữ liệu sau reload |
+| Hồ sơ | GET → PUT → GET; field lỗi và xóa SĐT | 08/11/2026: 7 kiểm tra logic Node đạt với QueryClient thật/API giả lập; chưa có payload/status API thật hoặc kết quả reload trình duyệt |
 | Mật khẩu | Sai mật khẩu cũ; đổi thành công; login lại | Status và kết quả đăng nhập, không lưu mật khẩu vào biên bản |
 | Orders | Filter/page/Back; đơn khác chủ, 404/locked | Query params, page response, UI/phiên sau lỗi |
 | Cancel | UNPAID và PAID; trạng thái đổi khi đang mở dialog | Response flags, CANCELLED/paymentStatus, message |
@@ -433,3 +435,14 @@ Bước tiếp theo:
 - `npm run lint`, `npm run build` (gồm `tsc -b`) và whitespace check đạt, gồm file AccountLayout chưa được Git track. Build còn cảnh báo chunk > 500 kB (index khoảng 845 kB, HeroScene khoảng 1.000 kB).
 - Chưa tự thử browser/backend; chờ người dùng xác nhận mở `/account`, chuyển menu/reload, guest → login → quay lại địa chỉ, giữ search/hash, logout, mobile/bàn phím và hồi quy địa chỉ/checkout.
 - Chưa commit/push. Sau khi kiểm thử đạt, chốt D1 với commit gợi ý `feat(account): add account layout and navigation`, rồi tiếp tục D2.
+
+### Triển khai D2 — 08/11/2026
+
+- Người dùng đã thêm auth types/schema/API/hooks và yêu cầu triển khai phần còn lại. Đã thêm `src/features/auth/components/ProfileForm.tsx`, nối vào `pages/ProfilePage.tsx`; bổ sung `scripts/verify-profile.cjs` và lệnh `npm run verify:profile`.
+- Form sửa họ tên/SĐT, email chỉ đọc; nullable profile được chuyển thành ô trống. Payload phone trống được bỏ field theo DTO/service backend đã đọc; chưa xác nhận hành vi này bằng API thật.
+- Form chỉ reset từ hồ sơ GET sau lưu hoặc sau lần tải lại do người dùng yêu cầu khi PUT đã thành công. Refetch nền/lỗi không tháo form hoặc ghi đè nội dung đang nhập. Có khóa gửi lặp, lỗi theo field/root, kiểm tra phiên và unmount trước khi cập nhật form/thông báo.
+- Nếu PUT thành công nhưng GET lại thất bại, giữ nội dung, thông báo đã lưu và cung cấp nút chỉ tải lại hồ sơ; tạm khóa chỉnh sửa/gửi PUT cho đến khi xác nhận được dữ liệu mới.
+- `npm run lint`, `npm run build` (gồm `tsc -b`), `npm run verify:profile` (7/7) và `git diff --check` đạt; file mới cũng đã kiểm tra whitespace. Build còn cảnh báo chunk > 500 kB như D1 (index khoảng 850 kB, HeroScene khoảng 1.000 kB).
+- Kiểm tra Node dùng schema thật, MutationObserver/QueryClient thật và API giả lập: trim/validation, PUT → GET và cache đúng user, PUT lỗi giữ fieldErrors, GET lỗi sau PUT rồi tải lại, phiên đổi trước submit, đổi user khi PUT chậm, logout khi GET chậm không khôi phục cache. Đây là kiểm tra logic, không phải kết quả UI hoặc backend thật.
+- Chưa chạy kiểm thử backend/trình duyệt hoặc nhận xác nhận của người dùng. Cần thử `/account/profile`: nhập/sửa/lưu/reload, null, tên trắng/SĐT sai, xóa SĐT cũ, lỗi mạng/fieldErrors, chặn gửi lặp, refetch nền, đổi tài khoản và mobile/bàn phím. Chưa chốt D2 hoàn thành đầy đủ, chưa thay trạng thái kiểm thử D1.
+- Chưa commit/push. Commit gợi ý sau khi kiểm thử đạt: `feat(account): edit customer profile`. Bước tiếp theo: xác nhận backend/trình duyệt D2, sau đó D3 — đổi mật khẩu.

@@ -9,6 +9,7 @@
     "typecheck": "tsc -b",
     "verify:checkout": "node --test scripts/verify-checkout.cjs",
     "verify:catalog": "node --test scripts/verify-catalog.cjs",
+    "verify:profile": "node --test scripts/verify-profile.cjs",
     "gen:api": "openapi-typescript http://localhost:8080/v3/api-docs -o src/shared/types/openapi.d.ts",
     "lint": "eslint .",
     "preview": "vite preview"

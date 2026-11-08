@@ -1,5 +1,5 @@
 import { api } from "@/shared/api/client";
-import type { AuthResponse, ForgotPasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, UserProfileResponse } from "./types";
+import type { AuthResponse, ForgotPasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, UpdateProfileRequest, UserProfileResponse } from "./types";
 import type { MessageResponse } from "@/shared/types/common"
 
 // LOGIN
@@ -20,9 +20,19 @@ export async function login(
 }
 
 // PROFILE
-export async function getMyProfile(): Promise<UserProfileResponse> {
+export async function getMyProfile(
+    signal?: AbortSignal,
+    token?: string,
+): Promise<UserProfileResponse> {
     const response = await api.get<UserProfileResponse>(
         "/api/users/me",
+        {
+            signal,
+            meta: {
+                authToken: token,
+                noPublicRetry: true,
+            },
+        },
     )
 
     return response.data
@@ -118,5 +128,23 @@ export async function resetPassword(
         payload,
         { headers: { "X-Skip-Auth": "1" } },
     )
+    return response.data
+}
+
+export async function updateMyProfile(
+    payload: UpdateProfileRequest,
+    token: string,
+): Promise<MessageResponse> {
+    const response = await api.put<MessageResponse>(
+        "/api/users/me",
+        payload,
+        {
+            meta: {
+                authToken: token,
+                noPublicRetry: true,
+            },
+        },
+    )
+
     return response.data
 }

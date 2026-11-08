@@ -1,12 +1,12 @@
-import { useMutation, useQuery } from "@tanstack/react-query"
-import { forgotPassword, getMyProfile, login, logout, registerAccount, resendVerification, resetPassword, verifyEmail } from "./api"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { forgotPassword, getMyProfile, login, logout, registerAccount, resendVerification, resetPassword, updateMyProfile, verifyEmail } from "./api"
 import { useSession } from "@/shared/auth/session.store"
 import { qk } from "@/shared/api/queryKeys"
 import { isExpired } from "@/shared/auth/jwt"
 import { toast } from "sonner"
 import { startGuestCartMerge } from "../cart/mergeGuestCart"
+import type { UpdateProfileRequest, UserProfileResponse } from "./types"
 
-// LOGIN
 export function useLogin() {
     const setSession = useSession((state) => state.setSession)
 
@@ -26,20 +26,19 @@ export function useLogin() {
     })
 }
 
-// PROFILE
 export function useMe() {
     const token = useSession((state) => state.token)
     const userId = useSession((state) => state.user?.id)
 
     return useQuery({
         queryKey: [...qk.me, userId],
-        queryFn: getMyProfile,
-        enabled: Boolean(token && !isExpired(token)),
+        queryFn: ({ signal }) =>
+            getMyProfile(signal, token ?? undefined),
+        enabled: Boolean(userId && token && !isExpired(token)),
         retry: false,
     })
 }
 
-// LOGOUT
 export function useLogout() {
     return useMutation({
         retry: false,
@@ -65,7 +64,6 @@ export function useLogout() {
     })
 }
 
-// REGISTER
 export function useRegister() {
     return useMutation({
         mutationFn: registerAccount,
@@ -73,7 +71,6 @@ export function useRegister() {
     })
 }
 
-// RESEND VERIFICATION
 export function useResendVerification() {
     return useMutation({
         mutationFn: resendVerification,
@@ -81,7 +78,6 @@ export function useResendVerification() {
     })
 }
 
-// VERIFY EMAIL
 export function useVerifyEmail() {
     const setSession = useSession((state) => state.setSession)
 
@@ -101,7 +97,6 @@ export function useVerifyEmail() {
     })
 }
 
-// FORGOT PASSWORD
 export function useForgotPassword() {
     return useMutation({ 
         mutationFn: forgotPassword, 
@@ -109,10 +104,96 @@ export function useForgotPassword() {
     })
 }
 
-// RESET PASSWORD
 export function useResetPassword() {
     return useMutation({ 
         mutationFn: resetPassword, 
         retry: false 
+    })
+}
+
+interface UpdateProfileVariables {
+    payload: UpdateProfileRequest
+    userId: string
+    token: string
+}
+
+export function isCurrentProfileSession(
+    session: { userId: string; token: string },
+): boolean {
+    const current = useSession.getState()
+
+    return (
+        current.user?.id === session.userId &&
+        current.token === session.token &&
+        !isExpired(session.token)
+    )
+}
+
+export function useUpdateProfile() {
+    const queryClient = useQueryClient()
+
+    return useMutation({
+        retry: false,
+
+        networkMode: "always",
+
+        mutationFn: async (variables: UpdateProfileVariables) => {
+            const { payload, userId, token } = variables
+
+            if (!isCurrentProfileSession(variables)) {
+                return null
+            }
+
+            const response = await updateMyProfile(payload, token)
+
+            if (!isCurrentProfileSession(variables)) {
+                return null
+            }
+
+            const queryKey = [...qk.me, userId]
+
+            try {
+                await queryClient.invalidateQueries(
+                    {
+                        queryKey,
+                        exact: true,
+                        refetchType: "all",
+                    },
+                    {
+                        throwOnError: true,
+                    },
+                )
+            } catch {
+                if (!isCurrentProfileSession(variables)) {
+                    return null
+                }
+
+                return {
+                    message: response.message,
+                    profile: null,
+                }
+            }
+
+            if (!isCurrentProfileSession(variables)) {
+                return null
+            }
+
+            const state =
+                queryClient.getQueryState<UserProfileResponse>(
+                    queryKey,
+                )
+
+            const profile =
+                state?.status === "success" &&
+                !state.isInvalidated &&
+                state.data?.id === userId
+                    ? state.data
+                    : null
+
+            return {
+                message: response.message,
+                profile,
+            }
+        },
     })
 }
