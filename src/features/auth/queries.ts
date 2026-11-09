@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { forgotPassword, getMyProfile, login, logout, registerAccount, resendVerification, resetPassword, updateMyProfile, verifyEmail } from "./api"
+import { changePassword, forgotPassword, getMyProfile, login, logout, registerAccount, resendVerification, resetPassword, updateMyProfile, verifyEmail } from "./api"
 import { useSession } from "@/shared/auth/session.store"
 import { qk } from "@/shared/api/queryKeys"
 import { isExpired } from "@/shared/auth/jwt"
 import { toast } from "sonner"
 import { startGuestCartMerge } from "../cart/mergeGuestCart"
-import type { UpdateProfileRequest, UserProfileResponse } from "./types"
+import type { ChangePasswordRequest, UpdateProfileRequest, UserProfileResponse } from "./types"
 
 export function useLogin() {
     const setSession = useSession((state) => state.setSession)
@@ -194,6 +194,45 @@ export function useUpdateProfile() {
                 message: response.message,
                 profile,
             }
+        },
+    })
+}
+
+interface ChangePasswordVariables {
+    payload: ChangePasswordRequest
+    userId: string
+    token: string
+}
+
+export function isCurrentPasswordSession(
+    session: { userId: string; token: string },
+): boolean {
+    const current = useSession.getState()
+
+    return (
+        current.user?.id === session.userId &&
+        current.token === session.token &&
+        !isExpired(session.token)
+    )
+}
+
+export function useChangePassword() {
+    return useMutation({
+        retry: false,
+        networkMode: "always",
+        gcTime: 0,
+
+        mutationFn: async (variables: ChangePasswordVariables) => {
+            if (!isCurrentPasswordSession(variables)) return null
+
+            const response = await changePassword(
+                variables.payload,
+                variables.token,
+            )
+
+            if (!isCurrentPasswordSession(variables)) return null
+
+            return response
         },
     })
 }

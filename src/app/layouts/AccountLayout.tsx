@@ -9,6 +9,10 @@ const accountLinks = [
     to: "/account/addresses",
     label: "Sổ địa chỉ",
   },
+  {
+    to: "/account/password",
+    label: "Đổi mật khẩu",
+  },
 ];
 
 export function AccountLayout() {

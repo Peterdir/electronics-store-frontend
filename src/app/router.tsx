@@ -28,6 +28,7 @@ import { CheckoutSuccessPage } from "@/features/checkout/pages/CheckoutSuccessPa
 import { AddressesPage } from "@/features/address/pages/AddressesPage";
 import { PaymentResultPage } from "@/features/payment/pages/PaymentResultPage";
 import { AccountLayout } from "./layouts/AccountLayout";
+import { ChangePasswordPage } from "@/features/auth/pages/ChangePasswordPage";
 
 
 export const router = createBrowserRouter([
@@ -112,6 +113,10 @@ export const router = createBrowserRouter([
                     {
                         path: "addresses",
                         Component: AddressesPage,
+                    },
+                    {
+                        path: "password",
+                        Component: ChangePasswordPage,
                     },
                 ],
             },

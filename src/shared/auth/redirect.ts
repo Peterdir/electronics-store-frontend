@@ -35,6 +35,7 @@ export function getLoginDestination(
                 url.pathname === "/account" ||
                 url.pathname === "/account/profile" ||
                 url.pathname === "/account/addresses" ||
+                url.pathname === "/account/password" ||
                 (
                     url.pathname === "/admin" &&
                     canAccessAdmin

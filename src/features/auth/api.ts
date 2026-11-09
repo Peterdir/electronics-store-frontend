@@ -1,5 +1,5 @@
 import { api } from "@/shared/api/client";
-import type { AuthResponse, ForgotPasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, UpdateProfileRequest, UserProfileResponse } from "./types";
+import type { AuthResponse, ChangePasswordRequest, ForgotPasswordRequest, LoginRequest, RegisterRequest, ResetPasswordRequest, UpdateProfileRequest, UserProfileResponse } from "./types";
 import type { MessageResponse } from "@/shared/types/common"
 
 // LOGIN
@@ -137,6 +137,24 @@ export async function updateMyProfile(
 ): Promise<MessageResponse> {
     const response = await api.put<MessageResponse>(
         "/api/users/me",
+        payload,
+        {
+            meta: {
+                authToken: token,
+                noPublicRetry: true,
+            },
+        },
+    )
+
+    return response.data
+}
+
+export async function changePassword(
+    payload: ChangePasswordRequest,
+    token: string,
+): Promise<MessageResponse> {
+    const response = await api.post<MessageResponse>(
+        "/api/users/change-password",
         payload,
         {
             meta: {
