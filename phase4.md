@@ -2,7 +2,7 @@
 
 > Ngày lập: **07/11/2026**. Đối chiếu frontend tại HEAD `7df522e`; working tree sạch trước khi tạo tài liệu.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase3.md](phase3.md), source frontend và source tham chiếu tại `../ecommerce-backend`.
-> **Điểm tiếp tục — cập nhật 08/11/2026: kiểm thử backend/trình duyệt để chốt D2 — chỉnh sửa hồ sơ.** D2 đã có form và tích hợp API; kiểm tra tĩnh và kiểm tra logic Node được ghi ở bàn giao cuối tài liệu. D1 vẫn chờ xác nhận kiểm thử trình duyệt. Người dùng quyết định bỏ qua D0 như một mốc riêng; đối chiếu API và chuẩn bị dữ liệu ngay tại chức năng sử dụng. Chưa có mốc Phase 4 nào được ghi nhận hoàn thành đầy đủ.
+> **Điểm tiếp tục — cập nhật 09/11/2026: sửa lỗi lint D3, sau đó tiếp tục D4 — lịch sử đơn hàng.** Người dùng báo đã hoàn thành D3; code đã nằm trong commit `cafca17`. Review xác nhận build và 7 kiểm tra hồi quy hồ sơ đạt, nhưng `npm run lint` còn lỗi `react-hooks/refs` tại `ChangePasswordForm.tsx:143`; chưa chốt D3 đạt đầy đủ. D1/D2 vẫn chờ xác nhận kiểm thử trình duyệt/backend như bàn giao trước. Người dùng quyết định bỏ qua D0 như một mốc riêng; đối chiếu API và chuẩn bị dữ liệu ngay tại chức năng sử dụng.
 > Phase 3: C1–C12 đã được chốt trong phạm vi ghi ở `phase3.md`; C12 hoàn thành theo xác nhận thử VNPay của người dùng ngày 07/11/2026. **C13 còn hồi quy tổng thể**, không tự đánh dấu Phase 3 hoàn tất và không giao lại code C12. Có thể bắt đầu phần tài khoản độc lập; kiểm tra các luồng checkout/payment liên quan khi tích hợp D5–D8 và chốt D13.
 
 ## 1. Cách thực hiện
@@ -152,7 +152,7 @@ Không đặt token vào query key. Nếu giữ dữ liệu trang trước, ch�
 | D0 | Contract và dữ liệu kiểm tra được ghi rõ | Source hiện tại | Bỏ qua mốc riêng theo quyết định người dùng ngày 08/11/2026; kiểm tra tại từng chức năng, chưa ghi nhận đã thử API |
 | D1 | AccountLayout, route lồng nhau, quay lại đúng trang sau login | Auth hiện có | Đã code và review ngày 08/11/2026; lint/build/typecheck đạt; chờ xác nhận kiểm thử trình duyệt |
 | D2 | Sửa hồ sơ | D1 | Đã code ngày 08/11/2026; lint/build và 7 kiểm tra Node đạt; chờ kiểm thử backend/trình duyệt |
-| D3 | Đổi mật khẩu | D1 | Chưa làm |
+| D3 | Đổi mật khẩu | D1 | Người dùng báo hoàn thành; đã code tại `cafca17`, review 09/11/2026: build và hồi quy hồ sơ 7/7 đạt; còn 1 lỗi lint `react-hooks/refs`, chưa chốt đầy đủ; chưa ghi kết quả backend/trình duyệt từng ca |
 | D4 | Lịch sử đơn, lọc/phân trang | D1 | Chưa làm |
 | D5 | Chi tiết đơn, trạng thái và đường vào từ checkout | D4 | Chưa làm |
 | D6 | Hủy đơn có lý do | D5 | Chưa làm |
@@ -215,6 +215,8 @@ Thứ tự thực hiện từ 08/11/2026: D1 → D2 → D3 → D4 → D5 → D6 
 **Cập nhật — 08/11/2026:** người dùng đã bổ sung types/schema/API/hooks và yêu cầu triển khai phần còn lại. Đã thêm ProfileForm, nối ProfilePage và kiểm tra logic bằng `npm run verify:profile`. Form giữ nội dung khi refetch nền/lỗi, khóa gửi lặp, map fieldErrors và bỏ field phone khi xóa SĐT. PUT thành công nhưng GET lại lỗi có nút tải lại chỉ gửi GET, không gửi lại PUT. Chưa xác nhận API thật hoặc reload trình duyệt; xem bàn giao cuối tài liệu.
 
 ### D3 — Đổi mật khẩu
+
+**Trạng thái — 09/11/2026:** đã triển khai tại commit `cafca17`, người dùng báo hoàn thành. Review chưa phát hiện sai lệch contract; build đạt nhưng lint còn lỗi `react-hooks/refs` ở cách gắn submit handler của form. Sửa theo bàn giao cuối tài liệu rồi chạy lại lint trước khi chốt. Chưa có kết quả backend/trình duyệt từng ca được ghi nhận trong lượt review.
 
 **File:** auth types/schema/API/hooks, ChangePasswordForm/Page; dùng lại PasswordInput và `newPasswordSchema`.
 
@@ -386,7 +388,7 @@ Tất cả hàng dưới đây **chưa chạy trong lượt lập kế hoạch**
 |---|---|---|
 | Route/session | Guest vào deep link, login quay lại; đổi A → B khi request đang chờ | URL cuối, dữ liệu hiển thị, không ghi cache nhầm |
 | Hồ sơ | GET → PUT → GET; field lỗi và xóa SĐT | 08/11/2026: 7 kiểm tra logic Node đạt với QueryClient thật/API giả lập; chưa có payload/status API thật hoặc kết quả reload trình duyệt |
-| Mật khẩu | Sai mật khẩu cũ; đổi thành công; login lại | Status và kết quả đăng nhập, không lưu mật khẩu vào biên bản |
+| Mật khẩu | Sai mật khẩu cũ; đổi thành công; login lại | 09/11/2026: người dùng báo hoàn thành D3; đã review source và đối chiếu backend. Chưa có status/response API thật hoặc kết quả đăng nhập từng ca được ghi; build đạt, lint còn 1 lỗi. Không lưu mật khẩu vào biên bản |
 | Orders | Filter/page/Back; đơn khác chủ, 404/locked | Query params, page response, UI/phiên sau lỗi |
 | Cancel | UNPAID và PAID; trạng thái đổi khi đang mở dialog | Response flags, CANCELLED/paymentStatus, message |
 | Pay | Đơn đã có → VNPay → GET đơn; hủy/thất bại/already paid | Mã đơn thử, kết quả backend, giới hạn nhánh chưa chạy |
@@ -446,3 +448,15 @@ Bước tiếp theo:
 - Kiểm tra Node dùng schema thật, MutationObserver/QueryClient thật và API giả lập: trim/validation, PUT → GET và cache đúng user, PUT lỗi giữ fieldErrors, GET lỗi sau PUT rồi tải lại, phiên đổi trước submit, đổi user khi PUT chậm, logout khi GET chậm không khôi phục cache. Đây là kiểm tra logic, không phải kết quả UI hoặc backend thật.
 - Chưa chạy kiểm thử backend/trình duyệt hoặc nhận xác nhận của người dùng. Cần thử `/account/profile`: nhập/sửa/lưu/reload, null, tên trắng/SĐT sai, xóa SĐT cũ, lỗi mạng/fieldErrors, chặn gửi lặp, refetch nền, đổi tài khoản và mobile/bàn phím. Chưa chốt D2 hoàn thành đầy đủ, chưa thay trạng thái kiểm thử D1.
 - Chưa commit/push. Commit gợi ý sau khi kiểm thử đạt: `feat(account): edit customer profile`. Bước tiếp theo: xác nhận backend/trình duyệt D2, sau đó D3 — đổi mật khẩu.
+
+### Review D3 — 09/11/2026
+
+- Người dùng báo đã hoàn thành D3 và yêu cầu review/cập nhật tiến độ. Code nằm trong commit `cafca17` — `feat(account): change account password`; working tree sạch khi bắt đầu review. Commit D1 `01fed8f` và D2 `6542311` cũng đã có; việc có commit không thay thế xác nhận kiểm thử còn chờ ở các bàn giao trước.
+- Đã review auth types/schema/API/hooks, `components/ChangePasswordForm.tsx`, `pages/ChangePasswordPage.tsx`, router, AccountLayout và whitelist đích đăng nhập. Route `/account/password` nằm dưới RequireAuth chung; menu và đích quay lại sau login đã nối.
+- Đối chiếu source backend: POST `/api/users/change-password` nhận `{ currentPassword, newPassword, confirmPassword }` có Bearer, trả HTTP 200 MessageResponse; lỗi mật khẩu cũ là `Incorrect current password.`. Regex mật khẩu mạnh vẫn đang comment ở backend; frontend dùng `newPasswordSchema` hiện có. Service không cấp token mới hoặc thu hồi toàn bộ JWT, nên form giữ phiên hiện tại.
+- Form không trim mật khẩu; validate confirm, dùng PasswordInput/autocomplete đúng trường; map lỗi mật khẩu cũ vào currentPassword và validationErrors vào field hợp lệ, lỗi khác ở form. Có khóa gửi lặp, kiểm tra user/token và mounted trước khi cập nhật form/thông báo. Thành công reset các ô. Mutation không retry, dùng networkMode always để không xếp hàng chờ reconnect và gcTime 0; form reset mutation sau xử lý.
+- **Lỗi cần sửa trước khi chốt:** `npm run lint` thất bại với 1 lỗi `react-hooks/refs` tại `src/features/auth/components/ChangePasswordForm.tsx:143`, biểu thức `onSubmit={handleSubmit(onSubmit)}`. Hướng sửa: thay bằng `onSubmit={(event) => { void handleSubmit(onSubmit)(event) }}` như ProfileForm, để gọi handleSubmit trong callback sự kiện. Chưa sửa source chức năng trong lượt chỉ review/cập nhật tài liệu này.
+- Đã kiểm tra bản thay submit handler đề xuất bằng ESLint qua stdin với đúng filename: đạt. Đây là kiểm tra nội dung sửa đề xuất trong bộ nhớ; file source trên đĩa chưa thay đổi, nên kết quả lint toàn repo hiện vẫn là thất bại.
+- `npm run build` (gồm `tsc -b`) đạt; build còn cảnh báo chunk > 500 kB như trước (index khoảng 853 kB, HeroScene khoảng 1.000 kB). `npm run verify:profile` đạt 7/7, là hồi quy D2 trên auth dùng chung, không phải kiểm thử D3/backend. `git diff HEAD^ HEAD --check` đạt cho commit D3.
+- Chưa tự chạy backend/trình duyệt; xác nhận hoàn thành của người dùng chưa kèm kết quả riêng cho sai mật khẩu cũ, đổi thành công rồi logout/login mới/cũ, submit lặp, lỗi mạng, guest quay lại route, đổi phiên và mobile/bàn phím. Không ghi các ca này đã đạt hoặc suy ra D1/D2 đã được kiểm thử.
+- Chỉ cập nhật `phase4.md`, không tạo commit hoặc push trong lượt review. Bước tiếp theo: sửa submit handler và chạy lại lint; ghi kết quả kiểm thử tích hợp D3 khi có, rồi tiếp tục D4 — lịch sử đơn, lọc trạng thái và phân trang. D4 chưa được triển khai trong lượt này.

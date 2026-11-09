@@ -4,7 +4,6 @@ import { isExpired } from "@/shared/auth/jwt";
 import { useSession } from "@/shared/auth/session.store";
 import { ApiError, normalizeError } from "./errors";
 
-// Mở rộng kiểu config để feature có thể chặn public retry.
 declare module "axios" {
   interface AxiosRequestConfig {
     meta?: { 
@@ -51,7 +50,6 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   const skipAuth = config.headers.get("X-Skip-Auth") === "1";
 
-  // Header này chỉ dùng nội bộ, không gửi sang backend.
   config.headers.delete("X-Skip-Auth");
 
   const checkoutSession = config.meta?.checkoutSession;
@@ -94,9 +92,7 @@ function refreshOnce(): Promise<string | null> {
 api.interceptors.response.use(
   (response) => response,
   async (error: unknown) => {
-    // Giữ lỗi từ guard request, không đổi thành lỗi mạng chưa rõ kết quả.
     if (error instanceof ApiError) throw error;
-    // Giữ nguyên lỗi hủy request.
     if (axios.isCancel(error)) throw error;
 
     if (
@@ -118,7 +114,6 @@ api.interceptors.response.use(
           ? null
           : await refreshOnce();
 
-        // Trong lúc chờ, người dùng có thể đã đăng nhập phiên mới.
         if (useSession.getState().token === sentToken) {
           if (newToken) {
             useSession.getState().setToken(newToken);
@@ -144,6 +139,37 @@ api.interceptors.response.use(
       }
     }
 
-    throw await normalizeError(error);
+    const normalized = await normalizeError(error);
+
+    const isLocked = normalized.status === 400 &&
+      (
+        normalized.message ===
+          "This account has been locked. Please contact support" ||
+        normalized.message ===
+          "This account has been locked. Please contact support."
+      );
+
+    if (
+      isLocked &&
+      axios.isAxiosError(error) &&
+      error.config
+    ) {
+      const authorization = error.config.headers.get("Authorization");
+
+      const sentToken =
+        typeof authorization === "string" &&
+        authorization.startsWith("Bearer ")
+          ? authorization.slice(7)
+          : null;
+
+      if (
+        sentToken &&
+        useSession.getState().token === sentToken
+      ) {
+        useSession.getState().clear({ reason: "locked" });
+      }
+    }
+
+    throw normalized;
   },
 );

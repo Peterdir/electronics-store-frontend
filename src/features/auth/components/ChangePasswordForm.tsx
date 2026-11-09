@@ -140,7 +140,7 @@ export function ChangePasswordForm({ userId }: { userId: string }) {
     return (
         <form
             noValidate
-            onSubmit={handleSubmit(onSubmit)}
+            onSubmit={(event) => { void handleSubmit(onSubmit)(event) }}
             className="mt-6 space-y-5"
             aria-busy={busy}
         >

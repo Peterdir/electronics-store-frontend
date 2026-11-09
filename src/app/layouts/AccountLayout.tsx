@@ -13,6 +13,10 @@ const accountLinks = [
     to: "/account/password",
     label: "Đổi mật khẩu",
   },
+  {
+    to:"/account/orders",
+    label: "Đơn hàng",
+  },
 ];
 
 export function AccountLayout() {

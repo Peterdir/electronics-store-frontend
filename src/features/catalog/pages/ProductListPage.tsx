@@ -2,7 +2,7 @@ import { useGetCategories, useGetProducts } from "../queries";
 import { Button } from "@/components/ui/button";
 import { ProductGrid } from "../components/ProductGrid";
 import { useSearchParams } from "react-router";
-import { Pagination } from "../components/Pagination";
+import { Pagination } from "@/shared/components/Pagination";
 import { useEffect } from "react";
 import { SearchBar } from "../components/SearchBar";
 import { ActiveStatus, ProductSort } from "@/shared/types/enums";
@@ -244,6 +244,7 @@ export function ProductListPage() {
                             )}
 
                             <Pagination
+                                ariaLabel="Phân trang sản phẩm"
                                 currentPage={currentPage}
                                 totalPages={productsQuery.data.totalPages}
                                 isFetching={productsQuery.isFetching}

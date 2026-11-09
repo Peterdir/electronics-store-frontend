@@ -30,11 +30,25 @@ export function AppProviders({ children }: AppProvidersProps) {
                     duration: 2000,
                 });
             }
+
+            if (
+                event.type === "session-cleared" &&
+                event.reason === "locked"
+            ) {
+                toast.error(
+                    "Tài khoản đã bị khóa. Vui lòng liên hệ hỗ trợ.",
+                    {
+                        id: "session-locked",
+                        duration: 4000,
+                    },
+                );
+            }
         });
 
         const unsubscribeSession = useSession.subscribe((state, previousState) => {
             if (state.token && state.token !== previousState.token) {
                 toast.dismiss(SESSION_EXPIRED_TOAST_ID);
+                toast.dismiss("session-locked");
             }
         });
 

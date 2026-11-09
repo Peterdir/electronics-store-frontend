@@ -5,6 +5,7 @@ interface PaginationProps {
   totalPages: number;
   isFetching: boolean;
   onPageChange: (page: number) => void;
+  ariaLabel?: string;
 }
 
 export function Pagination({
@@ -12,13 +13,14 @@ export function Pagination({
   totalPages,
   isFetching,
   onPageChange,
+  ariaLabel = "Phân trang",
 }: PaginationProps) {
   if (totalPages <= 1) return null;
 
   return (
     <nav
-      aria-label="Phân trang sản phẩm"
-      className="flex items-center justify-center gap-4"
+      aria-label={ariaLabel}
+      className="flex flex-wrap items-center justify-center gap-4"
     >
       <Button
         type="button"

@@ -1,6 +1,6 @@
 export type AuthEvent = 
     | { type: "session-expiring" }
-    | { type: "session-cleared"; reason: "logout" | "expired" };
+    | { type: "session-cleared"; reason: "logout" | "expired" | "locked"};
 
 type AuthEventListener = (event: AuthEvent) => void;
 

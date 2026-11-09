@@ -23,7 +23,7 @@ interface SessionState {
     user: SessionUser | null;
     setSession: (token: string, user?: SessionUser) => void;
     setToken: (token: string) => void;
-    clear: (options?: { reason?: "logout" | "expired" }) => void;
+    clear: (options?: { reason?: "logout" | "expired" | "locked"}) => void;
 }
 
 function isRole(value: unknown): value is RoleValue {
