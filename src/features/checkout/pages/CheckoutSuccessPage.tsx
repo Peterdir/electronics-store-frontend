@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { qk } from "@/shared/api/queryKeys";
 import { useSession } from "@/shared/auth/session.store";
 import { isExpired } from "@/shared/auth/jwt";
+import { isPositiveLongId } from "@/shared/types/common";
 import { PaymentMethod, type PaymentStatus } from "@/shared/types/enums";
 import { formatVND } from "@/lib/format";
 import { parseConfirmation, readConfirmation } from "../confirmation.storage";
@@ -100,7 +101,16 @@ export function CheckoutSuccessPage() {
 
       {navigation?.stored === false && <p role="status" className="text-sm">Đơn đã tạo thành công. Trình duyệt chưa lưu được bản xác nhận để xem lại.</p>}
       {navigation?.cartSyncFailed === true && <p role="status" className="text-sm">Đơn đã tạo thành công. Giỏ hàng chưa đồng bộ xong; hãy kiểm tra lại giỏ trước lần mua tiếp theo.</p>}
-      <Link className="text-primary underline" to="/products">Tiếp tục mua sắm</Link>
+      <div className="flex flex-wrap gap-x-4 gap-y-2">
+        {userId && isPositiveLongId(order.orderId) && (
+          <Link className="text-primary underline" to={`/account/orders/${order.orderId}`}>
+            Xem đơn hàng
+          </Link>
+        )}
+        <Link className="text-primary underline" to="/products">
+          Tiếp tục mua sắm
+        </Link>
+      </div>
     </section>
   );
 }

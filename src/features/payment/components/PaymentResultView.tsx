@@ -1,4 +1,6 @@
 import { Link } from "react-router";
+import { isExpired } from "@/shared/auth/jwt";
+import { useSession } from "@/shared/auth/session.store";
 
 type ResultKind =
   | "pending"
@@ -26,6 +28,10 @@ export function PaymentResultView({
   message,
   orderId,
 }: Props) {
+  const token = useSession((state) => state.token);
+  const userId = useSession((state) => state.user?.id);
+  const canViewHistory = Boolean(userId && token && !isExpired(token));
+
   return (
     <section
       className="mx-auto max-w-2xl space-y-5 rounded-2xl border p-5 sm:p-8"
@@ -51,9 +57,16 @@ export function PaymentResultView({
       </div>
 
       {kind !== "pending" && (
-        <Link className="text-primary underline" to="/products">
-          Tiếp tục mua sắm
-        </Link>
+        <div className="flex flex-wrap gap-x-4 gap-y-2">
+          {canViewHistory && (
+            <Link className="text-primary underline" to="/account/orders">
+              Lịch sử đơn hàng
+            </Link>
+          )}
+          <Link className="text-primary underline" to="/products">
+            Tiếp tục mua sắm
+          </Link>
+        </div>
       )}
     </section>
   );

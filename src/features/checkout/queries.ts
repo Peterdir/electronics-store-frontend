@@ -35,6 +35,13 @@ export function usePlaceOrder() {
           throw new Error("Đơn đã được tạo nhưng phiên mua hàng đã thay đổi. Hãy kiểm tra đơn trong tài khoản ban đầu.");
         }
 
+        if (session.userId) {
+          void queryClient.invalidateQueries({
+            queryKey: [...qk.orders, session.userId, "list"],
+            refetchType: "none",
+          }).catch(() => undefined);
+        }
+
         const stored = saveConfirmation(order, session.userId);
         let cartSyncFailed = false;
         try {

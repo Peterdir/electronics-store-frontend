@@ -174,7 +174,7 @@ test("API 401/timeout không retry; guest gửi không kèm Authorization", asyn
   assert.equal(requests, 2);
 });
 
-test("Mutation: bốn luồng COD/VNPAY cleanup đúng nguồn, không retry, không xếp hàng offline", async () => {
+test("Mutation: COD/VNPAY cleanup đúng nguồn và cập nhật lịch sử của user, không retry hoặc xếp hàng offline", async () => {
   for (const [kind, paymentMethod] of ["guestCart", "userCart", "buyNowGuest", "buyNowUser"].flatMap(
     (kind) => ["COD", "VNPAY"].map((method) => [kind, method]),
   )) {
@@ -201,8 +201,21 @@ test("Mutation: bốn luồng COD/VNPAY cleanup đúng nguồn, không retry, kh
     assert.equal(result.confirmation.order.paymentMethod, paymentMethod);
     assert.equal(env.load("@/features/checkout/confirmation.storage").readConfirmation(order().orderId, session.userId).order.paymentMethod, paymentMethod);
     assert.equal(useGuestCart.getState().items.length, kind === "guestCart" ? 0 : 1);
-    assert.equal(env.invalidations.length, kind === "userCart" ? 1 : 0);
-    if (kind === "userCart") assert.deepEqual(env.invalidations[0].queryKey, ["cart", "user-1"]);
+    const expectedInvalidations = [];
+    if (session.userId) {
+      expectedInvalidations.push({
+        queryKey: ["orders", session.userId, "list"],
+        refetchType: "none",
+      });
+    }
+    if (kind === "userCart") {
+      expectedInvalidations.push({
+        queryKey: ["cart", session.userId],
+        exact: true,
+        refetchType: "none",
+      });
+    }
+    assert.deepEqual(env.invalidations, expectedInvalidations);
   }
 });
 
@@ -247,6 +260,28 @@ test("Response đến sau đổi phiên không lưu xác nhận hoặc dọn gi�
   await assert.rejects(pending, /Đơn đã được tạo nhưng phiên/);
   assert.equal(useGuestCart.getState().items.length, 1);
   assert.equal(env.load("@/features/checkout/confirmation.storage").readConfirmation(order().orderId, null), null);
+});
+
+test("Response của user cũ không invalidate lịch sử sau khi đổi tài khoản", async () => {
+  const env = fixture();
+  const session = env.login();
+  const { api } = env.load("@/shared/api/client");
+  let resolveResponse;
+  api.defaults.adapter = (config) => new Promise((resolve) => {
+    resolveResponse = () => resolve({ data: order(false), status: 200, statusText: "OK", headers: {}, config });
+  });
+  const mutation = env.load("@/features/checkout/queries").usePlaceOrder();
+  const source = { kind: "buyNow", item };
+  const payload = env.load("@/features/checkout/buildCheckoutRequest").buildCheckoutRequest(input(source));
+  const pending = mutation.mutationFn({ payload, source, session });
+  await new Promise((resolve) => setImmediate(resolve));
+
+  env.state.token = token("user-2");
+  env.state.user = { id: "user-2" };
+  resolveResponse();
+
+  await assert.rejects(pending, /Đơn đã được tạo nhưng phiên/);
+  assert.deepEqual(env.invalidations, []);
 });
 
 test("Lỗi storage/cache sau HTTP thành công không biến thành lỗi đặt đơn", async () => {

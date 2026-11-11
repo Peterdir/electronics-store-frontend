@@ -2,7 +2,7 @@
 
 > Ngày lập: **07/11/2026**. Đối chiếu frontend tại HEAD `7df522e`; working tree sạch trước khi tạo tài liệu.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase3.md](phase3.md), source frontend và source tham chiếu tại `../ecommerce-backend`.
-> **Điểm tiếp tục — cập nhật 11/11/2026: D5 — chi tiết đơn và nối đường đi sau checkout.** Người dùng xác nhận đã làm D4. Commit `427e9d0` có lịch sử đơn hàng, lọc, phân trang và bản sửa lint của D3. `npm run lint` và `npm run typecheck` đạt trên commit này. Kết quả từng ca kiểm thử backend/trình duyệt của D1–D4 vẫn chờ ghi nhận. D0 được bỏ qua như một mốc riêng, theo quyết định trước đó của người dùng.
+> **Điểm tiếp tục — cập nhật 11/11/2026: kiểm thử tích hợp D5, sau đó làm D6 — hủy đơn có lý do.** Trang chi tiết đã có trong `be5d2c9`. Phần đường dẫn sau checkout và cache lịch sử đã được bổ sung. Lint, build và kiểm tra logic checkout đạt. Xem bàn giao D5 để biết các ca cần thử trên backend và trình duyệt.
 > Phase 3: C1–C12 đã được chốt trong phạm vi ghi ở `phase3.md`; C12 hoàn thành theo xác nhận thử VNPay của người dùng ngày 07/11/2026. **C13 còn hồi quy tổng thể**, không tự đánh dấu Phase 3 hoàn tất và không giao lại code C12. Có thể bắt đầu phần tài khoản độc lập; kiểm tra các luồng checkout/payment liên quan khi tích hợp D5–D8 và chốt D13.
 
 ## 1. Cách thực hiện
@@ -154,7 +154,7 @@ Không đặt token vào query key. Nếu giữ dữ liệu trang trước, ch�
 | D2 | Sửa hồ sơ | D1 | Đã code ngày 08/11/2026; lint/build và 7 kiểm tra Node đạt; chờ kiểm thử backend/trình duyệt |
 | D3 | Đổi mật khẩu | D1 | Người dùng báo hoàn thành. Code tại `cafca17`, sửa lỗi lint tại `427e9d0`. Lint và typecheck đạt ngày 11/11/2026. Chưa ghi kết quả backend/trình duyệt từng ca |
 | D4 | Lịch sử đơn, lọc/phân trang | D1 | Người dùng xác nhận đã làm. Code tại `427e9d0`, lint và typecheck đạt ngày 11/11/2026. Chưa ghi kết quả backend/trình duyệt từng ca |
-| D5 | Chi tiết đơn, trạng thái và đường vào từ checkout | D4 | Mốc tiếp theo |
+| D5 | Chi tiết đơn, trạng thái và đường vào từ checkout | D4 | Đã triển khai trang chi tiết và đường dẫn sau checkout. Lint, build và 16 ca kiểm tra logic checkout đạt. Chờ kiểm thử tích hợp |
 | D6 | Hủy đơn có lý do | D5 | Chưa làm |
 | D7 | Thanh toán lại đơn đã có | D5, payment C12 | Chưa làm |
 | D8 | Mua lại vào giỏ user | D5, cart C2–C5 | Chưa làm |
@@ -470,3 +470,11 @@ Bước tiếp theo:
 - Cùng commit sửa `react-hooks/refs` ở submit handler D3. Đã chạy `npm run lint` và `npm run typecheck` trên `427e9d0`, cả hai đều đạt.
 - Chưa ghi kết quả API/trình duyệt cho các ca lọc, phân trang, Back/Forward, reload, lỗi mạng, hết hạn, khóa tài khoản và đổi phiên khi request đang chờ. Các ca đơn khác chủ và 404 của trang chi tiết sẽ kiểm tra ở D5.
 - Tiếp theo làm D5. Bắt đầu với `GET /api/orders/{id}`, route `/account/orders/:id` và link từ danh sách, sau đó nối checkout success và trang kết quả thanh toán.
+
+### Bàn giao D5 — 11/11/2026
+
+- Trang chi tiết và đường vào từ danh sách nằm trong commit `be5d2c9`. Trang xác nhận checkout có link **Xem đơn hàng** khi bản xác nhận khớp tài khoản hiện tại và mã đơn hợp lệ. Trang kết quả VNPay có link **Lịch sử đơn hàng** cho phiên đăng nhập hợp lệ.
+- Checkout thành công đánh dấu danh sách đơn của đúng tài khoản cần tải lại. Kiểm tra logic bao phủ COD/VNPay cho checkout từ giỏ và mua ngay, bao gồm phản hồi đến sau khi đổi tài khoản.
+- `npm run lint`, `npm run build` và `npm run verify:checkout` (16/16) đạt. Build còn cảnh báo kích thước chunk. Kiểm tra render React với phiên giả lập xác nhận link hiện đúng theo tài khoản, guest và phiên hết hạn.
+- Người dùng xác nhận đã thử lại thanh toán VNPay thành công trên Sandbox sau khi gặp lỗi `70`. Chưa ghi kết quả riêng cho link lịch sử trên trang kết quả.
+- Các ca tích hợp còn cần ghi nhận gồm mở đơn từ danh sách và URL trực tiếp, đơn khác chủ, đường dẫn từ COD và VNPay, cùng việc tải lại lịch sử khi quay về. Sau đó tiếp tục D6.
