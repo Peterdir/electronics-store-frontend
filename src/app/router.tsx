@@ -30,6 +30,7 @@ import { PaymentResultPage } from "@/features/payment/pages/PaymentResultPage";
 import { AccountLayout } from "./layouts/AccountLayout";
 import { ChangePasswordPage } from "@/features/auth/pages/ChangePasswordPage";
 import { OrdersPage } from "@/features/orders/pages/OrdersPage";
+import { OrderDetailPage } from "@/features/orders/pages/OrderDetailPage";
 
 
 export const router = createBrowserRouter([
@@ -122,6 +123,10 @@ export const router = createBrowserRouter([
                     {
                         path: "orders",
                         Component: OrdersPage,
+                    },
+                    {
+                        path: "orders/:id",
+                        Component: OrderDetailPage,
                     },
                 ],
             },

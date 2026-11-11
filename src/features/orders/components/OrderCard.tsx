@@ -5,6 +5,7 @@ import {
   paymentStatusLabels,
 } from "../orderStatus";
 import type { OrderListUserResponse } from "../types";
+import { Link } from "react-router";
 
 interface OrderCardProps {
   order: OrderListUserResponse;
@@ -58,6 +59,13 @@ export function OrderCard({ order }: OrderCardProps) {
           </li>
         ))}
       </ul>
+
+      <Link
+        to={`/account/orders/${order.id}`}
+        className="text-sm font-medium text-primary underline underline-offset-4"
+      >
+        Xem chi tiết
+      </Link>
 
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
         <p className="text-sm text-muted-foreground">

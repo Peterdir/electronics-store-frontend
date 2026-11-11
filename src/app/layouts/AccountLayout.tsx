@@ -35,7 +35,7 @@ export function AccountLayout() {
             <NavLink
               key={item.to}
               to={item.to}
-              end
+              end={item.to !== "/account/orders"}
               className={({ isActive }) =>
                 `shrink-0 rounded-lg px-4 py-3 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-ring ${
                   isActive

@@ -21,3 +21,16 @@ export interface Page<T> {
     totalItems: number;
     totalPages: number;
 }
+
+const MAX_LONG_ID = "9223372036854775807";
+
+export function isPositiveLongId(value: string | undefined): value is ID {
+  if (!value || !/^[1-9]\d*$/.test(value)) {
+    return false;
+  }
+
+  return (
+    value.length < MAX_LONG_ID.length ||
+    (value.length === MAX_LONG_ID.length && value <= MAX_LONG_ID)
+  );
+}

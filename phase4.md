@@ -2,7 +2,7 @@
 
 > Ngày lập: **07/11/2026**. Đối chiếu frontend tại HEAD `7df522e`; working tree sạch trước khi tạo tài liệu.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase3.md](phase3.md), source frontend và source tham chiếu tại `../ecommerce-backend`.
-> **Điểm tiếp tục — cập nhật 09/11/2026: sửa lỗi lint D3, sau đó tiếp tục D4 — lịch sử đơn hàng.** Người dùng báo đã hoàn thành D3; code đã nằm trong commit `cafca17`. Review xác nhận build và 7 kiểm tra hồi quy hồ sơ đạt, nhưng `npm run lint` còn lỗi `react-hooks/refs` tại `ChangePasswordForm.tsx:143`; chưa chốt D3 đạt đầy đủ. D1/D2 vẫn chờ xác nhận kiểm thử trình duyệt/backend như bàn giao trước. Người dùng quyết định bỏ qua D0 như một mốc riêng; đối chiếu API và chuẩn bị dữ liệu ngay tại chức năng sử dụng.
+> **Điểm tiếp tục — cập nhật 11/11/2026: D5 — chi tiết đơn và nối đường đi sau checkout.** Người dùng xác nhận đã làm D4. Commit `427e9d0` có lịch sử đơn hàng, lọc, phân trang và bản sửa lint của D3. `npm run lint` và `npm run typecheck` đạt trên commit này. Kết quả từng ca kiểm thử backend/trình duyệt của D1–D4 vẫn chờ ghi nhận. D0 được bỏ qua như một mốc riêng, theo quyết định trước đó của người dùng.
 > Phase 3: C1–C12 đã được chốt trong phạm vi ghi ở `phase3.md`; C12 hoàn thành theo xác nhận thử VNPay của người dùng ngày 07/11/2026. **C13 còn hồi quy tổng thể**, không tự đánh dấu Phase 3 hoàn tất và không giao lại code C12. Có thể bắt đầu phần tài khoản độc lập; kiểm tra các luồng checkout/payment liên quan khi tích hợp D5–D8 và chốt D13.
 
 ## 1. Cách thực hiện
@@ -18,10 +18,10 @@
 
 | Khu vực | Code đang có | Việc Phase 4 |
 |---|---|---|
-| Tài khoản | `ProfilePage` chỉ đọc, `getMyProfile`, `useMe`; `UserMenu` có link hồ sơ/địa chỉ | Thêm AccountLayout, form sửa hồ sơ và đổi mật khẩu |
-| Địa chỉ | `/account/addresses`, CRUD, schema/form dùng chung checkout | Chuyển route vào AccountLayout, giữ chức năng đã có |
-| Điều hướng đăng nhập | `RequireAuth` giữ `location.state.from`; `getLoginDestination` chỉ cho `/`, `/account/profile`, `/admin` theo quyền | Mở rộng danh sách đích hợp lệ cho route mới; hiện `/account/addresses` cũng chưa được chấp nhận làm đích quay lại |
-| Đơn hàng | Checkout COD/VNPay và trang xác nhận từ snapshot; chưa có `features/orders` | Danh sách, chi tiết lấy từ server, hủy, thanh toán lại, mua lại |
+| Tài khoản | `AccountLayout`, form sửa hồ sơ và đổi mật khẩu | Ghi kết quả kiểm thử tích hợp D1–D3 |
+| Địa chỉ | `/account/addresses` nằm trong `AccountLayout`, có CRUD và schema/form dùng chung checkout | Kiểm tra hồi quy khi tích hợp các luồng mua hàng |
+| Điều hướng đăng nhập | `RequireAuth` giữ `location.state.from`; `getLoginDestination` chấp nhận các route tài khoản từ D1 đến D4 | Bổ sung đích quay lại cho `/account/orders/:id` ở D5 |
+| Đơn hàng | `/account/orders` lấy danh sách từ API, có lọc và phân trang. Checkout COD/VNPay có bản xác nhận đơn | Chi tiết lấy từ server, đường dẫn sau checkout, hủy, thanh toán lại, mua lại |
 | Thanh toán | `features/payment` có redirect helper, API return public và trang kết quả | Dùng lại cho thanh toán đơn đã có; nối đường xem đơn và làm mới dữ liệu |
 | Đánh giá/yêu thích/trả hàng | Chưa có `features/reviews`, `features/wishlist`, `features/returns` | Tạo từng feature khi đến mốc tương ứng |
 | Shared | ID dạng string; enum đơn/thanh toán/trả hàng; `formatVND`; `normalizePage`; cache theo user ở hồ sơ/cart/địa chỉ | Thêm query keys đang dùng, format ngày, badge trạng thái, dialog xác nhận, chọn ảnh khi cần |
@@ -43,7 +43,7 @@ Không nằm trong Phase 4: giao diện admin P5, policy B11, phần còn hoãn 
 | Tạo yêu cầu trả hàng | `createReturnRequest` lưu request PENDING nhưng **không đổi order sang RETURN_REQUESTED** | Hiện thành công từ `ReturnRequestResponse`, refetch đơn nhưng không tự gán trạng thái đơn. Muốn đúng kỳ vọng master phải phối hợp backend |
 | Xem lại yêu cầu trả hàng | Customer controller chỉ có POST, không có GET list/detail | Không tạo trang theo dõi giả. Sau reload không hứa khôi phục trạng thái pending; 409 được xử lý rõ |
 | Timeline đơn | DTO chỉ có `createdAt`, `updatedAt`, `cancelledAt`; không có lịch sử từng lần chuyển trạng thái | Hiện tiến trình/trạng thái hiện tại, chỉ gắn thời gian có thật; `updatedAt` không phải ngày giao hàng chắc chắn |
-| Tài khoản bị khóa | Order service có lỗi 400 `This account has been locked...`; client hiện chỉ xử lý phiên ở nhánh 401 | Bổ sung xử lý chính xác lỗi locked ở D4, bảo vệ phiên mới; không logout mọi lỗi 400/403 |
+| Tài khoản bị khóa | D4 nhận diện HTTP 400 với thông báo `This account has been locked. Please contact support` có hoặc không có dấu chấm cuối | Client chỉ clear phiên khi Bearer token của request còn khớp phiên hiện tại. Provider hiển thị thông báo qua sự kiện `locked` |
 
 Nguồn đối chiếu backend, tính từ `../ecommerce-backend/src/main/java/com/ecommerce/backend/`:
 
@@ -95,14 +95,14 @@ Chỉ thêm link/menu khi route đã dùng được. `/checkout/success/:orderId
 |---|---|
 | Điều hướng | Sửa `src/app/router.tsx`, `src/shared/auth/redirect.ts`, `src/features/auth/components/UserMenu.tsx`; tạo `src/app/layouts/AccountLayout.tsx` |
 | Hồ sơ/mật khẩu | Mở rộng `src/features/auth/{types,schemas,api,queries}.ts`, `pages/ProfilePage.tsx`; thêm `components/ProfileForm.tsx`, `components/ChangePasswordForm.tsx`, `pages/ChangePasswordPage.tsx` |
-| Đơn hàng | Tạo `src/features/orders/{types,api,queries,schemas}.ts`, `pages/OrdersPage.tsx`, `pages/OrderDetailPage.tsx`, components theo từng mốc |
+| Đơn hàng | Mở rộng `src/features/orders/{types,api,queries}.ts` đã có từ D4. Thêm `pages/OrderDetailPage.tsx` ở D5, schema và components theo từng mốc sử dụng |
 | Đánh giá | Tạo `src/features/reviews/{types,api,queries,schemas,index}.ts`, `pages/ReviewsPage.tsx`, cards/form |
 | Yêu thích | Tạo `src/features/wishlist/{types,api,queries,index}.ts`, `pages/WishlistPage.tsx`, `components/WishlistToggleButton.tsx`, grid/card |
 | Trả hàng | Tạo `src/features/returns/{types,api,queries,schemas}.ts`, `pages/ReturnRequestPage.tsx`, `components/ReturnRequestForm.tsx` |
 | Payment/checkout | Mở rộng có giới hạn `src/features/payment/redirect.ts`, `components/PaymentResultView.tsx`, nơi điều phối kết quả; `src/features/checkout/queries.ts`, `pages/CheckoutSuccessPage.tsx` |
 | Dùng chung | `src/shared/api/queryKeys.ts`, `src/lib/format.ts`; tạo StatusBadge, ConfirmDialog, ImageDropzone tại mốc đầu tiên sử dụng |
 
-Không chuyển toàn bộ auth sang feature account mới. Chỉ xuất `index.ts` khi có feature khác sử dụng; không import vòng `orders ↔ reviews ↔ returns`. Shared không import ngược features. Pagination hiện nằm trong catalog và có nhãn “Phân trang sản phẩm”: khi dùng cho đơn hàng, chuyển thành component chung với nhãn phù hợp, cập nhật cả nơi dùng cũ.
+Không chuyển toàn bộ auth sang feature account mới. Chỉ xuất `index.ts` khi có feature khác sử dụng; không import vòng `orders ↔ reviews ↔ returns`. Shared không import ngược features. D4 đã chuyển `Pagination` sang `src/shared/components/Pagination.tsx` để catalog và đơn hàng dùng chung với nhãn phù hợp từng trang.
 
 ## 4. Quy ước dữ liệu, cache và xử lý lỗi
 
@@ -115,7 +115,7 @@ Không chuyển toàn bộ auth sang feature account mới. Chỉ xuất `index.
 - Mọi mutation mới `retry: false`, khóa gửi lặp trong thời gian pending. Với thao tác không nên xếp hàng offline như mua lại, dùng chính sách không tự phát lại khi reconnect như checkout hiện có.
 - Chụp `userId`/token khi bắt đầu mutation; kiểm tra trước khi dispatch và sau mỗi đoạn chờ trước khi ghi cache, rollback, toast hoặc navigate. Có thể dùng `meta.authToken` để gắn token đã chụp, nhưng vẫn cần kiểm tra phiên; không lạm dụng `checkoutSession` cho mọi feature.
 - Response của phiên A không cập nhật UI/cache phiên B, cũng không khôi phục cache A sau logout. `useSession.clear()` đã clear QueryClient; không tạo cơ chế logout/cache khác.
-- Map `ApiError.fieldErrors` vào field hợp lệ, lỗi còn lại ở form/banner. Không tự logout vì mọi 400; 403/404 có trang lỗi phù hợp. Bổ sung nhánh locked theo D4, tránh toast trùng lifecycle.
+- Map `ApiError.fieldErrors` vào field hợp lệ, lỗi còn lại ở form/banner. 403/404 có trang lỗi phù hợp. Dùng nhánh xử lý tài khoản bị khóa đã có trong client D4 và thông báo của Provider.
 
 ### 4.2 Query keys đề xuất
 
@@ -152,9 +152,9 @@ Không đặt token vào query key. Nếu giữ dữ liệu trang trước, ch�
 | D0 | Contract và dữ liệu kiểm tra được ghi rõ | Source hiện tại | Bỏ qua mốc riêng theo quyết định người dùng ngày 08/11/2026; kiểm tra tại từng chức năng, chưa ghi nhận đã thử API |
 | D1 | AccountLayout, route lồng nhau, quay lại đúng trang sau login | Auth hiện có | Đã code và review ngày 08/11/2026; lint/build/typecheck đạt; chờ xác nhận kiểm thử trình duyệt |
 | D2 | Sửa hồ sơ | D1 | Đã code ngày 08/11/2026; lint/build và 7 kiểm tra Node đạt; chờ kiểm thử backend/trình duyệt |
-| D3 | Đổi mật khẩu | D1 | Người dùng báo hoàn thành; đã code tại `cafca17`, review 09/11/2026: build và hồi quy hồ sơ 7/7 đạt; còn 1 lỗi lint `react-hooks/refs`, chưa chốt đầy đủ; chưa ghi kết quả backend/trình duyệt từng ca |
-| D4 | Lịch sử đơn, lọc/phân trang | D1 | Chưa làm |
-| D5 | Chi tiết đơn, trạng thái và đường vào từ checkout | D4 | Chưa làm |
+| D3 | Đổi mật khẩu | D1 | Người dùng báo hoàn thành. Code tại `cafca17`, sửa lỗi lint tại `427e9d0`. Lint và typecheck đạt ngày 11/11/2026. Chưa ghi kết quả backend/trình duyệt từng ca |
+| D4 | Lịch sử đơn, lọc/phân trang | D1 | Người dùng xác nhận đã làm. Code tại `427e9d0`, lint và typecheck đạt ngày 11/11/2026. Chưa ghi kết quả backend/trình duyệt từng ca |
+| D5 | Chi tiết đơn, trạng thái và đường vào từ checkout | D4 | Mốc tiếp theo |
 | D6 | Hủy đơn có lý do | D5 | Chưa làm |
 | D7 | Thanh toán lại đơn đã có | D5, payment C12 | Chưa làm |
 | D8 | Mua lại vào giỏ user | D5, cart C2–C5 | Chưa làm |
@@ -216,7 +216,7 @@ Thứ tự thực hiện từ 08/11/2026: D1 → D2 → D3 → D4 → D5 → D6 
 
 ### D3 — Đổi mật khẩu
 
-**Trạng thái — 09/11/2026:** đã triển khai tại commit `cafca17`, người dùng báo hoàn thành. Review chưa phát hiện sai lệch contract; build đạt nhưng lint còn lỗi `react-hooks/refs` ở cách gắn submit handler của form. Sửa theo bàn giao cuối tài liệu rồi chạy lại lint trước khi chốt. Chưa có kết quả backend/trình duyệt từng ca được ghi nhận trong lượt review.
+**Trạng thái — 11/11/2026.** Đã triển khai tại `cafca17`, người dùng báo hoàn thành. Submit handler đã được sửa trong `427e9d0`. Lint và typecheck đạt. Chưa ghi kết quả backend/trình duyệt từng ca.
 
 **File:** auth types/schema/API/hooks, ChangePasswordForm/Page; dùng lại PasswordInput và `newPasswordSchema`.
 
@@ -230,13 +230,15 @@ Thứ tự thực hiện từ 08/11/2026: D1 → D2 → D3 → D4 → D5 → D6 
 
 ### D4 — Lịch sử đơn hàng
 
-**File:** orders types/API/queries, OrdersPage, OrderStatusTabs, OrderCard; qk.orders; pagination dùng chung khi tách khỏi catalog.
+**Trạng thái — 11/11/2026.** Người dùng xác nhận đã làm D4 tại commit `427e9d0`. Lint và typecheck đạt. Xem bàn giao cuối tài liệu để biết các ca tích hợp còn cần ghi kết quả.
+
+**File:** orders types/API/queries, OrdersPage, OrderStatusTabs, OrderCard, `qk.orders` và `Pagination` dùng chung.
 
 **Contract:** GET `/api/orders?orderStatus=&page=0&size=10&sortBy=createdAt&direction=desc` → page `OrderListUserResponse`. Bỏ `orderStatus` khi chọn tất cả; không gửi literal `ALL`. Dùng đủ enum trạng thái hiện có, gồm ba trạng thái trả hàng.
 
 **Thực hiện:** URL điều khiển tab/page; không lọc client trên một trang server. Card hiển thị mã đơn, ngày, tổng tiền, số lượng và hai badge riêng order/payment. Chưa gắn mutation D6–D8 ở mốc này. Thêm format ngày và badge khi dùng. Không suy đoán tổng số đơn mỗi tab từ trang hiện tại.
 
-**Lỗi locked:** bổ sung nhánh nhận diện chính xác thông báo locked đã thấy ở order service, kiểm tra token gửi đi vẫn là token hiện tại rồi clear phiên. Có thể đặt trong client/error policy hiện có; không áp dụng logout cho lỗi 400 khác. Ghi rõ cách thông báo để không trùng toast lifecycle.
+**Lỗi locked:** `src/shared/api/client.ts` kiểm tra HTTP 400, nội dung thông báo và token đã gửi trước khi clear phiên. `src/app/providers.tsx` hiển thị thông báo khóa tài khoản khi nhận sự kiện `session-cleared` với lý do `locked`.
 
 **Kiểm tra:** tất cả/trạng thái rỗng, page đầu/cuối, URL sai, Back/Forward/reload, response chậm khi đổi tab, tài khoản A/B, expired/locked và lỗi mạng. Page ngoài phạm vi sau mutation phải có cách về trang hợp lệ.
 
@@ -388,8 +390,8 @@ Tất cả hàng dưới đây **chưa chạy trong lượt lập kế hoạch**
 |---|---|---|
 | Route/session | Guest vào deep link, login quay lại; đổi A → B khi request đang chờ | URL cuối, dữ liệu hiển thị, không ghi cache nhầm |
 | Hồ sơ | GET → PUT → GET; field lỗi và xóa SĐT | 08/11/2026: 7 kiểm tra logic Node đạt với QueryClient thật/API giả lập; chưa có payload/status API thật hoặc kết quả reload trình duyệt |
-| Mật khẩu | Sai mật khẩu cũ; đổi thành công; login lại | 09/11/2026: người dùng báo hoàn thành D3; đã review source và đối chiếu backend. Chưa có status/response API thật hoặc kết quả đăng nhập từng ca được ghi; build đạt, lint còn 1 lỗi. Không lưu mật khẩu vào biên bản |
-| Orders | Filter/page/Back; đơn khác chủ, 404/locked | Query params, page response, UI/phiên sau lỗi |
+| Mật khẩu | Sai mật khẩu cũ; đổi thành công; login lại | Đã review source và đối chiếu backend ngày 09/11/2026. Lint và typecheck đạt ngày 11/11/2026 sau khi sửa submit handler. Chưa ghi status/response API hoặc kết quả đăng nhập từng ca |
+| Orders | D4: lọc, phân trang, Back/Forward, reload, lỗi mạng và phiên locked. D5: chi tiết đơn khác chủ hoặc 404 | D4 đã triển khai và kiểm tra tĩnh ngày 11/11/2026. Cần ghi query params, response và kết quả UI/phiên khi kiểm thử tích hợp |
 | Cancel | UNPAID và PAID; trạng thái đổi khi đang mở dialog | Response flags, CANCELLED/paymentStatus, message |
 | Pay | Đơn đã có → VNPay → GET đơn; hủy/thất bại/already paid | Mã đơn thử, kết quả backend, giới hạn nhánh chưa chạy |
 | Buy again | Đủ/một phần/không có hàng, timeout và double-click | Cart trước/sau, số request POST, kết quả đối chiếu |
@@ -460,3 +462,11 @@ Bước tiếp theo:
 - `npm run build` (gồm `tsc -b`) đạt; build còn cảnh báo chunk > 500 kB như trước (index khoảng 853 kB, HeroScene khoảng 1.000 kB). `npm run verify:profile` đạt 7/7, là hồi quy D2 trên auth dùng chung, không phải kiểm thử D3/backend. `git diff HEAD^ HEAD --check` đạt cho commit D3.
 - Chưa tự chạy backend/trình duyệt; xác nhận hoàn thành của người dùng chưa kèm kết quả riêng cho sai mật khẩu cũ, đổi thành công rồi logout/login mới/cũ, submit lặp, lỗi mạng, guest quay lại route, đổi phiên và mobile/bàn phím. Không ghi các ca này đã đạt hoặc suy ra D1/D2 đã được kiểm thử.
 - Chỉ cập nhật `phase4.md`, không tạo commit hoặc push trong lượt review. Bước tiếp theo: sửa submit handler và chạy lại lint; ghi kết quả kiểm thử tích hợp D3 khi có, rồi tiếp tục D4 — lịch sử đơn, lọc trạng thái và phân trang. D4 chưa được triển khai trong lượt này.
+
+### Bàn giao D4 — 11/11/2026
+
+- Người dùng xác nhận đã làm D4. Commit `427e9d0` (`feat(orders): add paginated order history`) thêm `/account/orders` dưới `AccountLayout`, link trong menu tài khoản và đích quay lại sau đăng nhập.
+- Danh sách dùng `GET /api/orders` và `normalizePage`. URL giữ `status` và `page` bắt đầu từ 1, API nhận `orderStatus` và `page` bắt đầu từ 0. Đổi tab về trang đầu. Sau khi tải được dữ liệu, trang vượt phạm vi được đưa về trang cuối hợp lệ. Query danh sách dùng tiền tố `[...qk.orders, userId, "list"]`.
+- Cùng commit sửa `react-hooks/refs` ở submit handler D3. Đã chạy `npm run lint` và `npm run typecheck` trên `427e9d0`, cả hai đều đạt.
+- Chưa ghi kết quả API/trình duyệt cho các ca lọc, phân trang, Back/Forward, reload, lỗi mạng, hết hạn, khóa tài khoản và đổi phiên khi request đang chờ. Các ca đơn khác chủ và 404 của trang chi tiết sẽ kiểm tra ở D5.
+- Tiếp theo làm D5. Bắt đầu với `GET /api/orders/{id}`, route `/account/orders/:id` và link từ danh sách, sau đó nối checkout success và trang kết quả thanh toán.

@@ -1,5 +1,6 @@
 import { Role } from "@/shared/types/enums"
 import type { Role as RoleType } from "@/shared/types/enums"
+import { isPositiveLongId } from "../types/common"
 
 export function getLoginDestination(
     role: RoleType | undefined,
@@ -29,7 +30,8 @@ export function getLoginDestination(
             if (url.origin !== window.location.origin) {
                 continue
             }
-
+            
+            const orderDetailMatch = /^\/account\/orders\/([^/]+)\/?$/.exec(url.pathname);
             const allowed =
                 url.pathname === "/" ||
                 url.pathname === "/account" ||
@@ -37,6 +39,7 @@ export function getLoginDestination(
                 url.pathname === "/account/addresses" ||
                 url.pathname === "/account/password" ||
                 url.pathname === "/account/orders" ||
+                isPositiveLongId(orderDetailMatch?.[1]) ||
                 (
                     url.pathname === "/admin" &&
                     canAccessAdmin

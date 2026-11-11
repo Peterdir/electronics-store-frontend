@@ -41,3 +41,27 @@ export interface GetOrdersParams {
   sortBy: "createdAt";
   direction: "desc";
 }
+
+export interface OrderDetailUserResponse {
+  id: ID;
+  recipientName: string;
+  recipientPhone: string;
+  shippingAddress: string;
+  subtotal: Money;
+  shippingFee: Money;
+  couponCode: string | null;
+  discountAmount: Money;
+  totalPrice: Money;
+  orderStatus: OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentMethod: PaymentMethod;
+  cancelReason: string | null;
+  cancelledAt: ISODateTime | null;
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+  canCancel: boolean;
+  canPay: boolean;
+  canBuyAgain: boolean;
+  message?: string | null;
+  items: OrderItemResponse[];
+}
