@@ -8,6 +8,7 @@ import { OrderItems } from "../components/OrderItems";
 import { orderStatusLabels, paymentStatusLabels } from "../orderStatus";
 import { useOrderDetail } from "../queries";
 import type { OrderDetailUserResponse } from "../types";
+import { CancelOrderDialog } from "../components/CancelOrderDialog";
 
 const ordersPath = "/account/orders";
 
@@ -46,6 +47,9 @@ function OrderDetailContent({ order }: { order: OrderDetailUserResponse }) {
             </div>
           )}
         </dl>
+        {order.canCancel && (
+          <CancelOrderDialog key={order.id} orderId={order.id} />
+        )}
       </header>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">

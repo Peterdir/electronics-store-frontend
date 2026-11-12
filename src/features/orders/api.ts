@@ -9,6 +9,7 @@ import type {
   OrderListUserResponse,
 } from "./types";
 import type { ID } from "@/shared/types/common";
+import type { CancelOrderValues } from "./schemas";
 
 export async function getOrders(
   params: GetOrdersParams,
@@ -38,6 +39,20 @@ export async function getOrderDetail(
     signal,
     meta: { authToken, noPublicRetry: true },
   });
+
+  return data;
+}
+
+export async function cancelOrder(
+  id: ID,
+  payload: CancelOrderValues,
+  authToken: string,
+) {
+  const { data } = await api.put<OrderDetailUserResponse>(
+    `/api/orders/${id}/cancel`,
+    payload,
+    { meta: { authToken, noPublicRetry: true } },
+  );
 
   return data;
 }
