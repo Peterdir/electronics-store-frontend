@@ -65,3 +65,12 @@ export interface OrderDetailUserResponse {
   message?: string | null;
   items: OrderItemResponse[];
 }
+
+export interface OrderPaymentResponse {
+  orderId: ID;
+  paymentStatus: PaymentStatus;
+  paymentMethod: PaymentMethod;
+  totalPrice: Money;
+  message: string;
+  paymentUrl: string | null;
+}

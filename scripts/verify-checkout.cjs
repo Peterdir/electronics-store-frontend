@@ -1,10 +1,13 @@
-/* Kiểm tra logic C10/C12 bằng Node, không cài thêm test framework hoặc gọi backend. */
+/* Kiểm tra logic checkout và thanh toán bằng Node với API giả lập. */
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
 const fs = require("node:fs");
 const path = require("node:path");
 const ts = require("typescript");
 const axios = require("axios");
+const { createElement } = require("react");
+const { renderToStaticMarkup } = require("react-dom/server");
+const { MemoryRouter } = require("react-router");
 const { QueryClient, QueryObserver, focusManager, onlineManager } = require("@tanstack/react-query");
 
 const root = path.resolve(__dirname, "..");
@@ -28,7 +31,7 @@ function fixture() {
     user: null,
     clear() { state.token = null; state.user = null; },
   };
-  const useSession = { getState: () => state };
+  const useSession = Object.assign((select) => select(state), { getState: () => state });
   const mergeState = { isMerging: false, attempts: [], dropVariant() {}, clearAttempts() {} };
   const invalidations = [];
   const queryClient = { invalidateQueries: async (options) => { invalidations.push(options); } };
@@ -36,7 +39,12 @@ function fixture() {
     "@/shared/auth/session.store": { useSession },
     "@/shared/config/env": { env: { API_BASE_URL: "https://checkout.test", BACKEND_ORIGIN: "https://checkout.test" } },
     "@/features/cart/cartMerge.store": { useCartMerge: { getState: () => mergeState } },
-    "@tanstack/react-query": { useMutation: (options) => options, useQuery: (options) => options, useQueryClient: () => queryClient },
+    "@tanstack/react-query": {
+      useMutation: (options) => ({ ...options, mutateAsync: options }),
+      useQuery: (options) => options,
+      useQueryClient: () => queryClient,
+      useIsMutating: () => 0,
+    },
   };
   const cache = new Map();
   function load(specifier, parent = path.join(root, "src", "index.ts")) {
@@ -49,12 +57,16 @@ function fixture() {
       if (Object.hasOwn(mocks, alias)) return mocks[alias];
     }
     if (!resolved) return require(specifier);
-    const filename = fs.existsSync(resolved + ".ts") ? resolved + ".ts" : resolved;
+    const filename = [resolved + ".ts", resolved + ".tsx", resolved].find(fs.existsSync);
     if (cache.has(filename)) return cache.get(filename).exports;
     const module = { exports: {} };
     cache.set(filename, module);
     const output = ts.transpileModule(fs.readFileSync(filename, "utf8"), {
-      compilerOptions: { target: ts.ScriptTarget.ES2023, module: ts.ModuleKind.CommonJS },
+      compilerOptions: {
+        target: ts.ScriptTarget.ES2023,
+        module: ts.ModuleKind.CommonJS,
+        jsx: ts.JsxEmit.ReactJSX,
+      },
     }).outputText;
     new Function("require", "module", "exports", "window", "localStorage", "sessionStorage", output)(
       (name) => load(name, filename), module, module.exports,
@@ -328,6 +340,139 @@ test("VNPay: URL tương đối/tuyệt đối đúng backend; chặn thiếu UR
 });
 
 const callbackSearch = `?vnp_TxnRef=${order().orderId}&vnp_OrderInfo=Don+hang%20%2B%26&vnp_ResponseCode=00&vnp_SecureHash=test`;
+
+test("D7: POST đúng đơn COD/VNPAY, dùng Bearer và chỉ chấp nhận URL của đơn đó", async () => {
+  const { load, login, invalidations } = fixture();
+  const session = login();
+  const { api } = load("@/shared/api/client");
+  const { usePayOrder } = load("@/features/orders/queries");
+  const { orderId } = order(false);
+  const paymentUrl = `/api/payments/vnpay/create?orderId=${orderId}`;
+  const mutation = usePayOrder(orderId).mutateAsync;
+  assert.equal(mutation.retry, false);
+  assert.equal(mutation.networkMode, "always");
+  let payment;
+  api.defaults.adapter = async (config) => {
+    assert.equal(config.method, "post");
+    assert.equal(config.url, `/api/orders/${orderId}/pay`);
+    assert.equal(config.data, undefined);
+    assert.equal(config.headers.get("Authorization"), `Bearer ${session.token}`);
+    return { data: payment, status: 200, headers: {}, config };
+  };
+
+  for (const paymentMethod of ["COD", "VNPAY"]) {
+    payment = { ...order(false), paymentMethod, paymentUrl };
+    assert.equal(await mutation.mutationFn(session), `https://checkout.test${paymentUrl}`);
+  }
+  for (const invalidPayment of [
+    { orderId },
+    { orderId, paymentUrl: "http://[" },
+    { orderId, paymentUrl: `https://other.test${paymentUrl}` },
+    { orderId, paymentUrl: `${paymentUrl}&orderId=42` },
+    { orderId, paymentUrl: "/api/payments/vnpay/create?orderId=42" },
+    { orderId: "42", paymentUrl: "/api/payments/vnpay/create?orderId=42" },
+  ]) {
+    payment = invalidPayment;
+    await assert.rejects(mutation.mutationFn(session), /đường dẫn thanh toán/i);
+  }
+  assert.deepEqual(invalidations, []);
+});
+
+test("D7: đơn đã thanh toán làm mới detail/list; đổi phiên chặn redirect và cập nhật cache", async () => {
+  const { load, login, state, invalidations } = fixture();
+  const session = login();
+  const { api } = load("@/shared/api/client");
+  const { usePayOrder } = load("@/features/orders/queries");
+  const { orderId } = order(false);
+  const mutation = usePayOrder(orderId).mutateAsync;
+  api.defaults.adapter = async (config) => {
+    const response = { status: 400, data: { message: "Order is already paid." }, headers: {}, config };
+    throw new axios.AxiosError("Already paid", "ERR_BAD_REQUEST", config, null, response);
+  };
+  const client = new QueryClient();
+  try {
+    const cachedMutation = client.getMutationCache().build(client, mutation);
+    await assert.rejects(cachedMutation.execute(session), { status: 400, message: "Order is already paid." });
+    assert.deepEqual(invalidations.splice(0).map(({ queryKey }) => queryKey), [
+      ["orders", session.userId, "detail", orderId],
+      ["orders", session.userId, "list"],
+    ]);
+
+    api.defaults.adapter = async (config) => {
+      state.user = { id: "user-2" };
+      state.token = token("user-2");
+      return {
+        data: { orderId, paymentUrl: `/api/payments/vnpay/create?orderId=${orderId}` },
+        status: 200, headers: {}, config,
+      };
+    };
+    await assert.rejects(cachedMutation.execute(session), { status: 401 });
+    assert.deepEqual(invalidations, []);
+  } finally {
+    client.clear();
+  }
+});
+
+test("D7: trang kết quả chỉ làm mới cache đơn sau GET xác nhận quyền xem", async () => {
+  const { load, login, state, invalidations } = fixture();
+  const { api } = load("@/shared/api/client");
+  const { useOrderAfterPayment } = load("@/features/orders/queries");
+  const { orderId } = order(false);
+  const signal = new AbortController().signal;
+  assert.equal(useOrderAfterPayment(orderId).enabled, false);
+  const session = login();
+  assert.equal(useOrderAfterPayment(undefined).enabled, false);
+  const options = useOrderAfterPayment(orderId);
+  assert.equal(options.enabled, true);
+  assert.equal(options.retry, false);
+
+  api.defaults.adapter = async (config) => {
+    assert.equal(config.method, "get");
+    assert.equal(config.url, `/api/orders/${orderId}`);
+    assert.equal(config.headers.get("Authorization"), `Bearer ${session.token}`);
+    const response = { status: 400, data: { message: "You do not have permission to view this order." }, headers: {}, config };
+    throw new axios.AxiosError("Not the owner", "ERR_BAD_REQUEST", config, null, response);
+  };
+  await assert.rejects(options.queryFn({ signal }), { status: 400 });
+  assert.deepEqual(invalidations, []);
+
+  api.defaults.adapter = async (config) => ({ data: { id: orderId }, status: 200, headers: {}, config });
+  assert.equal(await options.queryFn({ signal }), orderId);
+  assert.deepEqual(invalidations.splice(0).map(({ queryKey }) => queryKey), [
+    ["orders", session.userId, "detail", orderId],
+    ["orders", session.userId, "list"],
+  ]);
+
+  api.defaults.adapter = async (config) => {
+    state.clear();
+    return { data: { id: orderId }, status: 200, headers: {}, config };
+  };
+  await assert.rejects(options.queryFn({ signal }), { status: 401 });
+  assert.deepEqual(invalidations, []);
+});
+
+test("D7: UI hiện nút theo canPay và link xem đơn theo phiên có quyền", () => {
+  const { load, login } = fixture();
+  const { orderId } = order(false);
+  const { PayOrderAction } = load("@/features/orders/components/PayOrderAction");
+  const { PaymentResultView } = load("@/features/payment/components/PaymentResultView");
+  const renderResult = (viewableOrderId) => renderToStaticMarkup(
+    createElement(MemoryRouter, null, createElement(PaymentResultView, {
+      kind: "success", message: "Giao dịch thành công", orderId, viewableOrderId,
+    })),
+  );
+  const detailPath = `/account/orders/${orderId}`;
+  assert.ok(!renderResult(orderId).includes(detailPath));
+
+  login();
+  const renderAction = (canPay) => renderToStaticMarkup(
+    createElement(PayOrderAction, { orderId, canPay, refreshing: false, onRefresh() {} }),
+  );
+  assert.equal(renderAction(false), "");
+  assert.match(renderAction(true), /Thanh toán qua VNPay/);
+  assert.ok(!renderResult(undefined).includes(detailPath));
+  assert.ok(renderResult(orderId).includes(detailPath));
+});
 
 test("VNPay: callback giữ nguyên query; bỏ token và không gửi header nội bộ", async () => {
   const { load, login, state } = fixture();

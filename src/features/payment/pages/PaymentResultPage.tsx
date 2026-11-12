@@ -1,4 +1,6 @@
 import { useLocation } from "react-router";
+import { useOrderAfterPayment } from "@/features/orders/queries";
+import { isPositiveLongId } from "@/shared/types/common";
 import { useVnpayReturn } from "../queries";
 import { PaymentResultView } from "../components/PaymentResultView";
 
@@ -12,6 +14,14 @@ export function PaymentResultPage() {
   );
 
   const query = useVnpayReturn(search, validSearch);
+  const resultOrderId = validSearch ? query.data?.orderId : undefined;
+  const orderQuery = useOrderAfterPayment(
+    isPositiveLongId(resultOrderId) ? resultOrderId : undefined,
+  );
+  const viewableOrderId =
+    orderQuery.isSuccess && orderQuery.isFetchedAfterMount && !orderQuery.isFetching
+      ? orderQuery.data
+      : undefined;
 
   if (!validSearch) {
     return (
@@ -48,6 +58,7 @@ export function PaymentResultPage() {
         kind="success"
         message={result.message}
         orderId={result.orderId}
+        viewableOrderId={viewableOrderId}
       />
     );
   }
@@ -68,6 +79,7 @@ export function PaymentResultPage() {
       kind={cancelled ? "cancelled" : "failed"}
       message={result.message}
       orderId={result.orderId}
+      viewableOrderId={viewableOrderId}
     />
   );
 }

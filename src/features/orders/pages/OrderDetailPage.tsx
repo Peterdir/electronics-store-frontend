@@ -4,15 +4,24 @@ import { formatDateTime, formatVND } from "@/lib/format";
 import { ApiError } from "@/shared/api/errors";
 import { StatusBadge } from "@/shared/components/StatusBadge";
 import { isPositiveLongId } from "@/shared/types/common";
+import { CancelOrderDialog } from "../components/CancelOrderDialog";
 import { OrderItems } from "../components/OrderItems";
+import { PayOrderAction } from "../components/PayOrderAction";
 import { orderStatusLabels, paymentStatusLabels } from "../orderStatus";
 import { useOrderDetail } from "../queries";
 import type { OrderDetailUserResponse } from "../types";
-import { CancelOrderDialog } from "../components/CancelOrderDialog";
 
 const ordersPath = "/account/orders";
 
-function OrderDetailContent({ order }: { order: OrderDetailUserResponse }) {
+function OrderDetailContent({
+  order,
+  refreshing,
+  onRefresh,
+}: {
+  order: OrderDetailUserResponse;
+  refreshing: boolean;
+  onRefresh: () => void;
+}) {
   return (
     <>
       <header className="space-y-3">
@@ -67,11 +76,10 @@ function OrderDetailContent({ order }: { order: OrderDetailUserResponse }) {
 
           <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
             <h2 className="font-semibold">Thanh toán</h2>
-            <p className="text-sm text-muted-foreground">
-              {order.paymentMethod === "COD"
-                ? "Thanh toán khi nhận hàng"
-                : "VNPay"}
-            </p>
+            <dl className="text-sm text-muted-foreground">
+              <dt>Phương thức lúc đặt đơn</dt>
+              <dd>{order.paymentMethod === "COD" ? "Thanh toán khi nhận hàng" : "VNPay"}</dd>
+            </dl>
 
             <dl className="space-y-2 text-sm tabular-nums">
               <div className="flex justify-between gap-3">
@@ -96,6 +104,13 @@ function OrderDetailContent({ order }: { order: OrderDetailUserResponse }) {
                 <dd>{formatVND(order.totalPrice)}</dd>
               </div>
             </dl>
+            <PayOrderAction
+              key={order.id}
+              orderId={order.id}
+              canPay={order.canPay}
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+            />
           </section>
         </div>
       </div>
@@ -148,7 +163,11 @@ export function OrderDetailPage() {
             : "Đang tải chi tiết đơn hàng…"}
         </p>
       ) : (
-        <OrderDetailContent order={orderQuery.data} />
+        <OrderDetailContent
+          order={orderQuery.data}
+          refreshing={orderQuery.isFetching}
+          onRefresh={() => void orderQuery.refetch()}
+        />
       )}
     </section>
   );

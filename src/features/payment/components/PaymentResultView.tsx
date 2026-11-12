@@ -13,6 +13,7 @@ interface Props {
   kind: ResultKind;
   message: string;
   orderId?: string;
+  viewableOrderId?: string;
 }
 
 const titles: Record<ResultKind, string> = {
@@ -27,6 +28,7 @@ export function PaymentResultView({
   kind,
   message,
   orderId,
+  viewableOrderId,
 }: Props) {
   const token = useSession((state) => state.token);
   const userId = useSession((state) => state.user?.id);
@@ -58,6 +60,11 @@ export function PaymentResultView({
 
       {kind !== "pending" && (
         <div className="flex flex-wrap gap-x-4 gap-y-2">
+          {canViewHistory && viewableOrderId && (
+            <Link className="text-primary underline" to={`/account/orders/${viewableOrderId}`}>
+              Xem đơn hàng
+            </Link>
+          )}
           {canViewHistory && (
             <Link className="text-primary underline" to="/account/orders">
               Lịch sử đơn hàng

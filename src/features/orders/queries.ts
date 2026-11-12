@@ -1,9 +1,10 @@
 import { useIsMutating, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { getVnpayRedirectUrl } from "@/features/payment/redirect";
 import { ApiError } from "@/shared/api/errors";
 import { qk } from "@/shared/api/queryKeys";
 import { isExpired } from "@/shared/auth/jwt";
 import { useSession } from "@/shared/auth/session.store";
-import { cancelOrder, getOrderDetail, getOrders } from "./api";
+import { cancelOrder, getOrderDetail, getOrders, payOrder } from "./api";
 import type { GetOrdersParams } from "./types";
 import type { ID } from "@/shared/types/common";
 import { toast } from "sonner";
@@ -73,6 +74,17 @@ function assertOrdersSession(userId: ID, token: string) {
   if (!isCurrentOrdersSession(userId, token)) {
     throw new ApiError(401, "Phiên đăng nhập đã thay đổi.");
   }
+}
+
+function invalidateOrderQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  userId: ID,
+  orderId: ID,
+) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: [...qk.orders, userId, "detail", orderId], exact: true }),
+    queryClient.invalidateQueries({ queryKey: [...qk.orders, userId, "list"] }),
+  ]);
 }
 
 export function useOrderDetail(orderId: ID | undefined) {
@@ -197,4 +209,80 @@ export function useCancelOrder(orderId: ID) {
     mutateAsync: mutation.mutateAsync,
     isPending: mutation.isPending || pendingCount > 0,
   };
+}
+
+export function usePayOrder(orderId: ID) {
+  const queryClient = useQueryClient();
+  const mutationKey = [...qk.orders, "pay", orderId];
+  const pendingCount = useIsMutating({ mutationKey, exact: true });
+
+  const mutation = useMutation({
+    mutationKey,
+    retry: false,
+    networkMode: "always",
+    gcTime: 0,
+
+    mutationFn: async ({ userId, token }: { userId: ID; token: string }) => {
+      assertOrdersSession(userId, token);
+      const payment = await payOrder(orderId, token);
+      assertOrdersSession(userId, token);
+
+      if (payment?.orderId !== orderId) {
+        throw new Error("Đường dẫn thanh toán không khớp với đơn hàng.");
+      }
+
+      return getVnpayRedirectUrl(payment);
+    },
+
+    onError: async (error, { userId, token }) => {
+      if (
+        !isCurrentOrdersSession(userId, token) ||
+        !(error instanceof ApiError) ||
+        ![400, 403, 404, 409].includes(error.status)
+      ) return;
+
+      await invalidateOrderQueries(queryClient, userId, orderId);
+    },
+  });
+
+  return {
+    mutateAsync: mutation.mutateAsync,
+    isPending: mutation.isPending || pendingCount > 0,
+  };
+}
+
+export function useOrderAfterPayment(orderId: ID | undefined) {
+  const queryClient = useQueryClient();
+  const userId = useSession((state) => state.user?.id);
+  const token = useSession((state) => state.token);
+
+  return useQuery({
+    queryKey: [...qk.orders, userId, "after-payment", orderId],
+    enabled: Boolean(orderId && userId && token && !isExpired(token)),
+    retry: false,
+    retryOnMount: false,
+    gcTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    networkMode: "always",
+
+    queryFn: async ({ signal }) => {
+      if (!orderId || !userId || !token) {
+        throw new ApiError(401, "Thiếu mã đơn hoặc phiên đăng nhập.");
+      }
+
+      assertOrdersSession(userId, token);
+      const detail = await getOrderDetail(orderId, signal, token);
+      signal.throwIfAborted();
+      assertOrdersSession(userId, token);
+
+      if (detail?.id !== orderId) {
+        throw new ApiError(0, "Máy chủ trả về sai mã đơn hàng.");
+      }
+
+      void invalidateOrderQueries(queryClient, userId, orderId);
+      return detail.id;
+    },
+  });
 }

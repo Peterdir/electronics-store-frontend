@@ -2,7 +2,7 @@
 
 > Ngày lập: **07/11/2026**. Đối chiếu frontend tại HEAD `7df522e`; working tree sạch trước khi tạo tài liệu.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase3.md](phase3.md), source frontend và source tham chiếu tại `../ecommerce-backend`.
-> **Điểm tiếp tục — cập nhật 11/11/2026: kiểm thử tích hợp D5, sau đó làm D6 — hủy đơn có lý do.** Trang chi tiết đã có trong `be5d2c9`. Phần đường dẫn sau checkout và cache lịch sử đã được bổ sung. Lint, build và kiểm tra logic checkout đạt. Xem bàn giao D5 để biết các ca cần thử trên backend và trình duyệt.
+> **Điểm tiếp tục — cập nhật 12/11/2026: kiểm thử D7 trên VNPay Sandbox, sau đó làm D8 — mua lại vào giỏ.** D5–D7 đã có code. Xem bàn giao từng mốc để biết các ca tích hợp còn chờ.
 > Phase 3: C1–C12 đã được chốt trong phạm vi ghi ở `phase3.md`; C12 hoàn thành theo xác nhận thử VNPay của người dùng ngày 07/11/2026. **C13 còn hồi quy tổng thể**, không tự đánh dấu Phase 3 hoàn tất và không giao lại code C12. Có thể bắt đầu phần tài khoản độc lập; kiểm tra các luồng checkout/payment liên quan khi tích hợp D5–D8 và chốt D13.
 
 ## 1. Cách thực hiện
@@ -155,8 +155,8 @@ Không đặt token vào query key. Nếu giữ dữ liệu trang trước, ch�
 | D3 | Đổi mật khẩu | D1 | Người dùng báo hoàn thành. Code tại `cafca17`, sửa lỗi lint tại `427e9d0`. Lint và typecheck đạt ngày 11/11/2026. Chưa ghi kết quả backend/trình duyệt từng ca |
 | D4 | Lịch sử đơn, lọc/phân trang | D1 | Người dùng xác nhận đã làm. Code tại `427e9d0`, lint và typecheck đạt ngày 11/11/2026. Chưa ghi kết quả backend/trình duyệt từng ca |
 | D5 | Chi tiết đơn, trạng thái và đường vào từ checkout | D4 | Đã triển khai trang chi tiết và đường dẫn sau checkout. Lint, build và 16 ca kiểm tra logic checkout đạt. Chờ kiểm thử tích hợp |
-| D6 | Hủy đơn có lý do | D5 | Chưa làm |
-| D7 | Thanh toán lại đơn đã có | D5, payment C12 | Chưa làm |
+| D6 | Hủy đơn có lý do | D5 | Đã có code trong `17a38d8`. Chưa ghi nhận kết quả kiểm thử tích hợp |
+| D7 | Thanh toán lại đơn đã có | D5, payment C12 | Đã triển khai và kiểm tra bằng API giả lập. Chờ thử trình duyệt với backend và VNPay Sandbox |
 | D8 | Mua lại vào giỏ user | D5, cart C2–C5 | Chưa làm |
 | D9 | Pending/history và tạo đánh giá | D1, dữ liệu DELIVERED; D5 để nối CTA | Chưa làm; cần kiểm tra nghiệp vụ backend |
 | D10 | Sửa/xóa đánh giá | D9 | Chưa làm; sửa bị vướng contract |
@@ -478,3 +478,13 @@ Bước tiếp theo:
 - `npm run lint`, `npm run build` và `npm run verify:checkout` (16/16) đạt. Build còn cảnh báo kích thước chunk. Kiểm tra render React với phiên giả lập xác nhận link hiện đúng theo tài khoản, guest và phiên hết hạn.
 - Người dùng xác nhận đã thử lại thanh toán VNPay thành công trên Sandbox sau khi gặp lỗi `70`. Chưa ghi kết quả riêng cho link lịch sử trên trang kết quả.
 - Các ca tích hợp còn cần ghi nhận gồm mở đơn từ danh sách và URL trực tiếp, đơn khác chủ, đường dẫn từ COD và VNPay, cùng việc tải lại lịch sử khi quay về. Sau đó tiếp tục D6.
+
+### Bàn giao D7 — 12/11/2026
+
+- Trang chi tiết hiển thị **Thanh toán qua VNPay** theo `canPay` của backend, áp dụng cho cả đơn COD và VNPay đủ điều kiện. `POST /api/orders/{id}/pay` dùng phiên hiện tại và trả đường dẫn cho đơn đã có. Khi đang gửi hoặc chuyển trang, nút bị khóa. Lỗi mở đường dẫn hiển thị ngay tại đơn với nút **Tải lại chi tiết đơn**.
+- Kiểm tra URL theo origin, đường dẫn và mã đơn trước khi chuyển cả trang. Khi POST báo đơn đã thanh toán hoặc trả lỗi có thể do trạng thái đơn đã đổi, tải lại chi tiết và đánh dấu các trang lịch sử của tài khoản cần cập nhật.
+- Trang kết quả giữ luồng xác nhận công khai của C12. Với mã đơn hợp lệ từ response xác nhận và phiên còn hạn, gọi `GET /api/orders/{id}`. Chỉ sau khi GET thành công và khớp mã đơn mới hiện **Xem đơn hàng** và làm mới cache đơn của tài khoản đó.
+- Source backend cho thấy giao dịch thành công cập nhật `paymentStatus` thành `PAID` và giữ `paymentMethod` lúc đặt. Vì vậy trang chi tiết ghi **Phương thức lúc đặt đơn**, còn badge hiển thị trạng thái thanh toán hiện tại.
+- `npm run lint`, `npm run build` và `npm run verify:checkout` (20/20) đạt. Các ca D7 kiểm tra POST cho COD/VNPay, URL không hợp lệ, đơn đã thanh toán, đổi phiên, quyền xem đơn và điều kiện hiển thị khi render React. Build còn cảnh báo kích thước chunk.
+- Backend dev tại cổng `8081` chưa phản hồi và chưa chạy được giao diện tương tác trên trình duyệt trong lượt này. Trên Sandbox, thử lần lượt đơn COD và VNPay có `canPay=true`: thanh toán thành công rồi mở lại đúng đơn và kiểm tra badge `PAID`; hủy hoặc làm giao dịch thất bại rồi kiểm tra đơn vẫn còn và có thể thanh toán lại theo `canPay`. Bước tiếp theo là D8.
+- Commit D7 dùng thông điệp `feat(orders): retry payment for existing orders`.
