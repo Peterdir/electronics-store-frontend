@@ -1,173 +1,124 @@
-import { qk } from "@/shared/api/queryKeys";
-import { useSession } from "@/shared/auth/session.store";
-import { addCartItem, clearServerCart, getCart, removeCartItem, updateCartItem, validateCartForCheckout } from "./api";
-import { isExpired } from "@/shared/auth/jwt";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { AddToCartRequest, CartItemResponse, CartResponse } from "./types";
+import { ApiError } from "@/shared/api/errors";
+import { qk } from "@/shared/api/queryKeys";
+import { isExpired } from "@/shared/auth/jwt";
+import { useSession } from "@/shared/auth/session.store";
 import type { ID } from "@/shared/types/common";
-
+import { addCartItem, clearServerCart, getCart, removeCartItem, updateCartItem, validateCartForCheckout } from "./api";
+import { useCartMerge } from "./cartMerge.store";
+import { assertCartSession, cacheServerCart, isCurrentCartSession, withCartWrite, type CartSession } from "./cartWrite";
+import type { AddToCartRequest, CartItemResponse, CartResponse } from "./types";
 
 export function useServerCart() {
-    const token = useSession((state) => state.token);
-    const userId = useSession((state) => state.user?.id);
+  const token = useSession((state) => state.token);
+  const userId = useSession((state) => state.user?.id);
 
-    return useQuery({
-        queryKey: [...qk.cart, userId],
-        queryFn: ({ signal }) => getCart(signal),
-        enabled: Boolean(token && userId && !isExpired(token)),
-        retry:false,
-    });
+  return useQuery({
+    queryKey: [...qk.cart, userId],
+    enabled: Boolean(token && userId && !isExpired(token)),
+    retry: false,
+    queryFn: async ({ signal }) => {
+      if (!userId || !token) throw new ApiError(401, "Vui lòng đăng nhập.");
+      const session = { userId, token };
+      assertCartSession(session);
+      const cart = await getCart(signal, session.token);
+      assertCartSession(session);
+      return cart;
+    },
+  });
+}
+
+function useCartMutation<Payload>(
+  write: (payload: Payload, token: string) => Promise<CartResponse | undefined>,
+  optimistic?: (cart: CartResponse, payload: Payload) => CartResponse,
+) {
+  const queryClient = useQueryClient();
+  const userId = useSession((state) => state.user?.id);
+  const token = useSession((state) => state.token);
+
+  return useMutation({
+    retry: false,
+    networkMode: "always",
+    mutationFn: async (payload: Payload) => {
+      if (!userId || !token) throw new ApiError(401, "Vui lòng đăng nhập.");
+      const session: CartSession = { userId, token };
+      return withCartWrite(session, async () => {
+        if (useCartMerge.getState().isMerging) {
+          throw new Error("Giỏ hàng đang được đồng bộ. Vui lòng chờ.");
+        }
+
+        const queryKey = [...qk.cart, session.userId];
+        await queryClient.cancelQueries({ queryKey, exact: true });
+        assertCartSession(session);
+        const previous = queryClient.getQueryData<CartResponse>(queryKey);
+        if (previous && optimistic) {
+          queryClient.setQueryData(queryKey, optimistic(previous, payload));
+        }
+
+        let cart: CartResponse | undefined;
+        try {
+          cart = await write(payload, session.token);
+        } catch (error) {
+          if (previous && optimistic && isCurrentCartSession(session)) {
+            await cacheServerCart(queryClient, session, previous);
+          }
+          throw error;
+        }
+
+        if (cart) {
+          await cacheServerCart(queryClient, session, cart);
+        } else if (isCurrentCartSession(session)) {
+          await queryClient.invalidateQueries({ queryKey, exact: true });
+        }
+      });
+    },
+  });
+}
+
+function recalculate(cart: CartResponse, items: CartItemResponse[]): CartResponse {
+  return {
+    ...cart,
+    items,
+    totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
+    totalPrice: items.reduce((sum, item) => sum + item.subtotal, 0),
+  };
 }
 
 export function useAddCartItem() {
-    const queryClient = useQueryClient();
-    const userId = useSession((state) => state.user?.id);
-
-    return useMutation({
-        mutationFn: (payload: AddToCartRequest) => addCartItem(payload),
-        retry: false,
-
-        onSuccess: async (cart) => {
-            if (!userId || useSession.getState().user?.id !== userId) return;
-
-            const cartKey = [...qk.cart, userId];
-
-            await queryClient.cancelQueries({ queryKey: cartKey });
-            queryClient.setQueryData(cartKey, cart);
-        },
-    })
-}
-
-function recalculate(
-    cart: CartResponse,
-    items: CartItemResponse[],
-): CartResponse {
-    return {
-        ...cart,
-        items,
-        totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
-        totalPrice: items.reduce((sum, item) => sum + item.subtotal, 0),
-    };
+  return useCartMutation((payload: AddToCartRequest, token) => addCartItem(payload, token));
 }
 
 export function useUpdateCartItem() {
-    const queryClient = useQueryClient();
-    const userId = useSession((state) => state.user?.id);
-    const key = [...qk.cart, userId];
-
-    return useMutation({
-        mutationFn: ({ id, quantity }: { id: ID; quantity: number }) => updateCartItem(id, quantity),
-        retry: false,
-
-        onMutate: async ({ id, quantity }) => {
-            await queryClient.cancelQueries({ queryKey: key });
-            const previous = queryClient.getQueryData<CartResponse>(key);
-
-            queryClient.setQueryData<CartResponse>(key, (cart) => {
-                if (!cart) return cart;
-
-                const items = cart.items.map((item) =>
-                    item.id === id
-                        ? {
-                            ...item,
-                            quantity,
-                            subtotal: item.unitPrice * quantity,
-                            hasSufficientStock: quantity <= item.availableStock,
-                        }
-                        : item,
-                );
-
-                return recalculate(cart, items);
-            });
-
-            return previous;
-        },
-
-        onError: (_error, _variables, previous) => {
-            if (userId === useSession.getState().user?.id && previous) {
-                queryClient.setQueryData(key, previous);
-            }
-        },
-
-        onSuccess: (cart) => {
-            if (userId === useSession.getState().user?.id) {
-                queryClient.setQueryData(key, cart);
-            }
-        },
-    });
+  return useCartMutation(
+    ({ id, quantity }: { id: ID; quantity: number }, token) => updateCartItem(id, quantity, token),
+    (cart, { id, quantity }) => recalculate(cart, cart.items.map((item) =>
+      item.id === id
+        ? {
+            ...item,
+            quantity,
+            subtotal: item.unitPrice * quantity,
+            hasSufficientStock: quantity <= item.availableStock,
+          }
+        : item,
+    )),
+  );
 }
 
 export function useRemoveCartItem() {
-    const queryClient = useQueryClient();
-    const userId = useSession((state) => state.user?.id);
-    const key = [...qk.cart, userId];
-
-    return useMutation({
-        mutationFn: removeCartItem,
-        retry: false,
-
-        onMutate: async (id: ID) => {
-            await queryClient.cancelQueries({ queryKey: key });
-            const previous = queryClient.getQueryData<CartResponse>(key);
-
-            queryClient.setQueryData<CartResponse>(key, (cart) =>
-                cart
-                ? recalculate(
-                    cart,
-                    cart.items.filter((item) => item.id !== id),
-                )
-                : cart,
-            );
-
-            return previous;
-        },
-
-        onError: (_error, _id, previous) => {
-            if (userId === useSession.getState().user?.id && previous) {
-                queryClient.setQueryData(key, previous);
-            }
-        },
-
-        onSuccess: (cart) => {
-            if (userId === useSession.getState().user?.id) {
-                queryClient.setQueryData(key, cart);
-            }
-        },
-    });
+  return useCartMutation(
+    (id: ID, token) => removeCartItem(id, token),
+    (cart, id) => recalculate(cart, cart.items.filter((item) => item.id !== id)),
+  );
 }
 
 export function useClearServerCart() {
-    const queryClient = useQueryClient();
-    const userId = useSession((state) => state.user?.id);
-    const key = [...qk.cart, userId];
-
-    return useMutation({
-        mutationFn: clearServerCart,
-        retry: false,
-
-        onMutate: async () => {
-            await queryClient.cancelQueries({ queryKey: key });
-            const previous = queryClient.getQueryData<CartResponse>(key);
-
-            queryClient.setQueryData<CartResponse>(key, (cart) =>
-                cart ? { ...cart, items: [], totalItems: 0, totalPrice: 0 } : cart,
-            );
-
-            return previous;
-        },
-
-        onError: (_error, _variables, previous) => {
-            if (userId === useSession.getState().user?.id && previous) {
-                queryClient.setQueryData(key, previous);
-            }
-        },
-
-        onSuccess: async () => {
-            if (userId === useSession.getState().user?.id) {
-                await queryClient.invalidateQueries({ queryKey: key });
-            }
-        },
-    });
+  return useCartMutation(
+    async (_payload: void, token) => {
+      await clearServerCart(token);
+      return undefined;
+    },
+    (cart) => recalculate(cart, []),
+  );
 }
 
 export function useCheckoutCartValidation(userId: ID) {

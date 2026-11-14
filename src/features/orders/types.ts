@@ -8,6 +8,7 @@ import type {
   PaymentMethod,
   PaymentStatus,
 } from "@/shared/types/enums";
+import type { CartResponse } from "../cart/types";
 
 export interface OrderItemResponse {
   id: ID;
@@ -73,4 +74,13 @@ export interface OrderPaymentResponse {
   totalPrice: Money;
   message: string;
   paymentUrl: string | null;
+}
+
+export interface BuyAgainResponse {
+  message: string;
+  addedItemsCount: number;
+  unavailableItemsCount: number;
+  addedItemNames: string[];
+  unavailableItemNames: string[];
+  cart: CartResponse;
 }

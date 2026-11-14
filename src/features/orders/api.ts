@@ -4,6 +4,7 @@ import {
   type BackendPage,
 } from "@/shared/api/pagination";
 import type {
+  BuyAgainResponse,
   GetOrdersParams,
   OrderDetailUserResponse,
   OrderListUserResponse,
@@ -63,6 +64,21 @@ export async function payOrder(id: ID, authToken: string) {
     `/api/orders/${id}/pay`,
     undefined,
     { meta: { authToken, noPublicRetry: true } },
+  );
+
+  return data;
+}
+
+export async function buyAgainOrder(id: ID, authToken: string) {
+  const { data } = await api.post<BuyAgainResponse>(
+    `/api/orders/${id}/buy-again`,
+    undefined,
+    {
+      meta: {
+        authToken,
+        noPublicRetry: true,
+      },
+    },
   );
 
   return data;

@@ -1,4 +1,4 @@
-/* Kiểm tra logic checkout và thanh toán bằng Node với API giả lập. */
+/* Kiểm tra logic checkout, thanh toán và mua lại bằng Node với API giả lập. */
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
 const fs = require("node:fs");
@@ -9,6 +9,7 @@ const { createElement } = require("react");
 const { renderToStaticMarkup } = require("react-dom/server");
 const { MemoryRouter } = require("react-router");
 const { QueryClient, QueryObserver, focusManager, onlineManager } = require("@tanstack/react-query");
+const { createStore } = require("zustand/vanilla");
 
 const root = path.resolve(__dirname, "..");
 const token = (subject = "user-1", expires = Date.now() + 60_000) =>
@@ -23,7 +24,7 @@ function memoryStorage() {
   };
 }
 
-function fixture() {
+function fixture({ useQuery = (options) => options, renderCurrentStore = false } = {}) {
   const localStorage = memoryStorage();
   const sessionStorage = memoryStorage();
   const state = {
@@ -34,18 +35,32 @@ function fixture() {
   const useSession = Object.assign((select) => select(state), { getState: () => state });
   const mergeState = { isMerging: false, attempts: [], dropVariant() {}, clearAttempts() {} };
   const invalidations = [];
-  const queryClient = { invalidateQueries: async (options) => { invalidations.push(options); } };
+  const queryClient = {
+    cancelQueries: async () => {},
+    invalidateQueries: async (options) => { invalidations.push(options); },
+  };
   const mocks = {
     "@/shared/auth/session.store": { useSession },
     "@/shared/config/env": { env: { API_BASE_URL: "https://checkout.test", BACKEND_ORIGIN: "https://checkout.test" } },
-    "@/features/cart/cartMerge.store": { useCartMerge: { getState: () => mergeState } },
+    "@/features/cart/cartMerge.store": {
+      useCartMerge: Object.assign((select) => select(mergeState), { getState: () => mergeState }),
+    },
     "@tanstack/react-query": {
+      QueryClient,
       useMutation: (options) => ({ ...options, mutateAsync: options }),
-      useQuery: (options) => options,
+      useQuery,
       useQueryClient: () => queryClient,
       useIsMutating: () => 0,
     },
   };
+  if (renderCurrentStore) {
+    // Static rendering normally reads Zustand's initial snapshot.
+    const bindStore = (initializer) => {
+      const store = createStore(initializer);
+      return Object.assign((select) => select(store.getState()), store);
+    };
+    mocks.zustand = { create: (initializer) => initializer ? bindStore(initializer) : bindStore };
+  }
   const cache = new Map();
   function load(specifier, parent = path.join(root, "src", "index.ts")) {
     const resolved = specifier.startsWith("@/")
@@ -340,6 +355,149 @@ test("VNPay: URL tương đối/tuyệt đối đúng backend; chặn thiếu UR
 });
 
 const callbackSearch = `?vnp_TxnRef=${order().orderId}&vnp_OrderInfo=Don+hang%20%2B%26&vnp_ResponseCode=00&vnp_SecureHash=test`;
+
+function buyAgainFixture(t, options) {
+  const env = fixture({ ...options, renderCurrentStore: true });
+  const client = new QueryClient();
+  t.after(() => client.clear());
+  for (const method of ["cancelQueries", "getQueryData", "setQueryData"]) {
+    env.queryClient[method] = client[method].bind(client);
+  }
+  const session = env.login();
+  const { orderId } = order(false);
+  const { api } = env.load("@/shared/api/client");
+  const { useBuyAgainOrder } = env.load("@/features/orders/queries");
+  const { useCartWriteState, withCartWrite } = env.load("@/features/cart/cartWrite");
+  const cartKey = ["cart", session.userId];
+  const cart = { id: "1", totalItems: 2, totalPrice: 200_000, items: [] };
+  const result = {
+    message: "Items added.",
+    addedItemsCount: 1,
+    unavailableItemsCount: 1,
+    addedItemNames: ["Chuột"],
+    unavailableItemNames: ["Bàn phím"],
+    cart,
+  };
+  return {
+    ...env, api, client, session, orderId, cartKey, cart, result,
+    useCartWriteState, withCartWrite,
+    buyAgain: useBuyAgainOrder(orderId).mutationFn,
+  };
+}
+
+test("D8: ghi giỏ từ response, chặn mua lại và sửa giỏ chạy chồng", async (t) => {
+  const env = buyAgainFixture(t);
+  let releasePost;
+  const dispatched = new Promise((resolve) => {
+    env.api.defaults.adapter = (config) => {
+      assert.equal(config.method, "post");
+      assert.equal(config.url, `/api/orders/${env.orderId}/buy-again`);
+      assert.equal(config.data, undefined);
+      assert.equal(config.headers.get("Authorization"), `Bearer ${env.session.token}`);
+      return new Promise((release) => {
+        releasePost = () => release({ data: env.result, status: 200, headers: {}, config });
+        resolve();
+      });
+    };
+  });
+
+  const pending = env.buyAgain(env.session);
+  await dispatched;
+  const remove = env.load("@/features/cart/queries").useRemoveCartItem().mutationFn;
+  await assert.rejects(env.buyAgain(env.session), /đang được cập nhật/);
+  await assert.rejects(remove("4"), /đang được cập nhật/);
+  releasePost();
+  assert.deepEqual(await pending, env.result);
+  assert.deepEqual(env.client.getQueryData(env.cartKey), env.cart);
+
+  await env.withCartWrite(env.session, async () => {
+    await assert.rejects(env.buyAgain(env.session), /đang được cập nhật/);
+  });
+});
+
+test("D8: chặn khi merge, phản hồi phiên cũ không khôi phục cache", async (t) => {
+  const env = buyAgainFixture(t);
+  const merge = env.load("@/features/cart/cartMerge.store").useCartMerge.getState();
+  let calls = 0;
+  env.api.defaults.adapter = async (config) => {
+    calls++;
+    env.state.clear();
+    return { data: env.result, status: 200, headers: {}, config };
+  };
+
+  merge.isMerging = true;
+  await assert.rejects(env.buyAgain(env.session), /đồng bộ/);
+  merge.isMerging = false;
+  merge.attempts = [{ userId: env.session.userId }];
+  await assert.rejects(env.buyAgain(env.session), /đối chiếu/);
+  assert.equal(calls, 0);
+  merge.attempts = [];
+
+  await assert.rejects(env.buyAgain(env.session), { status: 401 });
+  assert.equal(calls, 1);
+  assert.equal(env.client.getQueryData(env.cartKey), undefined);
+  assert.equal(env.useCartWriteState.getState().busyUsers.size, 0);
+});
+
+test("D8: timeout hoặc 5xx làm mới giỏ và chỉ cho mua lại sau khi xác nhận", async (t) => {
+  for (const status of [0, 503]) {
+    const env = buyAgainFixture(t);
+    let posts = 0;
+    env.api.defaults.adapter = async (config) => {
+      assert.equal(config.method, "post");
+      posts++;
+      if (posts > 1) return { data: env.result, status: 200, headers: {}, config };
+      const response = status ? { status, data: {}, headers: {}, config } : undefined;
+      throw new axios.AxiosError("Request failed", "ERR_NETWORK", config, null, response);
+    };
+
+    await assert.rejects(env.buyAgain(env.session), { status });
+    assert.deepEqual(env.invalidations, [{ queryKey: env.cartKey, exact: true }]);
+    assert.equal(posts, 1);
+
+    // A new page instance keeps the retry guard for this order in the same tab.
+    const { useBuyAgainOrder } = env.load("@/features/orders/queries");
+    const retry = useBuyAgainOrder(env.orderId).mutationFn;
+    await assert.rejects(retry(env.session), /xác nhận trước khi mua lại/);
+    assert.equal(posts, 1);
+    await env.withCartWrite(env.session, async () => {});
+
+    await retry({ ...env.session, retryConfirmed: true });
+    assert.deepEqual(env.client.getQueryData(env.cartKey), env.cart);
+    await retry(env.session);
+    assert.equal(posts, 3);
+  }
+});
+
+test("D8: khi kết quả chưa rõ, chi tiết đơn dẫn tới giỏ và giỏ vẫn dùng màn hình lỗi thường", async (t) => {
+  let cartQuery;
+  const env = buyAgainFixture(t, { useQuery: () => cartQuery });
+  env.api.defaults.adapter = async (config) => {
+    throw new axios.AxiosError("Backend offline", "ERR_NETWORK", config);
+  };
+
+  await assert.rejects(env.buyAgain(env.session), { status: 0 });
+  const { BuyAgainOrderAction } = env.load("@/features/orders/components/BuyAgainOrderAction");
+  const action = renderToStaticMarkup(createElement(MemoryRouter, null,
+    createElement(BuyAgainOrderAction, { orderId: env.orderId, canBuyAgain: true, refreshing: false }),
+  ));
+  assert.match(action, /Chưa xác định được kết quả mua lại/);
+  assert.match(action, /href="\/cart"[^>]*>Xem giỏ hàng/);
+
+  const { ApiError } = env.load("@/shared/api/errors");
+  const { CartPage } = env.load("@/features/cart/pages/CartPage");
+  const renderCart = () => renderToStaticMarkup(createElement(MemoryRouter, null, createElement(CartPage)));
+
+  cartQuery = {
+    error: new ApiError(0, "Không thể kết nối máy chủ"),
+    isLoading: false,
+    isFetching: false,
+  };
+  const unavailableCart = renderCart();
+  assert.match(unavailableCart, /Không thể kết nối máy chủ/);
+  assert.match(unavailableCart, /Thử lại/);
+  assert.doesNotMatch(unavailableCart, /Kiểm tra kết quả mua lại/);
+});
 
 test("D7: POST đúng đơn COD/VNPAY, dùng Bearer và chỉ chấp nhận URL của đơn đó", async () => {
   const { load, login, invalidations } = fixture();

@@ -2,7 +2,7 @@
 
 > Ngày lập: **07/11/2026**. Đối chiếu frontend tại HEAD `7df522e`; working tree sạch trước khi tạo tài liệu.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase3.md](phase3.md), source frontend và source tham chiếu tại `../ecommerce-backend`.
-> **Điểm tiếp tục — cập nhật 12/11/2026: kiểm thử D7 trên VNPay Sandbox, sau đó làm D8 — mua lại vào giỏ.** D5–D7 đã có code. Xem bàn giao từng mốc để biết các ca tích hợp còn chờ.
+> **Điểm tiếp tục — cập nhật 13/11/2026: kiểm thử tích hợp D8, sau đó làm D9 — đánh giá.** D5–D8 đã có code. Xem bàn giao từng mốc để biết các ca tích hợp còn chờ.
 > Phase 3: C1–C12 đã được chốt trong phạm vi ghi ở `phase3.md`; C12 hoàn thành theo xác nhận thử VNPay của người dùng ngày 07/11/2026. **C13 còn hồi quy tổng thể**, không tự đánh dấu Phase 3 hoàn tất và không giao lại code C12. Có thể bắt đầu phần tài khoản độc lập; kiểm tra các luồng checkout/payment liên quan khi tích hợp D5–D8 và chốt D13.
 
 ## 1. Cách thực hiện
@@ -157,7 +157,7 @@ Không đặt token vào query key. Nếu giữ dữ liệu trang trước, ch�
 | D5 | Chi tiết đơn, trạng thái và đường vào từ checkout | D4 | Đã triển khai trang chi tiết và đường dẫn sau checkout. Lint, build và 16 ca kiểm tra logic checkout đạt. Chờ kiểm thử tích hợp |
 | D6 | Hủy đơn có lý do | D5 | Đã có code trong `17a38d8`. Chưa ghi nhận kết quả kiểm thử tích hợp |
 | D7 | Thanh toán lại đơn đã có | D5, payment C12 | Đã triển khai và kiểm tra bằng API giả lập. Chờ thử trình duyệt với backend và VNPay Sandbox |
-| D8 | Mua lại vào giỏ user | D5, cart C2–C5 | Chưa làm |
+| D8 | Mua lại vào giỏ user | D5, cart C2–C5 | Đã triển khai. Lint, build và kiểm thử giả lập đạt. Chờ thử với backend trên trình duyệt |
 | D9 | Pending/history và tạo đánh giá | D1, dữ liệu DELIVERED; D5 để nối CTA | Chưa làm; cần kiểm tra nghiệp vụ backend |
 | D10 | Sửa/xóa đánh giá | D9 | Chưa làm; sửa bị vướng contract |
 | D11 | Wishlist và nút tim ở catalog | D1, catalog | Chưa làm |
@@ -292,7 +292,7 @@ Giữ luồng `/payment/result` public, query nguyên vẹn, không token/retry/
 
 **Thực hiện:** canBuyAgain mới mở nút; chặn lúc merge hoặc user còn dấu merge cần đối chiếu. Dùng khóa chung đủ để không chạy đồng thời với ghi cart làm response ghi đè nhau, không chỉ dựa vào pending của một instance hook. Set cache `[...qk.cart, userId]` từ response, mở dialog kết quả và CTA tới giỏ. Tồn kho có thể chỉ cho thêm một phần số lượng cũ; số item được thêm không chứng minh đã thêm đủ số lượng đặt trước, xem giỏ để xác nhận.
 
-**Kiểm tra:** thêm đủ, một phần, không thêm được, variant đã xóa/hết hàng/ngừng bán; giỏ đã có item; badge cập nhật; double-click và đổi phiên. Timeout/5xx: không tự gửi lại vì có thể cộng trùng; GET giỏ và yêu cầu đối chiếu trước thao tác tiếp. Không cam kết exactly-once qua reload/nhiều tab khi backend chưa có idempotency.
+**Kiểm tra:** thêm đủ, một phần, không thêm được, variant đã xóa/hết hàng/ngừng bán; giỏ đã có item; badge cập nhật; double-click và đổi phiên. Timeout/5xx: làm mới dữ liệu giỏ, hiện link **Xem giỏ hàng** và yêu cầu xác nhận khi người dùng bấm **Mua lại** lần nữa cho cùng đơn. Không tự gửi lại POST. Không cam kết exactly-once qua reload/nhiều tab khi backend chưa có idempotency.
 
 **Commit:** `feat(orders): add buy again with cart results`.
 
@@ -488,3 +488,11 @@ Bước tiếp theo:
 - `npm run lint`, `npm run build` và `npm run verify:checkout` (20/20) đạt. Các ca D7 kiểm tra POST cho COD/VNPay, URL không hợp lệ, đơn đã thanh toán, đổi phiên, quyền xem đơn và điều kiện hiển thị khi render React. Build còn cảnh báo kích thước chunk.
 - Backend dev tại cổng `8081` chưa phản hồi và chưa chạy được giao diện tương tác trên trình duyệt trong lượt này. Trên Sandbox, thử lần lượt đơn COD và VNPay có `canPay=true`: thanh toán thành công rồi mở lại đúng đơn và kiểm tra badge `PAID`; hủy hoặc làm giao dịch thất bại rồi kiểm tra đơn vẫn còn và có thể thanh toán lại theo `canPay`. Bước tiếp theo là D8.
 - Commit D7 dùng thông điệp `feat(orders): retry payment for existing orders`.
+
+### Bàn giao D8 — 13/11/2026
+
+- Chi tiết đơn hiện nút **Mua lại** theo `canBuyAgain`. Sau POST thành công, badge và trang giỏ nhận `response.cart`. Dialog liệt kê các dòng đã thêm và chưa thêm được, kèm nút **Xem giỏ hàng** để kiểm tra số lượng thực tế.
+- Mua lại, ghi giỏ tài khoản, đồng bộ giỏ guest và checkout từ giỏ dùng chung khóa theo tài khoản trong cùng tab. Cache chỉ được cập nhật khi user ID và token còn khớp. D8 chặn mua lại khi đang merge hoặc còn dấu merge cần đối chiếu.
+- Cập nhật 14/11/2026: bỏ khối đối chiếu riêng trên trang giỏ. Khi timeout hoặc lỗi 5xx, đánh dấu cache giỏ cần làm mới và hiện link **Xem giỏ hàng** dưới nút **Mua lại**. Khi quay lại cùng đơn trong tab, lần bấm tiếp theo yêu cầu xác nhận trước khi gửi POST. Giỏ và checkout chỉ chịu khóa ghi khi thao tác đang chạy.
+- `npm run lint`, `npm run build`, `git diff --check` và `npm run verify:checkout` (24/24) đạt. Bốn ca D8 kiểm tra cập nhật cache và khóa ghi, merge/đổi phiên, timeout/5xx cần xác nhận khi thử lại và hiển thị link tới giỏ trên trang chi tiết. Build còn cảnh báo kích thước chunk.
+- Backend dev tại cổng `8081` chưa phản hồi. Cần thử trên trình duyệt với đơn đủ điều kiện, các tình huống thêm đủ, thêm một phần, không thêm được và dialog bằng bàn phím trước khi chốt kiểm thử tích hợp.

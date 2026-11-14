@@ -5,6 +5,7 @@ import { useSession } from "@/shared/auth/session.store";
 import { isExpired } from "@/shared/auth/jwt";
 import { ApiError } from "@/shared/api/errors";
 import { useCartMerge } from "./cartMerge.store";
+import { useCartWriteState } from "./cartWrite";
 
 export function useCart() {
   const setGuestQuantity = useGuestCart((state) => state.setQuantity);
@@ -16,6 +17,8 @@ export function useCart() {
   const clearServerCart = useClearServerCart();
 
   const token = useSession((state) => state.token);
+  const userId = useSession((state) => state.user?.id);
+  const cartBusy = useCartWriteState((state) => Boolean(userId && state.busyUsers.has(userId)));
   const guestItems = useGuestCart((state) => state.items);
   const addGuestItem = useGuestCart((state) => state.add);
 
@@ -110,7 +113,7 @@ export function useCart() {
       isLoading: serverCart.isLoading,
       isRefreshing: serverCart.isFetching,
       isMerging,
-      isAdding: isMerging || addServerItem.isPending,
+      isAdding: isMerging || cartBusy || addServerItem.isPending,
       error: isExpired(token)
         ? new ApiError(401, "Phiên đăng nhập đã hết hạn.")
         : serverCart.error,
@@ -118,6 +121,7 @@ export function useCart() {
       addItem,
       isChanging:
         isMerging ||
+        cartBusy ||
         updateServerItem.isPending ||
         removeServerItem.isPending ||
         clearServerCart.isPending,

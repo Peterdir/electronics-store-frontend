@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router";
 import { formatVND } from "@/lib/format";
 import { useCart } from "@/features/cart/useCart";
 import { useCartMerge } from "@/features/cart/cartMerge.store";
+import { useCartWriteState } from "@/features/cart/cartWrite";
 import { useCheckoutCartValidation } from "@/features/cart/queries";
 import { useSession } from "@/shared/auth/session.store";
 import { isExpired } from "@/shared/auth/jwt";
@@ -42,6 +43,7 @@ function UserCartValidation({
   totalPrice: number;
 }) {
   const validation = useCheckoutCartValidation(userId);
+  const cartBusy = useCartWriteState((state) => state.busyUsers.has(userId));
 
   if (validation.isPending) {
     return <p role="status">Đang kiểm tra giỏ hàng…</p>;
@@ -88,7 +90,7 @@ function UserCartValidation({
       userId={userId}
       source={{ kind: "userCart" }}
       subtotal={totalPrice}
-      canSubmit={!validation.isFetching && !validation.isError}
+      canSubmit={!cartBusy && !validation.isFetching && !validation.isError}
     >
       <p>Giỏ tài khoản đã được kiểm tra.</p>
       <p>
@@ -151,7 +153,6 @@ function CartCheckoutEntry({ userId }: { userId: string | null }) {
 
   if (
     cart.isMerging ||
-    cart.isChanging ||
     cart.totalItems === 0 ||
     (cart.mode === "guest" && hasIssues)
   ) {

@@ -78,7 +78,6 @@ export function CartMergeReview({
       `Request trước có thể đã thành công. Gửi lại ${guestItem.quantity} chiếc ${attempt.name} có thể cộng trùng. Bạn đã đối chiếu giỏ server và vẫn muốn thử lại?`,
     )) return;
 
-    useCartMerge.getState().resolve(attempt.userId, attempt.variantId);
     void startGuestCartMerge(token, userId, attempt.variantId).catch(() => {
       toast.error("Không thể chuyển sản phẩm. Bản lưu guest vẫn được giữ.");
     });

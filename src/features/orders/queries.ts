@@ -1,10 +1,19 @@
 import { useIsMutating, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { create } from "zustand";
+import { useCartMerge } from "@/features/cart/cartMerge.store";
+import {
+  assertCartSession,
+  cacheServerCart,
+  isCurrentCartSession,
+  withCartWrite,
+  type CartSession,
+} from "@/features/cart/cartWrite";
 import { getVnpayRedirectUrl } from "@/features/payment/redirect";
 import { ApiError } from "@/shared/api/errors";
 import { qk } from "@/shared/api/queryKeys";
 import { isExpired } from "@/shared/auth/jwt";
 import { useSession } from "@/shared/auth/session.store";
-import { cancelOrder, getOrderDetail, getOrders, payOrder } from "./api";
+import { buyAgainOrder, cancelOrder, getOrderDetail, getOrders, payOrder } from "./api";
 import type { GetOrdersParams } from "./types";
 import type { ID } from "@/shared/types/common";
 import { toast } from "sonner";
@@ -249,6 +258,68 @@ export function usePayOrder(orderId: ID) {
     mutateAsync: mutation.mutateAsync,
     isPending: mutation.isPending || pendingCount > 0,
   };
+}
+
+const useUncertainBuyAgain = create<{ orders: ReadonlySet<string> }>(() => ({
+  orders: new Set(),
+}));
+
+export function useBuyAgainOrder(orderId: ID) {
+  const queryClient = useQueryClient();
+  const currentUserId = useSession((state) => state.user?.id);
+  const needsRetryConfirmation = useUncertainBuyAgain((state) =>
+    Boolean(currentUserId && state.orders.has(`${currentUserId}:${orderId}`)),
+  );
+
+  const mutation = useMutation({
+    retry: false,
+    networkMode: "always",
+    gcTime: 0,
+    mutationFn: (session: CartSession & { retryConfirmed?: boolean }) => withCartWrite(session, async () => {
+      const { userId, token } = session;
+      const orderKey = `${userId}:${orderId}`;
+      if (useUncertainBuyAgain.getState().orders.has(orderKey) && !session.retryConfirmed) {
+        throw new Error("Hãy kiểm tra giỏ hàng và xác nhận trước khi mua lại lần nữa.");
+      }
+
+      const merge = useCartMerge.getState();
+      if (merge.isMerging || merge.attempts.some((attempt) => attempt.userId === userId)) {
+        throw new Error("Vui lòng hoàn tất đồng bộ và đối chiếu giỏ hàng trước khi mua lại.");
+      }
+
+      await queryClient.cancelQueries({ queryKey: [...qk.cart, userId], exact: true });
+      assertCartSession(session);
+
+      let result;
+      try {
+        result = await buyAgainOrder(orderId, token);
+      } catch (error) {
+        if (isCurrentCartSession(session) &&
+            error instanceof ApiError && (error.status === 0 || error.status >= 500)) {
+          useUncertainBuyAgain.setState((state) => ({
+            orders: new Set(state.orders).add(orderKey),
+          }));
+          void queryClient.invalidateQueries({ queryKey: [...qk.cart, userId], exact: true });
+        }
+        throw error;
+      }
+
+      await cacheServerCart(queryClient, session, result.cart);
+      useUncertainBuyAgain.setState((state) => {
+        const orders = new Set(state.orders);
+        orders.delete(orderKey);
+        return { orders };
+      });
+      return result;
+    }),
+    onError: async (error, session) => {
+      if (isCurrentCartSession(session) && error instanceof ApiError &&
+          [400, 403, 404, 409].includes(error.status)) {
+        await invalidateOrderQueries(queryClient, session.userId, orderId);
+      }
+    },
+  });
+  return { ...mutation, needsRetryConfirmation };
 }
 
 export function useOrderAfterPayment(orderId: ID | undefined) {

@@ -2,16 +2,14 @@ import { toast } from "sonner";
 import { ApiError } from "@/shared/api/errors";
 import { queryClient } from "@/shared/api/queryClient";
 import { qk } from "@/shared/api/queryKeys";
-import { useSession } from "@/shared/auth/session.store";
 import { addCartItem } from "./api";
 import { useCartMerge } from "./cartMerge.store";
+import { cacheServerCart, isCurrentCartSession, withCartWrite } from "./cartWrite";
 import { useGuestCart } from "./guestCart.store";
-import type { CartResponse } from "./types";
 import type { ID } from "@/shared/types/common";
 
 function isCurrentSession(token: string, userId: ID): boolean {
-  const session = useSession.getState();
-  return session.token === token && session.user?.id === userId;
+  return isCurrentCartSession({ token, userId });
 }
 
 function isDefiniteRejection(error: unknown): boolean {
@@ -45,7 +43,8 @@ async function runMerge(
 
       if (
         mergeState.attempts.some(
-          (attempt) => attempt.variantId === item.variantId,
+          (attempt) => attempt.variantId === item.variantId &&
+            !(onlyVariantId && attempt.userId === userId),
         )
       ) {
         uncertain.push(name);
@@ -70,13 +69,8 @@ async function runMerge(
 
         if (!isCurrentSession(token, userId)) break;
 
-        await queryClient.cancelQueries({
-          queryKey: cartKey,
-          exact: true,
-        });
+        await cacheServerCart(queryClient, { userId, token }, cart);
         if (!isCurrentSession(token, userId)) break;
-
-        queryClient.setQueryData<CartResponse>(cartKey, cart);
 
         useGuestCart.getState().remove(item.variantId);
         useCartMerge.getState().resolve(userId, item.variantId);
@@ -144,7 +138,14 @@ export function startGuestCartMerge(
     });
   }
 
-  const promise = runMerge(token, userId, onlyVariantId).finally(() => {
+  if (!useGuestCart.getState().items.some(
+    (item) => !onlyVariantId || item.variantId === onlyVariantId,
+  )) return Promise.resolve();
+
+  const promise = withCartWrite(
+    { userId, token },
+    () => runMerge(token, userId, onlyVariantId),
+  ).finally(() => {
     if (running?.token === token) running = null;
   });
 

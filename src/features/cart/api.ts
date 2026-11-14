@@ -5,8 +5,12 @@ import type { ID, MessageResponse } from "@/shared/types/common";
 
 export async function getCart(
     signal?: AbortSignal,
+    authToken?: string,
 ): Promise<CartResponse> {
-    const response = await api.get<CartResponse>("/api/cart", { signal })
+    const response = await api.get<CartResponse>("/api/cart", {
+        signal,
+        meta: { authToken, noPublicRetry: true },
+    });
 
     return response.data;
 }
@@ -29,25 +33,30 @@ export async function addCartItem(
 export async function updateCartItem(
   cartItemId: ID,
   quantity: number,
+  authToken: string,
 ): Promise<CartResponse> {
     const response = await api.put<CartResponse>(
         `/api/cart/items/${cartItemId}`,
         { quantity },
+        { meta: { authToken, noPublicRetry: true } },
     );
 
     return response.data;
 }
 
-export async function removeCartItem(cartItemId: ID): Promise<CartResponse> {
+export async function removeCartItem(cartItemId: ID, authToken: string): Promise<CartResponse> {
     const response = await api.delete<CartResponse>(
         `/api/cart/items/${cartItemId}`,
+        { meta: { authToken, noPublicRetry: true } },
     );
 
     return response.data;
 }
 
-export async function clearServerCart(): Promise<MessageResponse> {
-    const response = await api.delete<MessageResponse>("/api/cart");
+export async function clearServerCart(authToken: string): Promise<MessageResponse> {
+    const response = await api.delete<MessageResponse>("/api/cart", {
+        meta: { authToken, noPublicRetry: true },
+    });
 
     return response.data;
 }

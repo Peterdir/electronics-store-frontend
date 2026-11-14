@@ -4,6 +4,7 @@ import { formatDateTime, formatVND } from "@/lib/format";
 import { ApiError } from "@/shared/api/errors";
 import { StatusBadge } from "@/shared/components/StatusBadge";
 import { isPositiveLongId } from "@/shared/types/common";
+import { BuyAgainOrderAction } from "../components/BuyAgainOrderAction";
 import { CancelOrderDialog } from "../components/CancelOrderDialog";
 import { OrderItems } from "../components/OrderItems";
 import { PayOrderAction } from "../components/PayOrderAction";
@@ -110,6 +111,12 @@ function OrderDetailContent({
               canPay={order.canPay}
               refreshing={refreshing}
               onRefresh={onRefresh}
+            />
+            <BuyAgainOrderAction
+              key={`buy-again-${order.id}`}
+              orderId={order.id}
+              canBuyAgain={order.canBuyAgain}
+              refreshing={refreshing}
             />
           </section>
         </div>
