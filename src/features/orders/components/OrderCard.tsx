@@ -1,11 +1,8 @@
-import { StatusBadge } from "@/shared/components/StatusBadge";
-import { formatDateTime, formatVND } from "@/lib/format";
-import {
-  orderStatusLabels,
-  paymentStatusLabels,
-} from "../orderStatus";
-import type { OrderListUserResponse } from "../types";
 import { Link } from "react-router";
+import { formatDateTime, formatVND } from "@/lib/format";
+import { orderStatusTones } from "../orderStatus";
+import type { OrderListUserResponse } from "../types";
+import { OrderStatusBadges } from "./OrderStatusBadges";
 
 interface OrderCardProps {
   order: OrderListUserResponse;
@@ -13,7 +10,10 @@ interface OrderCardProps {
 
 export function OrderCard({ order }: OrderCardProps) {
   return (
-    <article className="space-y-4 rounded-2xl border border-border bg-card p-5">
+    <article
+      className="order-card relative space-y-4 rounded-2xl border border-border bg-card p-5"
+      data-order-tone={orderStatusTones[order.orderStatus] ?? "neutral"}
+    >
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="break-words font-semibold">
@@ -25,15 +25,10 @@ export function OrderCard({ order }: OrderCardProps) {
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          <StatusBadge
-            label={`Đơn hàng: ${orderStatusLabels[order.orderStatus]}`}
-          />
-
-          <StatusBadge
-            label={`Thanh toán: ${paymentStatusLabels[order.paymentStatus]}`}
-          />
-        </div>
+        <OrderStatusBadges
+          orderStatus={order.orderStatus}
+          paymentStatus={order.paymentStatus}
+        />
       </header>
 
       <ul className="divide-y divide-border">

@@ -144,6 +144,146 @@
   @apply min-h-11 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors duration-150 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40 aria-invalid:border-destructive disabled:cursor-not-allowed disabled:opacity-50;
 }
 
+@layer components {
+  .order-card {
+    --order-accent: var(--muted-foreground);
+    background-image: radial-gradient(
+      ellipse at top left,
+      color-mix(in oklab, var(--order-accent) 12%, transparent),
+      transparent 66%
+    );
+  }
+
+  .order-card::before {
+    content: "";
+    position: absolute;
+    inset-block: 1.25rem;
+    inset-inline-start: 0;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: linear-gradient(
+      var(--order-accent),
+      color-mix(in oklab, var(--order-accent) 30%, transparent)
+    );
+    pointer-events: none;
+  }
+
+  .order-card[data-order-tone="pending"] {
+    --order-accent: light-dark(var(--color-amber-600), var(--color-amber-400));
+  }
+
+  .order-card[data-order-tone="active"] {
+    --order-accent: light-dark(var(--color-sky-600), var(--color-sky-400));
+  }
+
+  .order-card[data-order-tone="success"] {
+    --order-accent: light-dark(var(--color-emerald-600), var(--color-emerald-400));
+  }
+
+  .order-card[data-order-tone="danger"] {
+    --order-accent: light-dark(var(--color-rose-600), var(--color-rose-400));
+  }
+
+  .order-card[data-order-tone="returned"] {
+    --order-accent: light-dark(var(--color-violet-600), var(--color-violet-400));
+  }
+
+  .status-badge {
+    background-image: linear-gradient(
+      125deg,
+      color-mix(in oklab, currentColor 5%, transparent),
+      transparent 65%
+    );
+  }
+
+  .status-badge-prominent {
+    background-image: radial-gradient(
+      ellipse at top right,
+      color-mix(in oklab, currentColor 12%, transparent),
+      transparent 72%
+    );
+    box-shadow:
+      inset 0 1px color-mix(in oklab, currentColor 13%, transparent),
+      0 10px 24px -20px color-mix(in oklab, currentColor 50%, transparent);
+  }
+
+  .status-badge-icon {
+    background: linear-gradient(
+      145deg,
+      color-mix(in oklab, currentColor 16%, transparent),
+      color-mix(in oklab, currentColor 6%, transparent)
+    );
+    box-shadow: inset 0 0 0 1px color-mix(in oklab, currentColor 18%, transparent);
+  }
+
+  .status-badge-prominent .status-badge-indicator {
+    box-shadow: 0 0 9px color-mix(in oklab, currentColor 42%, transparent);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .status-badge-content {
+      animation: status-badge-update 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .status-badge-prominent:not([data-effect]) .status-badge-indicator,
+    .status-badge[data-effect="pulse"] .status-badge-indicator {
+      animation: status-badge-pulse 1.45s ease-out 250ms 2;
+    }
+
+    .status-badge[data-effect="lift"] {
+      --status-icon-transform: translateY(-4px);
+      --status-icon-repeats: 2;
+    }
+
+    .status-badge[data-effect="glide"] {
+      --status-icon-transform: translateX(5px);
+      --status-icon-repeats: 2;
+    }
+
+    .status-badge[data-effect="confirm"] {
+      --status-icon-transform: scale(1.23);
+    }
+
+    .status-badge[data-effect="stop"] {
+      --status-icon-transform: scale(0.82);
+    }
+
+    .status-badge[data-effect="rotate"] {
+      --status-icon-transform: rotate(-38deg);
+    }
+
+    .status-badge[data-effect]:not([data-effect="pulse"]) .status-badge-icon svg {
+      animation: status-badge-icon-motion 620ms ease-in-out 180ms var(--status-icon-repeats, 1);
+    }
+  }
+}
+
+@keyframes status-badge-update {
+  from {
+    transform: translateY(0.25rem);
+    opacity: 0.68;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes status-badge-pulse {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in oklab, currentColor 32%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 0.45rem transparent;
+  }
+}
+
+@keyframes status-badge-icon-motion {
+  50% {
+    transform: var(--status-icon-transform);
+  }
+}
+
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .product-card-image {
     transition: transform 160ms ease-out;

@@ -3,14 +3,13 @@ import { Button } from "@/components/ui/button";
 import { usePendingReviews } from "@/features/reviews";
 import { formatDateTime, formatVND } from "@/lib/format";
 import { ApiError } from "@/shared/api/errors";
-import { StatusBadge } from "@/shared/components/StatusBadge";
 import { isPositiveLongId } from "@/shared/types/common";
 import { OrderStatus } from "@/shared/types/enums";
 import { BuyAgainOrderAction } from "../components/BuyAgainOrderAction";
 import { CancelOrderDialog } from "../components/CancelOrderDialog";
 import { OrderItems } from "../components/OrderItems";
+import { OrderStatusBadges } from "../components/OrderStatusBadges";
 import { PayOrderAction } from "../components/PayOrderAction";
-import { orderStatusLabels, paymentStatusLabels } from "../orderStatus";
 import { useOrderDetail } from "../queries";
 import type { OrderDetailUserResponse } from "../types";
 
@@ -42,10 +41,11 @@ function OrderDetailContent({
           Đơn hàng #{order.id}
         </h1>
 
-        <div className="flex flex-wrap gap-2">
-          <StatusBadge label={orderStatusLabels[order.orderStatus]} />
-          <StatusBadge label={paymentStatusLabels[order.paymentStatus]} />
-        </div>
+        <OrderStatusBadges
+          orderStatus={order.orderStatus}
+          paymentStatus={order.paymentStatus}
+          prominent
+        />
 
         <dl className="space-y-1 text-sm text-muted-foreground">
           <div className="flex flex-wrap gap-x-2">

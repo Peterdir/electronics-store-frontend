@@ -2,6 +2,7 @@ import type {
   OrderStatus,
   PaymentStatus,
 } from "@/shared/types/enums";
+import type { StatusTone } from "@/shared/components/StatusBadge";
 
 export const orderStatusLabels = {
   PENDING: "Chờ xác nhận",
@@ -13,6 +14,17 @@ export const orderStatusLabels = {
   RETURNED: "Đã trả hàng",
   RETURN_REJECTED: "Từ chối trả hàng",
 } satisfies Record<OrderStatus, string>;
+
+export const orderStatusTones = {
+  PENDING: "pending",
+  PROCESSING: "active",
+  SHIPPED: "active",
+  DELIVERED: "success",
+  CANCELLED: "danger",
+  RETURN_REQUESTED: "pending",
+  RETURNED: "returned",
+  RETURN_REJECTED: "danger",
+} satisfies Record<OrderStatus, StatusTone>;
 
 export const paymentStatusLabels = {
   UNPAID: "Chưa thanh toán",
