@@ -17,6 +17,10 @@ const accountLinks = [
     to:"/account/orders",
     label: "Đơn hàng",
   },
+  {
+    to: "/account/reviews",
+    label: "Đánh giá của tôi",
+  },
 ];
 
 export function AccountLayout() {

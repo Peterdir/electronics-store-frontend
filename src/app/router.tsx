@@ -31,6 +31,7 @@ import { AccountLayout } from "./layouts/AccountLayout";
 import { ChangePasswordPage } from "@/features/auth/pages/ChangePasswordPage";
 import { OrdersPage } from "@/features/orders/pages/OrdersPage";
 import { OrderDetailPage } from "@/features/orders/pages/OrderDetailPage";
+import { ReviewsPage } from "@/features/reviews/pages/ReviewsPage";
 
 
 export const router = createBrowserRouter([
@@ -127,6 +128,10 @@ export const router = createBrowserRouter([
                     {
                         path: "orders/:id",
                         Component: OrderDetailPage,
+                    },
+                    {
+                        path: "reviews",
+                        Component: ReviewsPage,
                     },
                 ],
             },

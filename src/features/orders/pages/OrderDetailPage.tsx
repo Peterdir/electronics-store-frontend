@@ -1,9 +1,11 @@
 import { Link, useParams } from "react-router";
 import { Button } from "@/components/ui/button";
+import { usePendingReviews } from "@/features/reviews";
 import { formatDateTime, formatVND } from "@/lib/format";
 import { ApiError } from "@/shared/api/errors";
 import { StatusBadge } from "@/shared/components/StatusBadge";
 import { isPositiveLongId } from "@/shared/types/common";
+import { OrderStatus } from "@/shared/types/enums";
 import { BuyAgainOrderAction } from "../components/BuyAgainOrderAction";
 import { CancelOrderDialog } from "../components/CancelOrderDialog";
 import { OrderItems } from "../components/OrderItems";
@@ -23,6 +25,16 @@ function OrderDetailContent({
   refreshing: boolean;
   onRefresh: () => void;
 }) {
+  const delivered = order.orderStatus === OrderStatus.DELIVERED;
+  const pendingReviews = usePendingReviews(delivered);
+  const reviewableItemIds = new Set(
+    delivered && pendingReviews.isSuccess && pendingReviews.fetchStatus === "idle"
+      ? pendingReviews.data
+          .filter((item) => item.orderId === order.id)
+          .map((item) => item.orderItemId)
+      : [],
+  );
+
   return (
     <>
       <header className="space-y-3">
@@ -63,7 +75,7 @@ function OrderDetailContent({
       </header>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
-        <OrderItems items={order.items} />
+        <OrderItems items={order.items} reviewableItemIds={reviewableItemIds} />
 
         <div className="min-w-0 space-y-4">
           <section className="space-y-1 rounded-2xl border border-border bg-card p-4 wrap-anywhere">

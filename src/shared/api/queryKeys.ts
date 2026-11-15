@@ -6,4 +6,5 @@ export const qk = {
     cart: ["cart"] as const,
     addresses: ["addresses"] as const,
     orders: ["orders"] as const,
+    reviews: ["reviews"] as const,
 }

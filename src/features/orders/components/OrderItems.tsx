@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { formatVND } from "@/lib/format";
+import type { ID } from "@/shared/types/common";
 import type { OrderItemResponse } from "../types";
 
 function ItemThumbnail({ url }: { url: string | null }) {
@@ -27,7 +29,10 @@ function ItemThumbnail({ url }: { url: string | null }) {
   );
 }
 
-export function OrderItems({ items }: { items: OrderItemResponse[] }) {
+export function OrderItems({ items, reviewableItemIds }: {
+  items: OrderItemResponse[];
+  reviewableItemIds?: ReadonlySet<ID>;
+}) {
   return (
     <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">
       <h2 className="font-semibold">Sản phẩm đã đặt</h2>
@@ -53,6 +58,17 @@ export function OrderItems({ items }: { items: OrderItemResponse[] }) {
                 <p className="mt-1 font-medium tabular-nums">
                   {formatVND(item.subtotal)}
                 </p>
+                {reviewableItemIds?.has(item.id) && (
+                  <Link
+                    className="mt-2 inline-block text-sm text-primary underline"
+                    to={`/account/reviews?${new URLSearchParams({
+                      tab: "pending",
+                      orderItemId: item.id,
+                    })}`}
+                  >
+                    Đánh giá
+                  </Link>
+                )}
               </div>
             </li>
           ))}

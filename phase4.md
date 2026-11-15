@@ -2,7 +2,7 @@
 
 > Ngày lập: **07/11/2026**. Đối chiếu frontend tại HEAD `7df522e`; working tree sạch trước khi tạo tài liệu.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase3.md](phase3.md), source frontend và source tham chiếu tại `../ecommerce-backend`.
-> **Điểm tiếp tục — cập nhật 13/11/2026: kiểm thử tích hợp D8, sau đó làm D9 — đánh giá.** D5–D8 đã có code. Xem bàn giao từng mốc để biết các ca tích hợp còn chờ.
+> **Điểm tiếp tục — cập nhật 15/11/2026: D10 — sửa và xóa đánh giá.** Người dùng báo kiểm thử D9/D9a không gặp vấn đề. Backend tạo đánh giá và upload ảnh nằm trong commit `b07beb3`. D8 vẫn còn ca tích hợp cần xác nhận theo bàn giao riêng.
 > Phase 3: C1–C12 đã được chốt trong phạm vi ghi ở `phase3.md`; C12 hoàn thành theo xác nhận thử VNPay của người dùng ngày 07/11/2026. **C13 còn hồi quy tổng thể**, không tự đánh dấu Phase 3 hoàn tất và không giao lại code C12. Có thể bắt đầu phần tài khoản độc lập; kiểm tra các luồng checkout/payment liên quan khi tích hợp D5–D8 và chốt D13.
 
 ## 1. Cách thực hiện
@@ -28,7 +28,9 @@
 | UI catalog | ProductCard/PDP đã có so sánh; PDP có `averageRating` và chọn variant | Gắn wishlist; chưa có API đọc danh sách review công khai |
 | Kiểm tra | `lint`, `typecheck`, `build`, `verify:checkout`, `verify:catalog` trong `package.json` | Chạy kiểm tra phù hợp với phần thay đổi; không coi script giả lập là thử backend |
 
-Không nằm trong Phase 4: giao diện admin P5, policy B11, phần còn hoãn của B12, guest order tracking, gửi email xác nhận đơn, upload ảnh review và lịch sử trả hàng khi backend chưa hỗ trợ. Giữ các việc này trong backlog, không đánh dấu hoàn thành theo Phase 4.
+Không nằm trong Phase 4: giao diện admin P5, policy B11, phần còn hoãn của B12, guest order tracking, gửi email xác nhận đơn và lịch sử trả hàng khi backend chưa hỗ trợ. Giữ các việc này trong backlog, không đánh dấu hoàn thành theo Phase 4.
+
+Theo yêu cầu ngày 14/11/2026, upload ảnh đánh giá được đưa vào Phase 4 tại **D9a**, nối tiếp D9. Phạm vi đề xuất ban đầu là một ảnh tùy chọn cho mỗi review, phù hợp cột `imageUrl` hiện có. D10 bổ sung giữ/thay/xóa ảnh khi sửa review. Số lượng một ảnh là lựa chọn của kế hoạch này, chưa phải giới hạn nghiệp vụ do người dùng chốt.
 
 ### 2.1 Những khác biệt với master plan cần dùng đúng
 
@@ -38,7 +40,8 @@ Không nằm trong Phase 4: giao diện admin P5, policy B11, phần còn hoãn 
 | Chính sách mật khẩu | Regex mạnh đang comment trong `ChangePasswordRequest`; service kiểm tra mật khẩu cũ và confirm | Dùng lại `newPasswordSchema` của frontend để thống nhất register/reset; không ghi backend đã cưỡng chế regex này |
 | Phân trang | Backend đã bật `PageSerializationMode.VIA_DTO`; FE đọc `{ content, page: {...} }` | Dùng `normalizePage` hiện có, trả `Page<T> { items, page, size, totalItems, totalPages }`; không chép shape khác từ ví dụ cũ |
 | Sửa review | PUT nhận `ReviewRequest` bắt buộc `productId`, `orderItemId`, nhưng history chỉ trả `productId`, không trả `orderItemId` | **Chặn riêng phần sửa D10 đến khi sửa contract backend**; xem D10. Không bịa ID hoặc phụ thuộc dữ liệu còn trong RAM từ lần tạo |
-| Tạo review | `createReview` kiểm tra trùng và tìm entity, nhưng chưa thấy kiểm tra order item thuộc user, đơn DELIVERED và product/variant khớp item | Cần backend bổ sung kiểm tra nghiệp vụ trước khi nghiệm thu tạo review đầy đủ. UI chỉ cho chọn từ pending list không thay thế kiểm tra server |
+| Ảnh review | Từ `b07beb3`, POST nhận JSON không ảnh hoặc multipart với part `image`; server sinh URL khi lưu file | D9a hiển thị `imageUrl` trong lịch sử. D10 xử lý giữ/thay/bỏ ảnh khi sửa |
+| Tạo review | Từ `b07beb3`, `createReview` kiểm tra chủ dòng đơn, trạng thái DELIVERED, product/variant và review trùng | UI cho chọn từ pending list. Backend xác minh lại khi tạo |
 | Null trong DTO | `OrderItemResponse.variantId` có thể null; `ReviewResponse.productId` có thể null khi sản phẩm bị xóa; pending review chưa map `productImage` | Type/fallback phải phản ánh null; không tạo link sản phẩm từ `variantId` |
 | Tạo yêu cầu trả hàng | `createReturnRequest` lưu request PENDING nhưng **không đổi order sang RETURN_REQUESTED** | Hiện thành công từ `ReturnRequestResponse`, refetch đơn nhưng không tự gán trạng thái đơn. Muốn đúng kỳ vọng master phải phối hợp backend |
 | Xem lại yêu cầu trả hàng | Customer controller chỉ có POST, không có GET list/detail | Không tạo trang theo dõi giả. Sau reload không hứa khôi phục trạng thái pending; 409 được xử lý rõ |
@@ -68,7 +71,7 @@ Tất cả route `/account/*` dùng `RequireAuth` chung và nằm trong Storefro
 | `/account/password` | D3 | Đổi mật khẩu |
 | `/account/orders?status=&page=` | D4 | Lịch sử, lọc trạng thái, phân trang |
 | `/account/orders/:id` | D5–D8 | Chi tiết và thao tác sau mua |
-| `/account/reviews?tab=pending\|history` | D9–D10 | Chờ đánh giá/đã đánh giá |
+| `/account/reviews?tab=pending\|history` | D9, D9a, D10 | Chờ đánh giá/đã đánh giá, ảnh đính kèm |
 | `/account/wishlist` | D11 | Danh sách yêu thích |
 | `/account/returns/new?orderId=&orderItemId=` | D12 | Yêu cầu trả hàng cho một dòng đơn |
 
@@ -158,13 +161,14 @@ Không đặt token vào query key. Nếu giữ dữ liệu trang trước, ch�
 | D6 | Hủy đơn có lý do | D5 | Đã có code trong `17a38d8`. Chưa ghi nhận kết quả kiểm thử tích hợp |
 | D7 | Thanh toán lại đơn đã có | D5, payment C12 | Đã triển khai và kiểm tra bằng API giả lập. Chờ thử trình duyệt với backend và VNPay Sandbox |
 | D8 | Mua lại vào giỏ user | D5, cart C2–C5 | Đã triển khai. Lint, build và kiểm thử giả lập đạt. Chờ thử với backend trên trình duyệt |
-| D9 | Pending/history và tạo đánh giá | D1, dữ liệu DELIVERED; D5 để nối CTA | Chưa làm; cần kiểm tra nghiệp vụ backend |
+| D9 | Pending/history và tạo đánh giá | D1, dữ liệu DELIVERED; D5 để nối CTA | Đã triển khai. Lint, build và kiểm tra logic đạt. Người dùng báo kiểm thử không gặp vấn đề |
+| D9a | Upload một ảnh tùy chọn khi tạo review, xem ảnh ở history | D9; backend multipart/validation/storage | Đã triển khai backend và frontend. Người dùng báo kiểm thử không gặp vấn đề |
 | D10 | Sửa/xóa đánh giá | D9 | Chưa làm; sửa bị vướng contract |
 | D11 | Wishlist và nút tim ở catalog | D1, catalog | Chưa làm |
 | D12 | Tạo yêu cầu trả hàng và gửi ảnh | D5, dữ liệu DELIVERED | Chưa làm; giới hạn theo mục 2.1 |
 | D13 | Hồi quy, ghi nhận phạm vi hoàn thành và bàn giao P5 | Các mốc trên | Chưa làm |
 
-Thứ tự thực hiện từ 08/11/2026: D1 → D2 → D3 → D4 → D5 → D6 → D7 → D8 → D9 → D10 → D11 → D12 → D13. D0 được bỏ qua như một mốc riêng. Nếu backend chưa gỡ phần sửa review, ghi rõ D10 còn thiếu và tiếp tục D11/D12; không chặn cả phase vì một endpoint.
+Thứ tự thực hiện, cập nhật 14/11/2026: D1 → D2 → D3 → D4 → D5 → D6 → D7 → D8 → D9 → D9a → D10 → D11 → D12 → D13. D0 được bỏ qua như một mốc riêng. Nếu backend chưa gỡ phần upload/sửa review, ghi rõ D9a/D10 còn thiếu và tiếp tục D11/D12; không chặn cả phase vì một endpoint.
 
 ### D0 — Chốt contract và chuẩn bị dữ liệu
 
@@ -302,9 +306,9 @@ Giữ luồng `/payment/result` public, query nguyên vẹn, không token/retry/
 
 **Contract:** GET `/api/reviews/me/pending`, GET `/api/reviews/me/history` → arrays; POST `/api/reviews` → **201 ReviewResponse**. Payload `{ rating, reviewText?, productId, productVariantId?, orderItemId }`; lấy ID từ pending response, không suy từ tên/SKU hay variantId của order detail.
 
-**Thực hiện:** tab điều khiển bằng URL, loading/error/empty riêng. Rating 1–5; UI có thể chọn sao nguyên, DTO backend nhận Double nên không khẳng định server chỉ cho số nguyên. Nội dung tùy chọn, không có upload ảnh review. CTA đánh giá trong đơn chỉ có khi DELIVERED và item nằm trong pending list. Refresh pending khi cần xác minh điều kiện.
+**Thực hiện:** tab điều khiển bằng URL, loading/error/empty riêng. Rating 1–5; UI có thể chọn sao nguyên, DTO backend nhận Double nên không khẳng định server chỉ cho số nguyên. D9 tạo review với nội dung tùy chọn; phần upload ảnh tiếp tục tại D9a. CTA đánh giá trong đơn chỉ có khi DELIVERED và item nằm trong pending list. Refresh pending khi cần xác minh điều kiện.
 
-Tạo thành công invalidate pending/history và catalog rating liên quan. 409 đã đánh giá → refetch; 400 nội dung cấm/link → lỗi nội dung; 404 entity mất → reload danh sách. History hỗ trợ productDeleted/productId null; pending image null có placeholder. Yêu cầu backend bổ sung kiểm tra quyền sở hữu, trạng thái và liên kết item/product/variant như mục 2.1 trước khi nghiệm thu nghiệp vụ tạo đánh giá.
+Tạo thành công invalidate pending/history và catalog rating liên quan. 409 đã đánh giá → refetch; 400 nội dung cấm/link → lỗi nội dung; 404 entity mất → reload danh sách. History hỗ trợ productDeleted/productId null; pending image null có placeholder. Backend kiểm tra quyền sở hữu, trạng thái và liên kết item/product/variant như mục 2.1.
 
 **Học:** hai nguồn query theo tab, dữ liệu chọn làm payload, controlled rating với form và cache liên quan.
 
@@ -312,15 +316,40 @@ Tạo thành công invalidate pending/history và catalog rating liên quan. 409
 
 **Commit:** `feat(reviews): add pending reviews and review submission`.
 
+### D9a — Upload ảnh khi tạo đánh giá
+
+**Phạm vi:** một ảnh tùy chọn cho mỗi review, JPG/JPEG/PNG/WebP, tối đa **5 × 1024 × 1024 byte** theo validator dùng chung. Tạo không ảnh vẫn hoạt động. History hiển thị ảnh người dùng gửi từ `review.imageUrl`, tách với ảnh sản phẩm `productImage`.
+
+**Backend trước frontend**
+
+1. POST multipart `/api/reviews` nhận các field phẳng `rating`, `reviewText?`, `productId`, `productVariantId?`, `orderItemId` qua `@Valid @ModelAttribute ReviewRequest` và part file tùy chọn `image`. Response giữ **201 ReviewResponse** với `imageUrl` do server sinh. Hai handler khai báo `consumes` khác nhau để giữ luồng JSON D9.
+2. Kiểm tra chủ dòng đơn, DELIVERED, product/variant khớp dòng đơn và trùng review trước khi lưu file. Dùng cùng kiểm tra cho JSON và multipart. Từ chối ảnh rỗng được gửi vào, ảnh sai định dạng/dung lượng và nhiều part ảnh vượt giới hạn một ảnh.
+3. Dùng `FileValidator` chung sau khi sửa lỗi tên file thiếu đuôi, rồi `FileStorageService.uploadFile(image, "reviews")`. Gán URL trả về vào entity, không lấy URL tùy ý từ client để làm đường dẫn sở hữu/xóa file. Với JSON cũ, tiếp tục cho tạo không ảnh; chốt cách xử lý `imageUrl` cũ bằng reject field không được hỗ trợ hoặc kiểm chứng quyền sở hữu file.
+4. Đồng bộ vòng đời file và transaction. Khi DB rollback, dọn file mới đã upload, kể cả rollback ở lúc commit. Khi thay/bỏ ảnh, chỉ dọn ảnh cũ sau commit thành công. Ghi log và có cơ chế thử lại/đối soát nếu dọn file thất bại. Không xóa URL ngoài storage quản lý.
+5. Cấu hình giới hạn multipart thực tế đủ nhận ảnh 5 MiB cùng phần dữ liệu còn lại; map lỗi file/giới hạn request sang 4xx rõ ràng. Kiểm tra `app.base-url`, thư mục upload và truy cập ảnh từ trình duyệt frontend. Đây là yêu cầu cần xác nhận ở môi trường chạy.
+
+**Frontend sau khi chốt contract**
+
+- Mở rộng `ReviewForm`, schemas, types và API: chọn ảnh, preview, bỏ/chọn lại; giữ file khi lỗi có thể sửa. Tạo `ImageDropzone` dùng chung tại D9a nếu phù hợp cho D12. Lưu `File` trong state/form, revoke object URL khi thay/bỏ ảnh hoặc unmount; không persist file/base64.
+- Gửi `FormData` đúng tên field/part đã chốt, ID vẫn là chuỗi, số sao chuyển thành chuỗi khi append. Để trình duyệt tạo Content-Type cùng boundary. JSON cũ vẫn dùng được với luồng không ảnh trong giai đoạn chuyển đổi.
+- Khóa gửi lặp và giữ kiểm tra phiên D9. Timeout không tự retry POST; refetch pending/history để đối chiếu trước khi người dùng thử lại. Thành công lấy URL từ response, tải lại history và cache rating như D9.
+- Hiển thị ảnh review trong history, có trạng thái ảnh hỏng, nhãn phù hợp và mở xem ảnh lớn. File chính gồm `features/reviews/{types,schemas,api,queries}.ts`, `ReviewForm.tsx`, `ReviewCards.tsx` và component chọn ảnh dùng chung.
+
+**Kiểm tra/hoàn thành:** tạo không ảnh/có ảnh đều đạt; ảnh xem được sau reload; file đúng ở biên 5 MiB, vượt biên, rỗng, không đuôi, giả MIME/đuôi, nhiều part ảnh, multipart quá lớn; sai chủ/chưa giao/quan hệ sai không tạo file; DB rollback không để file mới mồ côi; timeout/409/đổi phiên không tự gửi lại hoặc ghi cache sai. Kiểm thử hồi quy validator/storage với brand, category, product và returns khi sửa phần dùng chung. Ghi cả HTTP, URL ảnh thực tế và kết quả kiểm tra file/DB.
+
+**Commit gợi ý:** `feat(reviews): upload review image and display it in history`.
+
 ### D10 — Sửa và xóa đánh giá
 
-**Điều kiện phần sửa:** giải quyết thiếu `orderItemId` trong contract. Hướng ưu tiên: backend tách `UpdateReviewRequest` chỉ có `rating`, `reviewText?`, `imageUrl?`; PUT lấy quan hệ product/item từ review đang lưu và kiểm tra chủ sở hữu. Phương án khác là bổ sung đầy đủ ID quan hệ vào response history, nhưng không cần gửi lại quan hệ nếu chỉ sửa nội dung.
+**Điều kiện phần sửa:** giải quyết thiếu `orderItemId` trong contract. Hướng ưu tiên sau D9a: DTO cập nhật riêng nhận `rating`, `reviewText?`, `removeImage?` và part `image?` qua multipart. PUT lấy quan hệ product/item từ review đang lưu và kiểm tra chủ sở hữu. JSON cập nhật nội dung cần có contract riêng để không vô tình ghi null ảnh hiện có.
 
 **File:** review API/mutation/schema/form, dialog xóa, history card. DELETE `/api/reviews/{reviewId}` trả **204**, không parse JSON. PUT endpoint cùng reviewId trả ReviewResponse sau khi chốt request mới.
 
-**Thực hiện:** form sửa dùng giá trị review cũ; giữ imageUrl có sẵn nếu ảnh chưa thuộc UI chỉnh sửa, tránh vô tình xóa. Xác nhận trước khi xóa. Sau thành công invalidate pending/history và catalog; item có thể trở lại pending nếu còn đủ điều kiện. Không mặc định mọi review đã xóa đều trở lại pending nếu đơn đã chuyển trạng thái.
+**Thực hiện:** form sửa dùng giá trị review cũ. Không gửi file và `removeImage=false` hoặc bỏ field nghĩa là giữ ảnh; có file mới nghĩa là thay ảnh; `removeImage=true` nghĩa là bỏ ảnh. Từ chối gửi file mới đồng thời yêu cầu bỏ ảnh. Dùng vòng đời storage D9a, chỉ xóa ảnh cũ sau DB commit; URL ảnh cũ đọc từ entity. Với xóa mềm review, đề xuất giữ file theo dữ liệu xóa mềm và dọn khi purge theo chính sách lưu trữ được chốt. Xác nhận trước khi xóa review. Sau thành công invalidate pending/history và catalog; item có thể trở lại pending nếu còn đủ điều kiện. Không mặc định mọi review đã xóa đều trở lại pending nếu đơn đã chuyển trạng thái.
 
 **Kiểm tra:** tải mới history rồi sửa được mà không cần đã tạo review trong tab đó; 403/404, nội dung không hợp lệ, lỗi giữ form, xóa 204; sản phẩm đã xóa vẫn hiển thị lịch sử phù hợp. Có thể hoàn thành xóa trước khi backend sửa contract, nhưng ghi D10 “một phần”, không chốt đủ CRUD.
+
+Bổ sung ca ảnh D10: sửa nội dung giữ ảnh cũ, thay ảnh, bỏ ảnh, gửi đồng thời file và removeImage, user khác sửa ảnh, DB rollback giữ ảnh cũ và dọn ảnh mới, lỗi dọn file sau commit. Reload history sau mỗi thao tác để đối chiếu URL server.
 
 **Commit:** `feat(reviews): edit and delete customer reviews` (hoặc tách commit xóa nếu phần sửa còn chờ).
 
@@ -342,7 +371,7 @@ Wishlist là cấp sản phẩm, không có variantId đủ để thêm cart. CT
 
 ### D12 — Yêu cầu trả hàng và ảnh bằng chứng
 
-**File:** returns feature, ReturnRequestPage/Form, ImageDropzone mới; link từng item trong chi tiết đơn.
+**File:** returns feature, ReturnRequestPage/Form, dùng lại ImageDropzone từ D9a nếu đã có; link từng item trong chi tiết đơn.
 
 **Contract:** POST multipart `/api/return-requests` → **201 ReturnRequestResponse**. Append `orderItemId`, `quantity`, `reason`, `description` nếu có và nhiều part cùng tên **`images`**. Để trình duyệt tạo Content-Type/boundary cho FormData.
 
@@ -362,7 +391,7 @@ Thành công hiện mã yêu cầu, trạng thái PENDING và dữ liệu respon
 
 - Account → sửa hồ sơ/đổi mật khẩu/địa chỉ; URL trực tiếp và login quay lại đúng trang; dữ liệu A/B không lẫn nhau.
 - Checkout user → xem đơn server → hủy/thanh toán lại/mua lại → giỏ/badge đúng. Guest checkout và payment result vẫn dùng được. Kết hợp các ca liên quan của C13, nhưng chỉ ghi C13 hoàn thành khi checklist riêng trong `phase3.md` được xác nhận.
-- DELIVERED → pending review → tạo/sửa/xóa; wishlist trên nhiều màn hình; trả hàng gửi ảnh và xử lý đúng giới hạn backend.
+- DELIVERED → pending review → tạo không ảnh/có ảnh → reload history → sửa giữ/thay/bỏ ảnh → xóa review; wishlist trên nhiều màn hình; trả hàng gửi ảnh và xử lý đúng giới hạn backend.
 - Kiểm tra mobile/desktop, tên sản phẩm/mã đơn dài, ảnh mất, form/dialog bằng bàn phím, focus quay về nút mở, lỗi có nhãn đọc được. Bổ sung title phù hợp trang tài khoản, không đưa thông tin cá nhân vào title.
 - Các giới hạn phải còn được ghi rõ: review edit/validation nếu backend chưa sửa, không có lịch sử trả hàng, timeline thiếu timestamps, dữ liệu payment chưa xác minh, ca chưa thử.
 
@@ -396,6 +425,7 @@ Tất cả hàng dưới đây **chưa chạy trong lượt lập kế hoạch**
 | Pay | Đơn đã có → VNPay → GET đơn; hủy/thất bại/already paid | Mã đơn thử, kết quả backend, giới hạn nhánh chưa chạy |
 | Buy again | Đủ/một phần/không có hàng, timeout và double-click | Cart trước/sau, số request POST, kết quả đối chiếu |
 | Reviews | Pending/history; tạo/409; sửa sau reload; xóa 204 | Payload đúng ID, cache hai tab, rating catalog; kiểm tra quyền tại backend |
+| Ảnh review D9a/D10 | Upload/preview/reload; giữ/thay/bỏ ảnh; file sai/413; DB rollback | Field multipart, HTTP, URL ảnh server, file cũ/mới sau commit/rollback; hồi quy storage dùng chung |
 | Wishlist | Hai vị trí render, rollback, hai item đồng thời, guest | ProductId dùng trong endpoint, state sau refetch |
 | Returns | Hợp lệ, ảnh/số lượng/hạn sai, khác chủ, trùng 409 | Multipart field names, 201/4xx, request status và order status thực tế |
 | Hồi quy P3 | User/guest COD và VNPay, địa chỉ, giỏ/merge | Checklist C13 liên quan, giữ nguyên nguồn xác nhận |
@@ -496,3 +526,36 @@ Bước tiếp theo:
 - Cập nhật 14/11/2026: bỏ khối đối chiếu riêng trên trang giỏ. Khi timeout hoặc lỗi 5xx, đánh dấu cache giỏ cần làm mới và hiện link **Xem giỏ hàng** dưới nút **Mua lại**. Khi quay lại cùng đơn trong tab, lần bấm tiếp theo yêu cầu xác nhận trước khi gửi POST. Giỏ và checkout chỉ chịu khóa ghi khi thao tác đang chạy.
 - `npm run lint`, `npm run build`, `git diff --check` và `npm run verify:checkout` (24/24) đạt. Bốn ca D8 kiểm tra cập nhật cache và khóa ghi, merge/đổi phiên, timeout/5xx cần xác nhận khi thử lại và hiển thị link tới giỏ trên trang chi tiết. Build còn cảnh báo kích thước chunk.
 - Backend dev tại cổng `8081` chưa phản hồi. Cần thử trên trình duyệt với đơn đủ điều kiện, các tình huống thêm đủ, thêm một phần, không thêm được và dialog bằng bàn phím trước khi chốt kiểm thử tích hợp.
+
+### Bàn giao D9 — 14/11/2026
+
+- Thêm `/account/reviews` dưới AccountLayout với hai tab theo URL. Form mở theo `orderItemId` từ URL khi ID khớp một dòng trong pending. Chi tiết đơn chỉ hiện link **Đánh giá** cho dòng pending của đơn DELIVERED.
+- Form kiểm tra 1–5 sao, nội dung tùy chọn và lấy ID từ dòng pending. Sau khi POST thành công, bỏ dòng đã gửi khỏi cache pending, rồi làm mới hai tab và cache catalog. Lỗi 409/404 làm mới danh sách liên quan. Cache review gắn với tài khoản và kết quả mutation chỉ cập nhật cache khi phiên còn khớp.
+- `npm run lint`, `npm run build`, `npm run verify:checkout` (24/24) và `npm run verify:catalog` (7/7) đạt. Kiểm tra D9 bằng Axios giả lập xác nhận schema, GET có Bearer, POST giữ ID chuỗi, cập nhật cache và phản hồi đến sau khi đổi phiên. Build còn cảnh báo kích thước chunk.
+- Backend tại `localhost:8081` chưa kết nối được khi kiểm tra. Còn cần thử browser với đơn DELIVERED, đối chiếu trường JSON báo sản phẩm đã xóa và kiểm tra rating sau khi gửi. Trước khi nghiệm thu tạo review, backend cần xác nhận quyền sở hữu dòng đơn, trạng thái DELIVERED và liên kết product/variant khi xử lý POST.
+
+### Bổ sung D9a và review upload backend — 14/11/2026
+
+- Theo yêu cầu người dùng, đưa upload ảnh review vào Phase 4. D9a có tạo review kèm ảnh và xem ảnh ở history; D10 bổ sung giữ/thay/bỏ ảnh. Phạm vi một ảnh tùy chọn được đề xuất theo entity hiện tại, có thể mở rộng sau khi chốt yêu cầu số lượng ảnh.
+- Kết luận từ source: review hiện nhận JSON và chép `imageUrl` do client gửi, chưa có upload file. Các module brand/category/product/returns đã nhận multipart và dùng chung `FileValidator` cùng `FileStorageService`. Brand dùng part `logo`, category dùng `image`, product dùng `images` và JSON `data` khi tạo, returns bind `images` trong ModelAttribute với 1–5 ảnh. Vì vậy backend chưa có một cách bind multipart duy nhất, nhưng có tầng validate/lưu ảnh chung để review dùng lại.
+
+Các vấn đề thấy trực tiếp trong source cần xử lý khi triển khai D9a:
+
+| Mức ưu tiên | Phát hiện và tác động | Vị trí backend, tính từ src/main/java/com/ecommerce/backend |
+|---|---|---|
+| Cao | `FileValidator` gọi substring tại lastIndexOf mà chưa kiểm tra dấu chấm. Tên file không có đuôi gây exception thay vì lỗi validation 400. Hiện chỉ xét MIME client khai báo, đuôi và dung lượng; chưa kiểm tra nội dung file có thật là ảnh. Sửa trường hợp null/không đuôi, kiểm chứng nội dung ảnh tương ứng các định dạng hỗ trợ trước khi publish. | `common/utils/FileValidator.java:36` |
+| Cao | `deleteFile` bỏ baseUrl rồi dùng Paths.get trực tiếp, không resolve theo uploadDir cấu hình hoặc kiểm tra đường dẫn sau normalize nằm trong root. Đổi upload-dir có thể xóa sai vị trí/để sót file. Cần chỉ nhận file do storage quản lý, kiểm tra root và tránh dùng URL client tùy ý làm đầu vào xóa. | `common/service/LocalFileStorageService.java:51` |
+| Cao | Brand/category xóa ảnh cũ trước saveAndFlush/commit. Nếu DB thất bại, dữ liệu có thể vẫn trỏ ảnh cũ đã bị xóa. Chuyển dọn ảnh cũ sang sau commit và xử lý file mới khi rollback. | `modules/brand/service/BrandServiceImpl.java:75`, `modules/category/service/CategoryServiceImpl.java:79` |
+| Vừa | Product/returns validate rồi ghi lần lượt từng file, chưa có cleanup file đã ghi khi file sau lỗi hoặc DB rollback. Product deleteProductImage bỏ quan hệ ảnh trong DB nhưng chưa gọi storage xóa file. Cần validate cả danh sách trước ghi và dọn file theo kết quả transaction. | `modules/product/service/ProductServiceImpl.java:96`, `:348`, `:373`; `modules/returnrequest/service/ReturnRequestServiceImpl.java:92` |
+| Vừa | Storage dùng file.getInputStream trực tiếp trong Files.copy, chưa đóng stream bằng try-with-resources. deleteFile nuốt IOException dù comment nói log warning, gây khó phát hiện file chưa dọn. | `common/service/LocalFileStorageService.java:42`, `:60` |
+| Vừa | Chưa thấy cấu hình spring.servlet.multipart.max-* trong resource config hoặc handler riêng cho lỗi multipart quá lớn. Validator 5 MiB chưa chứng minh request 5 MiB đi qua được môi trường thật. Cần xác nhận cả cấu hình triển khai và trả lỗi 4xx nhất quán. | `src/main/resources/application.properties`, `common/exception/GlobalExceptionHandler.java` |
+
+- Review hiện còn gán `imageUrl` trực tiếp khi update, nên thiếu field có thể ghi null ảnh. Customer response đã trả `imageUrl` nhưng card history frontend chưa render ảnh review. AdminReviewResponse chưa có `imageUrl`; khi làm kiểm duyệt P5 cần bổ sung để admin xem được ảnh đính kèm.
+- Đã đối chiếu source controller/service/DTO của review, brand, category, product và returns; đọc validator/storage, resource handler và SecurityConfig. Đây là nhận xét tĩnh, chưa kiểm thử upload với server/filesystem/DB đang chạy. Lượt này cập nhật kế hoạch và tiêu chí nghiệm thu, chưa triển khai D9a hoặc sửa backend.
+
+### Bàn giao D9a frontend — 15/11/2026
+
+- Backend `b07beb3` hỗ trợ POST JSON không ảnh và POST multipart với một part `image`. Frontend thêm chọn, preview và bỏ ảnh. Request có ảnh dùng FormData; request không ảnh dùng JSON. History hiện ảnh đã lưu từ `imageUrl` và cho mở ảnh trong tab mới.
+- Lint, build với `npm run build -- --outDir dist/d9a-frontend`, hồi quy checkout (24/24) và catalog (7/7) đạt. Kiểm tra bằng Axios bản trình duyệt với fetch giả lập xác nhận multipart có boundary, đúng tên field, giữ nguyên ID chuỗi và nội dung file. Kiểm tra thêm các biên dung lượng, định dạng và render lịch sử. Build mặc định vướng thư mục kiểm thử backend cũ đang bị khóa trong `dist`.
+- Backend ở `localhost:8081` chưa phản hồi khi kiểm tra. Khi môi trường sẵn sàng, thử review có ảnh và không ảnh trên hai dòng đơn đã giao, xác nhận POST trả 201 và reload lịch sử vẫn thấy ảnh. D10 tiếp tục phần sửa và xóa review.
+- Sau bàn giao, người dùng báo kiểm thử D9/D9a không gặp vấn đề và yêu cầu commit frontend. Xác nhận này không kèm kết quả từng ca.
