@@ -4,7 +4,6 @@ import { ProductGrid } from "../components/ProductGrid";
 import { useSearchParams } from "react-router";
 import { Pagination } from "@/shared/components/Pagination";
 import { useEffect } from "react";
-import { SearchBar } from "../components/SearchBar";
 import { ActiveStatus, ProductSort } from "@/shared/types/enums";
 import type { ID } from "@/shared/types/common";
 import {
@@ -130,22 +129,6 @@ export function ProductListPage() {
         });
     }
 
-    function searchProducts(nextKeyword: string) {
-        setSearchParams((currentParams) => {
-            const nextParams = new URLSearchParams(currentParams);
-            const normalizedKeyword = nextKeyword.trim();
-
-            if (normalizedKeyword) {
-                nextParams.set("q", normalizedKeyword);
-            } else {
-                nextParams.delete("q");
-            }
-
-            nextParams.set("page", "1");
-            return nextParams;
-        });
-    }
-
     function applyFilters(filters: ProductFilterValues, options?: { replace?: boolean }) {
         setSearchParams((currentParams) => {
             const nextParams = new URLSearchParams(currentParams);
@@ -209,12 +192,6 @@ export function ProductListPage() {
                 </aside>
 
                 <div className="min-w-0 space-y-6">
-                    <SearchBar
-                        key={keyword}
-                        initialValue={keyword}
-                        onSearch={searchProducts}
-                    />
-
                     {categoriesQuery.isError ? (
                         <p>Vui lòng tải lại danh mục để xem sản phẩm.</p>
                     ) : categoriesQuery.isSuccess && !categoryId ? (

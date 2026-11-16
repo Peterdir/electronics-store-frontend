@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Search } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useId, useState, type SubmitEvent, type KeyboardEvent } from "react";
 import { useProductSuggestions } from "../queries";
@@ -10,9 +10,10 @@ import { SearchSuggestDropdown } from "./SearchSuggestDropdown";
 interface SearchBarProps {
     initialValue: string;
     onSearch: (keyword: string) => void;
+    className?: string;
 }
 
-export function SearchBar({ initialValue, onSearch }: SearchBarProps) {
+export function SearchBar({ initialValue, onSearch, className }: SearchBarProps) {
     const navigate = useNavigate();
     const listboxId = useId();
 
@@ -37,6 +38,7 @@ export function SearchBar({ initialValue, onSearch }: SearchBarProps) {
     const suggestions = queryKeyword
         ? suggestionsQuery.data ?? []
         : [];
+    const activeSuggestion = suggestions[activeIndex];
 
     function closeSuggestions() {
         setIsOpen(false);
@@ -79,21 +81,22 @@ export function SearchBar({ initialValue, onSearch }: SearchBarProps) {
             );
         }
 
-        if (event.key === "Enter" && activeIndex >= 0) {
+        if (event.key === "Enter" && activeSuggestion) {
             event.preventDefault();
-            selectSuggestion(suggestions[activeIndex]);
+            selectSuggestion(activeSuggestion);
         }
     }
 
     return (
-        <form onSubmit={handleSubmit} role="search" className="flex gap-2">
-            <label htmlFor="product-search" className="sr-only">
-                Tìm kiếm sản phẩm
-            </label>
-
-            <div className="relative min-w-0 flex-1">
+        <form
+            onSubmit={handleSubmit}
+            role="search"
+            aria-label="Tìm kiếm sản phẩm"
+            className={className}
+        >
+            <div className="relative flex h-12 min-w-0 items-center rounded-xl border border-input bg-background transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15">
+                <Search aria-hidden="true" className="ml-4 hidden size-5 shrink-0 text-muted-foreground sm:block" />
                 <input
-                    id="product-search"
                     type="search"
                     value={value}
                     onChange={(event) => {
@@ -105,21 +108,31 @@ export function SearchBar({ initialValue, onSearch }: SearchBarProps) {
                     onBlur={closeSuggestions}
                     onKeyDown={handleKeyDown}
                     role="combobox"
+                    aria-label="Từ khóa tìm kiếm sản phẩm"
                     aria-autocomplete="list"
                     aria-expanded={canSuggest}
                     aria-controls={canSuggest ? listboxId : undefined}
                     aria-activedescendant={
-                        canSuggest && suggestions[activeIndex]
+                        canSuggest && activeSuggestion
                             ? `${listboxId}-option-${activeIndex}`
                             : undefined
                     }
                     autoComplete="off"
-                    placeholder="Tìm sản phẩm..."
-                    className="h-11 w-full rounded-xl border border-input bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                    placeholder="Bạn đang tìm sản phẩm gì?"
+                    className="h-full w-full min-w-0 bg-transparent px-4 text-sm outline-none placeholder:text-muted-foreground"
                 />
 
+                <button
+                    type="submit"
+                    aria-label="Tìm kiếm"
+                    className="mr-1 flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/85 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+                >
+                    <Search aria-hidden="true" className="size-4" />
+                    <span className="hidden xl:inline">Tìm kiếm</span>
+                </button>
+
                 {canSuggest && (
-                    <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-lg">
+                    <div className="absolute inset-x-0 top-full z-20 mt-2 max-h-[50vh] overflow-y-auto overscroll-contain rounded-xl border border-border bg-popover text-popover-foreground shadow-lg">
                         {(isDebouncing ||
                             suggestionsQuery.isFetching) && (
                             <p role="status" className="px-3 py-2 text-sm">
@@ -151,10 +164,6 @@ export function SearchBar({ initialValue, onSearch }: SearchBarProps) {
                     </div>
                 )}
             </div>
-            
-            <Button type="submit">
-                Tìm kiếm
-            </Button>
         </form>
     )
 }
