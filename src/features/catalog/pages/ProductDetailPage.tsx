@@ -4,8 +4,9 @@ import { ApiError } from "@/shared/api/errors";
 import { ProductGallery } from "../components/ProductGallery";
 import { SpecTable } from "../components/SpecTable";
 import { ProductPurchaseOptions } from "../components/ProductPurchaseOptions";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CompareToggleButton } from "../components/CompareToggleButton";
+import { useCompare } from "../compare.store";
 
 export function ProductDetailPage() {
     const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
@@ -13,6 +14,14 @@ export function ProductDetailPage() {
     const { id } = useParams<{ id: string }>();
     const productId = id && /^[1-9]\d*$/.test(id) ? id : "";
     const detailQuery = useGetProductDetails(productId);
+    const categoryName = detailQuery.data?.categoryName;
+    const setCompareCategory = useCompare((state) => state.setCategory);
+
+    useEffect(() => {
+        if (detailQuery.isSuccess && categoryName) {
+            setCompareCategory(categoryName);
+        }
+    }, [detailQuery.isSuccess, categoryName, setCompareCategory]);
 
     if (!productId) {
         return <p>Đường dẫn sản phẩm không hợp lệ.</p>;
@@ -85,7 +94,7 @@ export function ProductDetailPage() {
                         {product.name}
                     </h1>
 
-                    <CompareToggleButton id={product.id} name={product.name} />
+                    <CompareToggleButton id={product.id} name={product.name} categoryName={product.categoryName} />
 
                     {product.averageRating !== null && (
                         <p>Đánh giá trung bình: {product.averageRating.toFixed(1)}/5</p>

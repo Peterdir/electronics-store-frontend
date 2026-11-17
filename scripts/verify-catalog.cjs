@@ -40,6 +40,159 @@ function createLoader(mocks = {}) {
   return load;
 }
 
+function compareFixture(saved, mocks = {}) {
+  const middleware = require("zustand/middleware");
+  let value = saved ? JSON.stringify({ state: saved, version: 0 }) : null;
+  const storage = {
+    getItem: () => value,
+    setItem: (_key, next) => { value = next; },
+    removeItem: () => { value = null; },
+  };
+  const load = createLoader({
+    ...mocks,
+    "zustand/middleware": {
+      ...middleware,
+      createJSONStorage: () => middleware.createJSONStorage(() => storage),
+    },
+  });
+  const { useCompare } = load("@/features/catalog/compare.store");
+  return { load, store: useCompare, saved: () => JSON.parse(value).state };
+}
+
+test("So sánh giữ sản phẩm cùng danh mục, xóa khi đổi danh mục và không khôi phục khi quay lại", () => {
+  const { store, saved } = compareFixture();
+  const { add, setCategory, clear } = store.getState();
+  setCategory("Điện thoại");
+  for (const id of ["1", "2", "3", "4"]) assert.equal(add(id, "Điện thoại"), true);
+  assert.equal(add("1", "Điện thoại"), false);
+  assert.equal(add("5", "Điện thoại"), false);
+  setCategory("Điện thoại");
+  assert.deepEqual(store.getState().compareIds, ["1", "2", "3", "4"]);
+  setCategory("Laptop");
+  assert.deepEqual(store.getState().compareIds, []);
+  assert.deepEqual(saved(), { compareIds: [], categoryName: "Laptop" });
+  setCategory("Điện thoại");
+  assert.deepEqual(store.getState().compareIds, []);
+  add("1", "Điện thoại");
+  assert.equal(add("5", "Laptop"), true);
+  assert.deepEqual(store.getState().compareIds, ["5"]);
+  assert.equal(store.getState().categoryName, "Laptop");
+  clear();
+  assert.deepEqual(saved(), { compareIds: [], categoryName: null });
+});
+
+test("Khôi phục so sánh kèm danh mục; xóa dữ liệu cũ không xác định được danh mục", () => {
+  const restored = compareFixture({ compareIds: ["1", "1", "bad", "2"], categoryName: "Laptop" });
+  assert.deepEqual(restored.store.getState().compareIds, ["1", "2"]);
+  restored.store.getState().setCategory("Laptop");
+  assert.deepEqual(restored.store.getState().compareIds, ["1", "2"]);
+  restored.store.getState().setCategory("Điện thoại");
+  assert.deepEqual(restored.store.getState().compareIds, []);
+  for (const categoryName of [undefined, null, "", " ", 123]) {
+    assert.deepEqual(compareFixture({ compareIds: ["1", "2"], categoryName }).store.getState().compareIds, []);
+  }
+});
+
+test("Trang danh sách dọn so sánh khi đổi danh mục qua URL hoặc mở lại trang; giữ khi đổi bộ lọc", () => {
+  const effects = [];
+  let params = new URLSearchParams("categoryId=10&page=1");
+  let categoriesReady = true;
+  const { load, store } = compareFixture(undefined, {
+    react: { ...React, useEffect: (effect) => effects.push(effect) },
+    "react-router": { useSearchParams: () => [params, () => {}] },
+    "@/features/catalog/queries": {
+      useGetCategories: () => ({ isSuccess: categoriesReady, isPending: !categoriesReady, data: categoriesReady ? [
+        { id: "10", name: "Điện thoại", status: "ACTIVE" },
+        { id: "20", name: "Laptop", status: "ACTIVE" },
+      ] : undefined }),
+      useGetBrands: () => ({ isSuccess: false }),
+      useGetProducts: () => ({ isPending: true }),
+    },
+    "@/features/catalog/components/ProductFilters": { ProductFilters: () => null },
+    "@/features/catalog/components/ProductGrid": { ProductGrid: () => null },
+    "@/shared/components/Pagination": { Pagination: () => null },
+    "@/components/ui/button": { Button: () => null },
+  });
+  const { ProductListPage } = load("@/features/catalog/pages/ProductListPage");
+  function render() {
+    renderToStaticMarkup(React.createElement(ProductListPage));
+    effects.splice(0).forEach((effect) => effect());
+  }
+  render();
+  store.getState().add("1", "Điện thoại");
+  params = new URLSearchParams("categoryId=10&page=2&brandId=3&sort=PRICE_ASC&minPrice=1000&q=test");
+  render();
+  assert.deepEqual(store.getState().compareIds, ["1"]);
+  params = new URLSearchParams("categoryId=20");
+  categoriesReady = false;
+  render();
+  assert.deepEqual(store.getState().compareIds, ["1"]);
+  categoriesReady = true;
+  render();
+  assert.deepEqual(store.getState().compareIds, []);
+  store.getState().add("2", "Laptop");
+  params = new URLSearchParams("categoryId=10");
+  render();
+  assert.deepEqual(store.getState().compareIds, []);
+});
+
+test("Mở chi tiết sản phẩm khác danh mục cũng dọn so sánh sau khi tải thành công", () => {
+  const effects = [];
+  let categoryName = "Điện thoại";
+  let ready = true;
+  const { load, store } = compareFixture(undefined, {
+    react: { ...React, useEffect: (effect) => effects.push(effect) },
+    "react-router": {
+      useParams: () => ({ id: "2" }),
+      Link: ({ children }) => React.createElement("a", null, children),
+    },
+    "@/features/catalog/queries": { useGetProductDetails: () => ({
+      isSuccess: ready, isPending: !ready,
+      data: ready ? { id: "2", name: "Sản phẩm", categoryName, averageRating: null } : undefined,
+    }) },
+    "@/features/catalog/components/ProductGallery": { ProductGallery: () => null },
+    "@/features/catalog/components/SpecTable": { SpecTable: () => null },
+    "@/features/catalog/components/ProductPurchaseOptions": { ProductPurchaseOptions: () => null },
+    "@/features/catalog/components/CompareToggleButton": { CompareToggleButton: () => null },
+  });
+  const { ProductDetailPage } = load("@/features/catalog/pages/ProductDetailPage");
+  function render() {
+    renderToStaticMarkup(React.createElement(ProductDetailPage));
+    effects.splice(0).forEach((effect) => effect());
+  }
+  store.getState().add("1", "Điện thoại");
+  render();
+  assert.deepEqual(store.getState().compareIds, ["1"]);
+  categoryName = "Laptop";
+  ready = false;
+  render();
+  assert.deepEqual(store.getState().compareIds, ["1"]);
+  ready = true;
+  render();
+  assert.deepEqual(store.getState().compareIds, []);
+});
+
+test("URL so sánh trực tiếp không hiển thị bảng cho các sản phẩm khác danh mục", () => {
+  let products = [
+    { id: "1", categoryName: "Điện thoại" },
+    { id: "2", categoryName: "Laptop" },
+  ];
+  const load = createLoader({
+    "react-router": {
+      useSearchParams: () => [new URLSearchParams("ids=1,2"), () => {}],
+      Link: ({ children }) => React.createElement("a", null, children),
+    },
+    "@/features/catalog/queries": { useGetProductCompare: () => ({ data: products, isSuccess: true }) },
+    "@/features/catalog/components/CompareTable": { CompareTable: () => React.createElement("table", null) },
+  });
+  const { ComparePage } = load("@/features/catalog/pages/ComparePage");
+  const mixed = renderToStaticMarkup(React.createElement(ComparePage));
+  assert.match(mixed, /Chỉ có thể so sánh các sản phẩm cùng danh mục/);
+  assert.doesNotMatch(mixed, /<table/);
+  products = products.map((product) => ({ ...product, categoryName: "Laptop" }));
+  assert.match(renderToStaticMarkup(React.createElement(ComparePage)), /<table/);
+});
+
 test("Giá tính theo đồng: nhận 99.500đ, số 0, bỏ trống; chặn giá sai", () => {
   const { parsePriceRange } = createLoader()("@/features/catalog/priceFilters");
   assert.deepEqual(parsePriceRange("99500", "450000"), {

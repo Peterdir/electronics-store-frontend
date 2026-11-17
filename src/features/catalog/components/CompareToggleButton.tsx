@@ -5,17 +5,20 @@ import { useCompare } from "../compare.store";
 interface Props {
   id: ID;
   name: string;
+  categoryName: string | null;
 }
 
-export function CompareToggleButton({ id, name }: Props) {
+export function CompareToggleButton({ id, name, categoryName }: Props) {
   const selected = useCompare((state) => state.compareIds.includes(id));
   const add = useCompare((state) => state.add);
   const remove = useCompare((state) => state.remove);
 
   function toggle() {
+    if (!categoryName) return;
+
     if (selected) {
       remove(id);
-    } else if (!add(id)) {
+    } else if (!add(id, categoryName)) {
       toast.warning("Chỉ so sánh tối đa 4 sản phẩm.");
     }
   }
@@ -23,6 +26,7 @@ export function CompareToggleButton({ id, name }: Props) {
   return (
     <button
       type="button"
+      disabled={!categoryName}
       aria-pressed={selected}
       aria-label={`${selected ? "Bỏ" : "Thêm"} ${name} ${
         selected ? "khỏi" : "vào"

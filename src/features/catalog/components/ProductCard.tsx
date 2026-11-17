@@ -50,7 +50,7 @@ export function ProductCard({ product }: ProductCardProps) {
                     {formatVND(product.basePrice)}
                 </p>
 
-                <CompareToggleButton id={product.id} name={product.name} />
+                <CompareToggleButton id={product.id} name={product.name} categoryName={product.categoryName} />
             </div>
         </article>
     )

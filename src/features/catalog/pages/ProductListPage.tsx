@@ -4,6 +4,7 @@ import { ProductGrid } from "../components/ProductGrid";
 import { useSearchParams } from "react-router";
 import { Pagination } from "@/shared/components/Pagination";
 import { useEffect } from "react";
+import { useCompare } from "../compare.store";
 import { ActiveStatus, ProductSort } from "@/shared/types/enums";
 import type { ID } from "@/shared/types/common";
 import {
@@ -53,6 +54,15 @@ export function ProductListPage() {
     const categoryId = categories.find((category) => category.id === requestedCategoryId)?.id
         ?? categories[0]?.id;
     const hasSelectedCategory = categoryId !== undefined && requestedCategoryId === categoryId;
+    const categoryName = categories.find((category) => category.id === categoryId)?.name;
+    const setCompareCategory = useCompare((state) => state.setCategory);
+
+    useEffect(() => {
+        if (categoriesQuery.isSuccess && hasSelectedCategory && categoryName) {
+            setCompareCategory(categoryName);
+        }
+    }, [categoriesQuery.isSuccess, hasSelectedCategory, categoryName, setCompareCategory]);
+
     const brandId = parseId(searchParams.get("brandId"));
     const brandsQuery = useGetBrands(categoryId);
     const minPrice = hasSelectedCategory ? parseUrlPrice(searchParams.get("minPrice")) : undefined;

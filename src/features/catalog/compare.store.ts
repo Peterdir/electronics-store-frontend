@@ -4,7 +4,9 @@ import { createJSONStorage, persist } from "zustand/middleware";
 
 interface CompareState {
   compareIds: ID[];
-  add: (id: ID) => boolean;
+  categoryName: string | null;
+  setCategory: (categoryName: string) => void;
+  add: (id: ID, categoryName: string) => boolean;
   remove: (id: ID) => void;
   clear: () => void;
 }
@@ -24,12 +26,19 @@ export const useCompare = create<CompareState>()(
   persist(
     (set, get) => ({
       compareIds: [],
+      categoryName: null,
 
-      add: (id) => {
-        const ids = get().compareIds;
+      setCategory: (categoryName) => {
+        if (get().categoryName === categoryName) return;
+        set({ compareIds: [], categoryName });
+      },
+
+      add: (id, categoryName) => {
+        const state = get();
+        const ids = state.categoryName === categoryName ? state.compareIds : [];
         if (ids.includes(id) || ids.length >= 4) return false;
 
-        set({ compareIds: [...ids, id] });
+        set({ compareIds: [...ids, id], categoryName });
         return true;
       },
 
@@ -39,18 +48,27 @@ export const useCompare = create<CompareState>()(
         }));
       },
 
-      clear: () => set({ compareIds: [] }),
+      clear: () => set({ compareIds: [], categoryName: null }),
     }),
     {
       name: "ec.compare",
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ compareIds: state.compareIds }),
-      merge: (saved, current) => ({
-        ...current,
-        compareIds: normalizeIds(
-          (saved as Partial<CompareState> | undefined)?.compareIds,
-        ),
+      partialize: (state) => ({
+        compareIds: state.compareIds,
+        categoryName: state.categoryName,
       }),
+      merge: (saved, current) => {
+        const persisted = saved as Partial<CompareState> | undefined;
+        const categoryName = typeof persisted?.categoryName === "string"
+          && persisted.categoryName.trim() ? persisted.categoryName : null;
+
+        return {
+          ...current,
+          categoryName,
+          // Old selections have no category, so they cannot safely be restored.
+          compareIds: categoryName ? normalizeIds(persisted?.compareIds) : [],
+        };
+      },
     },
   ),
 );

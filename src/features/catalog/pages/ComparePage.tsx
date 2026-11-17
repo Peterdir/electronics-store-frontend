@@ -60,6 +60,7 @@ export function ComparePage() {
   const missingIds = compareQuery.isSuccess
     ? ids.filter((id) => !byId.has(id))
     : [];
+  const hasDifferentCategories = new Set(products.map((product) => product.categoryName)).size > 1;
 
   return (
     <section className="space-y-6">
@@ -122,6 +123,8 @@ export function ComparePage() {
             Thử lại
           </button>
         </div>
+      ) : hasDifferentCategories ? (
+        <p role="alert">Chỉ có thể so sánh các sản phẩm cùng danh mục. Vui lòng bỏ sản phẩm khác danh mục.</p>
       ) : (
         <>
           {missingIds.length > 0 && (
