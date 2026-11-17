@@ -172,6 +172,44 @@ test("Mở chi tiết sản phẩm khác danh mục cũng dọn so sánh sau khi
   assert.deepEqual(store.getState().compareIds, []);
 });
 
+test("Thanh so sánh tải tên/ảnh/giá từng sản phẩm và chỉ mở so sánh từ hai sản phẩm", () => {
+  const state = { compareIds: ["1"], categoryName: "Điện thoại", remove() {}, clear() {} };
+  let status = "success";
+  const load = createLoader({
+    "react-router": { Link: ({ to, children, ...props }) => React.createElement("a", { ...props, href: to }, children) },
+    "@/features/catalog/compare.store": { useCompare: (selector) => selector(state) },
+    "@/features/catalog/queries": { useGetProductDetails: (id) => ({
+      isPending: status === "loading", isError: status === "error", refetch() {},
+      data: status === "success" ? {
+        id, name: "Điện thoại " + id, basePrice: 9950000, images: ["/fallback.jpg"],
+        variants: [{ status: "ACTIVE", imageUrl: "/variant.jpg", images: [
+          { imageUrl: "/secondary.jpg", isPrimary: false, displayOrder: 0 },
+          { imageUrl: "/primary.jpg", isPrimary: true, displayOrder: 1 },
+        ] }],
+      } : undefined,
+    }) },
+  });
+  const { CompareTray } = load("@/features/catalog/components/CompareTray");
+  const render = () => renderToStaticMarkup(React.createElement(CompareTray));
+  const single = render();
+  assert.match(single, /Điện thoại 1/);
+  assert.match(single, /9\.950\.000/);
+  assert.match(single, /src="\/primary\.jpg"/);
+  assert.match(single, /Chọn thêm 1 sản phẩm để so sánh/);
+  assert.match(single, /disabled=""/);
+  assert.doesNotMatch(single, /href="\/compare/);
+  state.compareIds.push("2");
+  assert.match(render(), /href="\/compare\?ids=1,2"/);
+  status = "loading";
+  assert.match(render(), /Đang tải thông tin sản phẩm/);
+  assert.match(render(), /aria-busy="true"/);
+  status = "error";
+  assert.match(render(), /Tải lại thông tin/);
+  assert.match(render(), /Bỏ Sản phẩm #1 khỏi danh sách so sánh/);
+  state.compareIds = [];
+  assert.equal(render(), "");
+});
+
 test("URL so sánh trực tiếp không hiển thị bảng cho các sản phẩm khác danh mục", () => {
   let products = [
     { id: "1", categoryName: "Điện thoại" },
