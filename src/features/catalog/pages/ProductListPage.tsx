@@ -1,4 +1,4 @@
-import { useGetCategories, useGetProducts } from "../queries";
+import { useGetBrands, useGetCategories, useGetProducts } from "../queries";
 import { Button } from "@/components/ui/button";
 import { ProductGrid } from "../components/ProductGrid";
 import { useSearchParams } from "react-router";
@@ -54,6 +54,7 @@ export function ProductListPage() {
         ?? categories[0]?.id;
     const hasSelectedCategory = categoryId !== undefined && requestedCategoryId === categoryId;
     const brandId = parseId(searchParams.get("brandId"));
+    const brandsQuery = useGetBrands(categoryId);
     const minPrice = hasSelectedCategory ? parseUrlPrice(searchParams.get("minPrice")) : undefined;
     const maxPrice = hasSelectedCategory ? parseUrlPrice(searchParams.get("maxPrice")) : undefined;
     const sort = parseSort(searchParams.get("sort"));
@@ -85,6 +86,18 @@ export function ProductListPage() {
             return nextParams;
         }, { replace: true });
     }, [categoriesQuery.isSuccess, categoryId, hasSelectedCategory, setSearchParams]);
+
+    useEffect(() => {
+        if (!brandId || !brandsQuery.isSuccess) return;
+        if (brandsQuery.data.some((brand) => brand.id === brandId)) return;
+
+        setSearchParams((currentParams) => {
+            const nextParams = new URLSearchParams(currentParams);
+            nextParams.delete("brandId");
+            nextParams.set("page", "1");
+            return nextParams;
+        }, { replace: true });
+    }, [brandId, brandsQuery.data, brandsQuery.isSuccess, setSearchParams]);
 
     useEffect(() => {
         const totalPages = productsQuery.data?.totalPages;

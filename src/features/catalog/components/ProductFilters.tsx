@@ -30,7 +30,7 @@ function formatPriceInput(value: string): string {
 }
 
 export function ProductFilters({ values, categories, onChange }: ProductFiltersProps) {
-  const brandsQuery = useGetBrands();
+  const brandsQuery = useGetBrands(values.categoryId);
   const boundsQuery = useCategoryPriceBounds(values.categoryId);
   const priceErrorId = useId();
   const bounds = boundsQuery.data;
@@ -96,6 +96,7 @@ export function ProductFilters({ values, categories, onChange }: ProductFiltersP
               onChange({
                 ...values,
                 categoryId: event.target.value,
+                brandId: undefined,
                 minPrice: undefined,
                 maxPrice: undefined,
               });

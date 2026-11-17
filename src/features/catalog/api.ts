@@ -25,8 +25,10 @@ export async function getCategories(): Promise<CategoryResponse[]> {
     return response.data;
 }
 
-export async function getBrands(): Promise<BrandResponse[]> {
-    const response = await api.get<BrandResponse[]>("/api/brands")
+export async function getBrands(categoryId?: ID): Promise<BrandResponse[]> {
+    const response = await api.get<BrandResponse[]>("/api/brands", {
+        params: categoryId ? { categoryId } : undefined,
+    })
 
     return response.data;
 }

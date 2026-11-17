@@ -1072,6 +1072,8 @@ export interface ReturnRequestResponse { id: ID; orderId: ID; orderItemId: ID; q
 
 ### PHASE 5 — Admin Operations & Analytics/Reports
 
+> Kế hoạch tự học chi tiết: [phase5.md](phase5.md) — E1–E22, lập ngày 13/11/2026, có hướng dẫn sinh mã từng bước và commit cuối mỗi nhiệm vụ. Chưa triển khai Phase 5. Khi bắt đầu, ưu tiên các ghi chú contract đã đối chiếu trong `phase5.md` (đặc biệt category multipart, cập nhật variant/tồn kho và xử lý trả hàng) thay cho mô tả cũ bên dưới; tiếp tục kiểm tra với backend đang chạy.
+
 #### 5.1 Admin Shell & RBAC
 
 | Path | Quyền | Ghi chú |

@@ -27,10 +27,10 @@ export function useGetCategories() {
     })
 }
 
-export function useGetBrands() {
+export function useGetBrands(categoryId?: ID) {
     return useQuery({
-        queryKey: [...qk.brands],
-        queryFn: () => getBrands(),
+        queryKey: [...qk.brands, { categoryId }],
+        queryFn: () => getBrands(categoryId),
         staleTime: 10 * 60 * 1000,
         retry: 2,
     })
