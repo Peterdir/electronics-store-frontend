@@ -5,8 +5,8 @@ import { qk } from "@/shared/api/queryKeys";
 import { isExpired } from "@/shared/auth/jwt";
 import { useSession } from "@/shared/auth/session.store";
 import type { ID } from "@/shared/types/common";
-import { createReview, getPendingReviews, getReviewHistory } from "./api";
-import type { CreateReviewRequest, PendingReview } from "./types";
+import { createReview, deleteReview, getPendingReviews, getReviewHistory, updateReview } from "./api";
+import type { CreateReviewRequest, PendingReview, ReviewResponse, UpdateReviewRequest } from "./types";
 
 interface ReviewSession {
   userId: ID;
@@ -99,6 +99,56 @@ export function useCreateReview(userId: ID | undefined, orderItemId: ID) {
       } else if (error.status === 0 || error.status >= 500) {
         void queryClient.invalidateQueries({ queryKey: [...qk.reviews, input.userId] });
       }
+    },
+  });
+
+  return { mutation, mutationKey };
+}
+
+export function useManageReview(userId: ID | undefined, reviewId: ID) {
+  const queryClient = useQueryClient();
+  const mutationKey = [...qk.reviews, userId, "manage", reviewId] as const;
+  type Input = ReviewSession & (
+    | { action: "update"; payload: UpdateReviewRequest; image?: File }
+    | { action: "delete" }
+  );
+
+  const mutation = useMutation({
+    mutationKey,
+    retry: false,
+    networkMode: "always",
+    gcTime: 0,
+    mutationFn: async (input: Input) => {
+      assertReviewSession(input);
+      if (queryClient.isMutating({ mutationKey, exact: true }) > 1) {
+        throw new ApiError(409, "Đánh giá này đang được xử lý.");
+      }
+      const review = input.action === "update"
+        ? await updateReview(reviewId, input.payload, input.token, input.image)
+        : await deleteReview(reviewId, input.token);
+      assertReviewSession(input);
+      return review;
+    },
+    onSuccess: async (review, input) => {
+      if (!isCurrentReviewSession(input)) return;
+      const key = [...qk.reviews, input.userId];
+      await queryClient.cancelQueries({ queryKey: key });
+      if (!isCurrentReviewSession(input)) return;
+
+      queryClient.setQueryData<ReviewResponse[]>([...key, "history"], (items) => {
+        if (input.action === "delete") return items?.filter((item) => item.id !== reviewId);
+        return items?.map((item) => item.id === reviewId && review ? review : item);
+      });
+      void queryClient.invalidateQueries({ queryKey: key });
+      void queryClient.invalidateQueries({ queryKey: qk.products });
+      toast.success(input.action === "update" ? "Đã cập nhật đánh giá." : "Đã xóa đánh giá.");
+    },
+    onError: (error, input) => {
+      if (!isCurrentReviewSession(input) || !(error instanceof ApiError)) return;
+      if (error.status === 403 || error.status === 404 || error.status === 0 || error.status >= 500) {
+        void queryClient.invalidateQueries({ queryKey: [...qk.reviews, input.userId] });
+      }
+      if (error.status === 404) toast.info("Đánh giá này không còn khả dụng.");
     },
   });
 

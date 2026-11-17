@@ -1,12 +1,16 @@
 import { Link, useSearchParams } from "react-router";
+import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/shared/api/errors";
+import { useSession } from "@/shared/auth/session.store";
 import { isPositiveLongId, type ID } from "@/shared/types/common";
 import { PendingReviewCard, ReviewHistoryCard } from "../components/ReviewCards";
-import { ReviewForm } from "../components/ReviewForm";
+import { ReviewDialog } from "../components/ReviewDialog";
+import { ReviewHistoryActions } from "../components/ReviewHistoryActions";
 import { usePendingReviews, useReviewHistory } from "../queries";
 
 export function ReviewsPage() {
+  const userId = useSession((state) => state.user?.id);
   const [search, setSearch] = useSearchParams();
   const tab = search.get("tab") === "history" ? "history" : "pending";
   const pending = usePendingReviews(tab === "pending");
@@ -16,6 +20,9 @@ export function ReviewsPage() {
   const rawItemId = search.get("orderItemId") ?? undefined;
   const selectedItemId = isPositiveLongId(rawItemId) ? rawItemId : undefined;
   const pendingVerified = pending.isSuccess && pending.fetchStatus === "idle";
+  const selectedItem = tab === "pending"
+    ? pending.data?.find((item) => item.orderItemId === selectedItemId)
+    : undefined;
   const selectedItemMissing = rawItemId !== undefined && pendingVerified &&
     !pending.data.some((item) => item.orderItemId === selectedItemId);
 
@@ -80,22 +87,42 @@ export function ReviewsPage() {
           {pending.data.length === 0 && <p>Bạn chưa có sản phẩm nào chờ đánh giá.</p>}
           {pending.data.map((item) => (
             <PendingReviewCard
-              key={item.orderItemId}
+              key={`${userId}-${item.orderItemId}`}
               item={item}
               onOpen={() => openReview(item.orderItemId)}
-            >
-              {item.orderItemId === selectedItemId
-                ? <ReviewForm item={item} canSubmit={pendingVerified} onClose={closeReview} />
-                : undefined}
-            </PendingReviewCard>
+            />
           ))}
         </div>
       )}
 
+      {selectedItem && (
+        <ReviewDialog
+          key={`${userId}-${selectedItem.orderItemId}`}
+          open
+          item={selectedItem}
+          canSubmit={pendingVerified}
+          onClose={closeReview}
+        />
+      )}
+
       {tab === "history" && history.data && (
-        <div className="space-y-3">
-          {history.data.length === 0 && <p>Bạn chưa gửi đánh giá nào.</p>}
-          {history.data.map((review) => <ReviewHistoryCard key={review.id} review={review} />)}
+        <div className="space-y-5">
+          {history.data.length === 0 && (
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-12 text-center">
+              <span className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                <Star aria-hidden="true" className="size-6" />
+              </span>
+              <p className="text-sm text-muted-foreground">Bạn chưa gửi đánh giá nào.</p>
+            </div>
+          )}
+          {history.data.map((review) => (
+            <ReviewHistoryCard key={`${userId}-${review.id}`} review={review}>
+              <ReviewHistoryActions
+                review={review}
+                canSubmit={history.isSuccess && history.fetchStatus === "idle"}
+              />
+            </ReviewHistoryCard>
+          ))}
         </div>
       )}
     </section>

@@ -32,3 +32,9 @@ export interface CreateReviewRequest {
   productVariantId?: ID;
   orderItemId: ID;
 }
+
+export interface UpdateReviewRequest {
+  rating: number;
+  reviewText?: string;
+  removeImage?: boolean;
+}

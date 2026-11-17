@@ -1,5 +1,11 @@
 import { api } from "@/shared/api/client";
-import type { CreateReviewRequest, PendingReview, ReviewResponse } from "./types";
+import type { ID } from "@/shared/types/common";
+import type {
+  CreateReviewRequest,
+  PendingReview,
+  ReviewResponse,
+  UpdateReviewRequest,
+} from "./types";
 
 export async function getPendingReviews(signal: AbortSignal, authToken: string) {
   const { data } = await api.get<PendingReview[]>("/api/reviews/me/pending", {
@@ -38,4 +44,37 @@ export async function createReview(payload: CreateReviewRequest, authToken: stri
     meta: { authToken, noPublicRetry: true },
   });
   return data;
+}
+
+export async function updateReview(
+  reviewId: ID,
+  payload: UpdateReviewRequest,
+  authToken: string,
+  image?: File,
+) {
+  if (image && payload.removeImage) {
+    throw new Error("Hãy chọn thay ảnh hoặc bỏ ảnh hiện tại.");
+  }
+
+  let body: UpdateReviewRequest | FormData = payload;
+
+  if (image) {
+    const form = new FormData();
+    form.append("rating", String(payload.rating));
+    form.append("reviewText", payload.reviewText ?? "");
+    form.append("image", image);
+    body = form;
+  }
+
+  const { data } = await api.put<ReviewResponse>(`/api/reviews/${reviewId}`, body, {
+    meta: { authToken, noPublicRetry: true },
+  });
+
+  return data;
+}
+
+export async function deleteReview(reviewId: ID, authToken: string): Promise<void> {
+  await api.delete<void>(`/api/reviews/${reviewId}`, {
+    meta: { authToken, noPublicRetry: true },
+  });
 }

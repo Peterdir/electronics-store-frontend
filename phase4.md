@@ -2,7 +2,7 @@
 
 > Ngày lập: **07/11/2026**. Đối chiếu frontend tại HEAD `7df522e`; working tree sạch trước khi tạo tài liệu.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase3.md](phase3.md), source frontend và source tham chiếu tại `../ecommerce-backend`.
-> **Điểm tiếp tục — cập nhật 15/11/2026: D10 — sửa và xóa đánh giá.** Người dùng báo kiểm thử D9/D9a không gặp vấn đề. Backend tạo đánh giá và upload ảnh nằm trong commit `b07beb3`. D8 vẫn còn ca tích hợp cần xác nhận theo bàn giao riêng.
+> **Điểm tiếp tục — cập nhật 17/11/2026: D10 đã có code sửa/xóa đánh giá, chờ kiểm thử tích hợp.** Backend sửa review nằm trong commit `3606098` và `46a2c1c`. Frontend có form sửa, giữ/thay/gỡ ảnh và xác nhận xóa. Người dùng đã báo kiểm thử D9/D9a không gặp vấn đề. D8 vẫn còn ca tích hợp cần xác nhận theo bàn giao riêng.
 > Phase 3: C1–C12 đã được chốt trong phạm vi ghi ở `phase3.md`; C12 hoàn thành theo xác nhận thử VNPay của người dùng ngày 07/11/2026. **C13 còn hồi quy tổng thể**, không tự đánh dấu Phase 3 hoàn tất và không giao lại code C12. Có thể bắt đầu phần tài khoản độc lập; kiểm tra các luồng checkout/payment liên quan khi tích hợp D5–D8 và chốt D13.
 
 ## 1. Cách thực hiện
@@ -39,7 +39,7 @@ Theo yêu cầu ngày 14/11/2026, upload ảnh đánh giá được đưa vào P
 | Đổi mật khẩu | `UserController.changePassword` trả **MessageResponse JSON**, không còn plain text | API nhận `{ message }`; kiểm tra Network ở D3 |
 | Chính sách mật khẩu | Regex mạnh đang comment trong `ChangePasswordRequest`; service kiểm tra mật khẩu cũ và confirm | Dùng lại `newPasswordSchema` của frontend để thống nhất register/reset; không ghi backend đã cưỡng chế regex này |
 | Phân trang | Backend đã bật `PageSerializationMode.VIA_DTO`; FE đọc `{ content, page: {...} }` | Dùng `normalizePage` hiện có, trả `Page<T> { items, page, size, totalItems, totalPages }`; không chép shape khác từ ví dụ cũ |
-| Sửa review | PUT nhận `ReviewRequest` bắt buộc `productId`, `orderItemId`, nhưng history chỉ trả `productId`, không trả `orderItemId` | **Chặn riêng phần sửa D10 đến khi sửa contract backend**; xem D10. Không bịa ID hoặc phụ thuộc dữ liệu còn trong RAM từ lần tạo |
+| Sửa review | Backend `3606098`/`46a2c1c` nhận `UpdateReviewRequest` với `rating`, `reviewText?`, `removeImage?`; PUT có JSON và multipart với một part `image` | Frontend gửi reviewId trên URL, lấy giá trị form từ history. Backend giữ quan hệ product/item của review đang lưu |
 | Ảnh review | Từ `b07beb3`, POST nhận JSON không ảnh hoặc multipart với part `image`; server sinh URL khi lưu file | D9a hiển thị `imageUrl` trong lịch sử. D10 xử lý giữ/thay/bỏ ảnh khi sửa |
 | Tạo review | Từ `b07beb3`, `createReview` kiểm tra chủ dòng đơn, trạng thái DELIVERED, product/variant và review trùng | UI cho chọn từ pending list. Backend xác minh lại khi tạo |
 | Null trong DTO | `OrderItemResponse.variantId` có thể null; `ReviewResponse.productId` có thể null khi sản phẩm bị xóa; pending review chưa map `productImage` | Type/fallback phải phản ánh null; không tạo link sản phẩm từ `variantId` |
@@ -163,7 +163,7 @@ Không đặt token vào query key. Nếu giữ dữ liệu trang trước, ch�
 | D8 | Mua lại vào giỏ user | D5, cart C2–C5 | Đã triển khai. Lint, build và kiểm thử giả lập đạt. Chờ thử với backend trên trình duyệt |
 | D9 | Pending/history và tạo đánh giá | D1, dữ liệu DELIVERED; D5 để nối CTA | Đã triển khai. Lint, build và kiểm tra logic đạt. Người dùng báo kiểm thử không gặp vấn đề |
 | D9a | Upload một ảnh tùy chọn khi tạo review, xem ảnh ở history | D9; backend multipart/validation/storage | Đã triển khai backend và frontend. Người dùng báo kiểm thử không gặp vấn đề |
-| D10 | Sửa/xóa đánh giá | D9 | Chưa làm; sửa bị vướng contract |
+| D10 | Sửa/xóa đánh giá | D9 | Đã có backend và frontend ngày 17/11/2026; chờ kiểm thử tích hợp với tài khoản thật |
 | D11 | Wishlist và nút tim ở catalog | D1, catalog | Chưa làm |
 | D12 | Tạo yêu cầu trả hàng và gửi ảnh | D5, dữ liệu DELIVERED | Chưa làm; giới hạn theo mục 2.1 |
 | D13 | Hồi quy, ghi nhận phạm vi hoàn thành và bàn giao P5 | Các mốc trên | Chưa làm |
@@ -341,9 +341,9 @@ Tạo thành công invalidate pending/history và catalog rating liên quan. 409
 
 ### D10 — Sửa và xóa đánh giá
 
-**Điều kiện phần sửa:** giải quyết thiếu `orderItemId` trong contract. Hướng ưu tiên sau D9a: DTO cập nhật riêng nhận `rating`, `reviewText?`, `removeImage?` và part `image?` qua multipart. PUT lấy quan hệ product/item từ review đang lưu và kiểm tra chủ sở hữu. JSON cập nhật nội dung cần có contract riêng để không vô tình ghi null ảnh hiện có.
+**Contract đã cập nhật:** backend `3606098`/`46a2c1c` có DTO cập nhật riêng nhận `rating`, `reviewText?`, `removeImage?`, hỗ trợ JSON và multipart với part `image?`. PUT lấy quan hệ product/item từ review đang lưu và kiểm tra chủ sở hữu. Bỏ field `removeImage` hoặc gửi false khi không có file sẽ giữ ảnh hiện có.
 
-**File:** review API/mutation/schema/form, dialog xóa, history card. DELETE `/api/reviews/{reviewId}` trả **204**, không parse JSON. PUT endpoint cùng reviewId trả ReviewResponse sau khi chốt request mới.
+**File:** review API/mutation/schema/form, `components/ReviewHistoryActions.tsx` chứa dialog xóa, history card. DELETE `/api/reviews/{reviewId}` trả **204**, không parse JSON. PUT endpoint cùng reviewId trả ReviewResponse.
 
 **Thực hiện:** form sửa dùng giá trị review cũ. Không gửi file và `removeImage=false` hoặc bỏ field nghĩa là giữ ảnh; có file mới nghĩa là thay ảnh; `removeImage=true` nghĩa là bỏ ảnh. Từ chối gửi file mới đồng thời yêu cầu bỏ ảnh. Dùng vòng đời storage D9a, chỉ xóa ảnh cũ sau DB commit; URL ảnh cũ đọc từ entity. Với xóa mềm review, đề xuất giữ file theo dữ liệu xóa mềm và dọn khi purge theo chính sách lưu trữ được chốt. Xác nhận trước khi xóa review. Sau thành công invalidate pending/history và catalog; item có thể trở lại pending nếu còn đủ điều kiện. Không mặc định mọi review đã xóa đều trở lại pending nếu đơn đã chuyển trạng thái.
 
@@ -559,3 +559,14 @@ Các vấn đề thấy trực tiếp trong source cần xử lý khi triển kh
 - Lint, build với `npm run build -- --outDir dist/d9a-frontend`, hồi quy checkout (24/24) và catalog (7/7) đạt. Kiểm tra bằng Axios bản trình duyệt với fetch giả lập xác nhận multipart có boundary, đúng tên field, giữ nguyên ID chuỗi và nội dung file. Kiểm tra thêm các biên dung lượng, định dạng và render lịch sử. Build mặc định vướng thư mục kiểm thử backend cũ đang bị khóa trong `dist`.
 - Backend ở `localhost:8081` chưa phản hồi khi kiểm tra. Khi môi trường sẵn sàng, thử review có ảnh và không ảnh trên hai dòng đơn đã giao, xác nhận POST trả 201 và reload lịch sử vẫn thấy ảnh. D10 tiếp tục phần sửa và xóa review.
 - Sau bàn giao, người dùng báo kiểm thử D9/D9a không gặp vấn đề và yêu cầu commit frontend. Xác nhận này không kèm kết quả từng ca.
+
+### Bàn giao D10 — 17/11/2026
+
+- Backend `3606098` có DTO sửa riêng và PUT JSON; `46a2c1c` bổ sung PUT multipart. Sửa/xóa dùng chung khóa review và xác minh chủ sở hữu. Thay hoặc gỡ ảnh dọn file cũ sau commit, ảnh mới được dọn khi rollback. Lượt backend trước đã chạy 11 kiểm thử review đạt.
+- Frontend có `updateReview` chọn JSON hoặc multipart theo file và `deleteReview` nhận 204. History có nút sửa, form điền từ review đang lưu và dialog xác nhận xóa. Dùng chung `ReviewForm` với D9a để giữ validation, preview và xử lý lỗi ảnh. Form giữ nội dung đang nhập khi refetch nền hoặc lỗi validation. Checkbox gỡ ảnh được bỏ chọn khi chọn file thay thế.
+- Cập nhật giao diện theo yêu cầu người dùng ngày 17/11/2026. Cụm sao tương tác có mô tả mức hài lòng. `ReviewDialog` dùng chung cho tạo và sửa, hiển thị tên sản phẩm, khóa cuộn trang nền và giới hạn chiều cao theo màn hình. Nội dung form cuộn riêng, tiêu đề và nút lưu/đóng ở vị trí cố định trong hộp thoại. Chặn đóng bằng X/Escape khi mutation đang chạy; form tạo vẫn mở được từ URL orderItemId. Chưa xác nhận trực quan trên trình duyệt sau thay đổi modal.
+- Tab Đã đánh giá có ảnh sản phẩm, tên/phiên bản/ngày đánh giá ở đầu thẻ. Khối Số sao dùng điểm số lớn trên nền nhẹ cùng sao vàng hỗ trợ điểm lẻ; Nhận xét có khoảng cách và giãn dòng riêng. Ảnh đính kèm ở cột bên phải có đường phân cách trên màn hình rộng, xếp xuống dưới trên điện thoại. Thumbnail vuông mở ảnh đầy đủ; hàng sửa/xóa riêng có biểu tượng và vùng bấm lớn hơn. Trạng thái danh sách rỗng có khung và biểu tượng. Chưa xác nhận trực quan trên trình duyệt sau thay đổi thẻ.
+- Hook `useManageReview` dùng một mutation key theo user/review cho cả sửa và xóa. Khóa gửi trùng, không retry và không xếp hàng offline. Kiểm tra user/token trước và sau request, cùng sau khi hủy query đang chạy. Thành công cập nhật history, invalidate pending/history và catalog. Pending tải lại từ server theo điều kiện thực tế của dòng đơn.
+- Lint, build bằng `npm run build -- --outDir dist/d10-frontend`, `npm run verify:reviews` (7/7), hồi quy checkout (24/24), catalog (7/7) và kiểm tra whitespace đạt. Build có cảnh báo chunk trên 500 kB. Kiểm thử mới dùng QueryClient/MutationObserver thật với API giả lập, kiểm tra payload JSON/multipart, ID chuỗi, DELETE 204, cache đúng user, đổi phiên, khóa sửa/xóa, 403/404 và schema/render form.
+- Backend `localhost:8081` phản hồi 401 cho GET history không có token. Chưa kiểm thử giao diện tương tác hoặc API D10 bằng tài khoản thật trong lượt này. Cần đăng nhập, tải mới history rồi sửa số sao/nội dung, giữ/thay/gỡ ảnh và reload sau mỗi lần lưu; hủy/xác nhận xóa; kiểm tra pending và rating catalog sau thao tác. Thử thêm lỗi validation, 403/404, đổi tài khoản khi request chậm, bàn phím và mobile.
+- D10 đã hoàn tất phần triển khai, còn kiểm thử tích hợp cần xác nhận. Bước tiếp theo sau khi ghi nhận kết quả là D11 — wishlist.
