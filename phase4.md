@@ -2,7 +2,7 @@
 
 > Ngày lập: **07/11/2026**. Đối chiếu frontend tại HEAD `7df522e`; working tree sạch trước khi tạo tài liệu.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase3.md](phase3.md), source frontend và source tham chiếu tại `../ecommerce-backend`.
-> **Điểm tiếp tục — cập nhật 17/11/2026: D10 đã có code sửa/xóa đánh giá, chờ kiểm thử tích hợp.** Backend sửa review nằm trong commit `3606098` và `46a2c1c`. Frontend có form sửa, giữ/thay/gỡ ảnh và xác nhận xóa. Người dùng đã báo kiểm thử D9/D9a không gặp vấn đề. D8 vẫn còn ca tích hợp cần xác nhận theo bàn giao riêng.
+> **Điểm tiếp tục — cập nhật 17/11/2026: D11 đã có code wishlist, chờ kiểm thử tích hợp.** Có trang danh sách, bỏ yêu thích và nút tim đồng bộ ở ProductCard/PDP. D10 đã có code sửa/xóa đánh giá, vẫn chờ kiểm thử tích hợp; backend sửa review nằm trong commit `3606098` và `46a2c1c`. Người dùng đã báo kiểm thử D9/D9a không gặp vấn đề. D8 vẫn còn ca tích hợp cần xác nhận theo bàn giao riêng.
 > Phase 3: C1–C12 đã được chốt trong phạm vi ghi ở `phase3.md`; C12 hoàn thành theo xác nhận thử VNPay của người dùng ngày 07/11/2026. **C13 còn hồi quy tổng thể**, không tự đánh dấu Phase 3 hoàn tất và không giao lại code C12. Có thể bắt đầu phần tài khoản độc lập; kiểm tra các luồng checkout/payment liên quan khi tích hợp D5–D8 và chốt D13.
 
 ## 1. Cách thực hiện
@@ -20,13 +20,13 @@
 |---|---|---|
 | Tài khoản | `AccountLayout`, form sửa hồ sơ và đổi mật khẩu | Ghi kết quả kiểm thử tích hợp D1–D3 |
 | Địa chỉ | `/account/addresses` nằm trong `AccountLayout`, có CRUD và schema/form dùng chung checkout | Kiểm tra hồi quy khi tích hợp các luồng mua hàng |
-| Điều hướng đăng nhập | `RequireAuth` giữ `location.state.from`; `getLoginDestination` chấp nhận các route tài khoản từ D1 đến D4 | Bổ sung đích quay lại cho `/account/orders/:id` ở D5 |
+| Điều hướng đăng nhập | `RequireAuth` giữ `location.state.from`; whitelist có orders detail, reviews, wishlist, catalog list/detail | Hồi quy đích quay lại sau login, giữ search/hash và chặn URL ngoài |
 | Đơn hàng | `/account/orders` lấy danh sách từ API, có lọc và phân trang. Checkout COD/VNPay có bản xác nhận đơn | Chi tiết lấy từ server, đường dẫn sau checkout, hủy, thanh toán lại, mua lại |
 | Thanh toán | `features/payment` có redirect helper, API return public và trang kết quả | Dùng lại cho thanh toán đơn đã có; nối đường xem đơn và làm mới dữ liệu |
-| Đánh giá/yêu thích/trả hàng | Chưa có `features/reviews`, `features/wishlist`, `features/returns` | Tạo từng feature khi đến mốc tương ứng |
+| Đánh giá/yêu thích/trả hàng | Đã có `features/reviews` và `features/wishlist`; chưa có `features/returns` | Kiểm thử tích hợp D10/D11; tạo returns ở D12 |
 | Shared | ID dạng string; enum đơn/thanh toán/trả hàng; `formatVND`; `normalizePage`; cache theo user ở hồ sơ/cart/địa chỉ | Thêm query keys đang dùng, format ngày, badge trạng thái, dialog xác nhận, chọn ảnh khi cần |
-| UI catalog | ProductCard/PDP đã có so sánh; PDP có `averageRating` và chọn variant | Gắn wishlist; chưa có API đọc danh sách review công khai |
-| Kiểm tra | `lint`, `typecheck`, `build`, `verify:checkout`, `verify:catalog` trong `package.json` | Chạy kiểm tra phù hợp với phần thay đổi; không coi script giả lập là thử backend |
+| UI catalog | ProductCard/PDP đã có so sánh và nút wishlist; PDP có `averageRating` và chọn variant | Hồi quy wishlist giữa các màn hình; chưa có API đọc danh sách review công khai |
+| Kiểm tra | `lint`, `typecheck`, `build`, `verify:checkout`, `verify:catalog`, `verify:reviews`, `verify:wishlist` trong `package.json` | Chạy kiểm tra phù hợp với phần thay đổi; không coi script giả lập là thử backend |
 
 Không nằm trong Phase 4: giao diện admin P5, policy B11, phần còn hoãn của B12, guest order tracking, gửi email xác nhận đơn và lịch sử trả hàng khi backend chưa hỗ trợ. Giữ các việc này trong backlog, không đánh dấu hoàn thành theo Phase 4.
 
@@ -164,7 +164,7 @@ Không đặt token vào query key. Nếu giữ dữ liệu trang trước, ch�
 | D9 | Pending/history và tạo đánh giá | D1, dữ liệu DELIVERED; D5 để nối CTA | Đã triển khai. Lint, build và kiểm tra logic đạt. Người dùng báo kiểm thử không gặp vấn đề |
 | D9a | Upload một ảnh tùy chọn khi tạo review, xem ảnh ở history | D9; backend multipart/validation/storage | Đã triển khai backend và frontend. Người dùng báo kiểm thử không gặp vấn đề |
 | D10 | Sửa/xóa đánh giá | D9 | Đã có backend và frontend ngày 17/11/2026; chờ kiểm thử tích hợp với tài khoản thật |
-| D11 | Wishlist và nút tim ở catalog | D1, catalog | Chưa làm |
+| D11 | Wishlist và nút tim ở catalog | D1, catalog | Đã có frontend ngày 17/11/2026; kiểm tra tĩnh và 11 ca giả lập đạt; chờ kiểm thử tích hợp |
 | D12 | Tạo yêu cầu trả hàng và gửi ảnh | D5, dữ liệu DELIVERED | Chưa làm; giới hạn theo mục 2.1 |
 | D13 | Hồi quy, ghi nhận phạm vi hoàn thành và bàn giao P5 | Các mốc trên | Chưa làm |
 
@@ -570,3 +570,20 @@ Các vấn đề thấy trực tiếp trong source cần xử lý khi triển kh
 - Lint, build bằng `npm run build -- --outDir dist/d10-frontend`, `npm run verify:reviews` (7/7), hồi quy checkout (24/24), catalog (7/7) và kiểm tra whitespace đạt. Build có cảnh báo chunk trên 500 kB. Kiểm thử mới dùng QueryClient/MutationObserver thật với API giả lập, kiểm tra payload JSON/multipart, ID chuỗi, DELETE 204, cache đúng user, đổi phiên, khóa sửa/xóa, 403/404 và schema/render form.
 - Backend `localhost:8081` phản hồi 401 cho GET history không có token. Chưa kiểm thử giao diện tương tác hoặc API D10 bằng tài khoản thật trong lượt này. Cần đăng nhập, tải mới history rồi sửa số sao/nội dung, giữ/thay/gỡ ảnh và reload sau mỗi lần lưu; hủy/xác nhận xóa; kiểm tra pending và rating catalog sau thao tác. Thử thêm lỗi validation, 403/404, đổi tài khoản khi request chậm, bàn phím và mobile.
 - D10 đã hoàn tất phần triển khai, còn kiểm thử tích hợp cần xác nhận. Bước tiếp theo sau khi ghi nhận kết quả là D11 — wishlist.
+
+### Bàn giao D11 — 17/11/2026
+
+- Thêm `features/wishlist` với DTO viết tay, API GET/POST/DELETE và cache `['wishlist', userId]`. `/account/wishlist` nằm dưới RequireAuth và AccountLayout, có loading/error/empty/refetch, grid responsive và ảnh dự phòng. Menu tài khoản và UserMenu đã nối tới trang này.
+- `WishlistToggleButton` được xuất qua `index.ts` để ProductCard/PDP dùng chung. Nút có aria-pressed/nhãn, nằm ngoài Link. Guest nhận lời nhắc đăng nhập, giữ đích quay lại qua location.state.from. Whitelist chỉ mở thêm wishlist, catalog list và product detail có ID hợp lệ, giữ search/hash. Không tự thực hiện thao tác thêm sau login.
+- `useWishlistState` dẫn xuất Set productId từ dữ liệu GET và các mutation pending. Optimistic là lớp trạng thái tạm, không sửa DTO server hoặc tạo id/addedAt giả; lỗi kết thúc mutation sẽ bỏ lớp tạm. `submit` khóa mọi thao tác wishlist khác của cùng user trong lúc pending, kể cả bấm nhanh trước khi React render lại. Không xếp hàng thao tác hoặc tự retry khi reconnect.
+- Mutation chụp user/token, kiểm tra phiên trước và sau API; callback chỉ toast/refetch nếu phiên còn khớp. onSettled chờ GET lại đúng key với refetchType all, giữ khóa đến khi đối chiếu xong kể cả component đã unmount. DELETE 404 được xử lý như trạng thái đã bỏ và vẫn GET lại; POST 404 vẫn báo lỗi. Khi GET lỗi, nút chỉ tải lại, không đoán trạng thái yêu thích từ dữ liệu thiếu/cũ.
+- Wishlist dùng productId để gọi API và mở PDP. Không thêm thẳng vào giỏ vì chưa có variant. Sản phẩm không ACTIVE/hết hàng khóa CTA chọn phiên bản, vẫn cho bỏ yêu thích. Cờ inStock hiện do backend cộng tồn kho các variant, chưa lọc trạng thái variant; PDP/backend tiếp tục xác minh khả năng mua thực tế.
+- Typecheck, lint, build với `npm run build -- --outDir dist/d11-frontend`, `verify:wishlist` (11/11), catalog (13/13), checkout (24/24), reviews (7/7) đạt. Bộ kiểm tra wishlist dùng QueryClient/MutationObserver thật và API giả lập: ID chuỗi lớn, auth/signal, optimistic/rollback, khóa gửi trùng, chờ GET, GET lỗi, DELETE 404, đổi phiên, guest, điều kiện CTA và whitelist login. Bộ catalog thêm mock wishlist trong ca kiểm tra danh mục của PDP để giữ đúng phạm vi kiểm tra. Build còn cảnh báo chunk trên 500 kB.
+- Chưa kiểm thử API bằng tài khoản thật hoặc giao diện tương tác trên trình duyệt. Kết nối localhost trong lượt kiểm tra bị chặn bởi quyền môi trường; không suy ra backend đã tắt hay đã kiểm thử thành công. Cần thử đồng bộ card/PDP/list, reload sau thêm/xóa, lỗi mạng, bấm nhanh/hai sản phẩm, logout/đổi user khi request chậm, guest quay lại đúng trang và bàn phím/mobile.
+- D11 đã có code, còn kiểm thử tích hợp; không thay trạng thái kiểm thử D10/D8. Sau khi xác nhận các ca còn chờ, tiếp tục D12 — yêu cầu trả hàng. Chưa commit/push.
+
+### Điều chỉnh UX D11 — 18/11/2026
+
+- Thông báo wishlist chuyển riêng xuống góc dưới bên phải để tránh che header. Thành công hiển thị 1,5 giây, lỗi 3 giây; lời nhắc guest 4 giây để có thời gian bấm Đăng nhập. Dùng ID ổn định để các thông báo cùng loại thay thế nhau thay vì xếp chồng.
+- Ảnh và tên trong WishlistCard đều là Link tới `/products/{productId}`, hỗ trợ bàn phím. Hết hàng/ngừng bán vẫn cho mở chi tiết; chỉ CTA Chọn phiên bản bị khóa. Nút tim nằm ngoài Link. `features/wishlist/index.ts` có public export WishlistToggleButton cho catalog sử dụng.
+- Lint, build (gồm typecheck) và verify:wishlist (11/11) đạt sau điều chỉnh. Đã cập nhật kiểm tra render cho link ảnh/tên và trường hợp hết hàng/ngừng bán. Chưa kiểm thử tương tác trình duyệt; build vẫn có cảnh báo chunk trên 500 kB.

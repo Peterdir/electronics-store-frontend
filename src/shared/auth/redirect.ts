@@ -32,6 +32,7 @@ export function getLoginDestination(
             }
             
             const orderDetailMatch = /^\/account\/orders\/([^/]+)\/?$/.exec(url.pathname);
+            const productDetailMatch = /^\/products\/([^/]+)\/?$/.exec(url.pathname);
             const allowed =
                 url.pathname === "/" ||
                 url.pathname === "/account" ||
@@ -40,6 +41,9 @@ export function getLoginDestination(
                 url.pathname === "/account/password" ||
                 url.pathname === "/account/orders" ||
                 url.pathname === "/account/reviews" ||
+                url.pathname === "/account/wishlist" ||
+                url.pathname === "/products" ||
+                isPositiveLongId(productDetailMatch?.[1]) ||
                 isPositiveLongId(orderDetailMatch?.[1]) ||
                 (
                     url.pathname === "/admin" &&

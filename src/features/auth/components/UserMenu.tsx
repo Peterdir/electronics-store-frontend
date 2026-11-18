@@ -1,6 +1,6 @@
 import { Link } from "react-router"
 import { Menu } from "@base-ui/react/menu"
-import { ChevronDown, LogOut, Package, UserRound } from "lucide-react"
+import { ChevronDown, Heart, LogOut, Package, UserRound } from "lucide-react"
 import { useLogout, useMe } from "@/features/auth/queries"
 import { useSession } from "@/shared/auth/session.store"
 
@@ -61,6 +61,9 @@ export function UserMenu() {
                         </Menu.LinkItem>
                         <Menu.LinkItem render={<Link to="/account/orders" />} closeOnClick className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm outline-none data-[highlighted]:bg-accent">
                             <Package aria-hidden="true" className="size-4" />Đơn hàng của tôi
+                        </Menu.LinkItem>
+                        <Menu.LinkItem render={<Link to="/account/wishlist" />} closeOnClick className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm outline-none data-[highlighted]:bg-accent">
+                            <Heart aria-hidden="true" className="size-4" />Sản phẩm yêu thích
                         </Menu.LinkItem>
                         <Menu.Separator className="mx-2 my-1 h-px bg-border" />
                         <Menu.Item disabled={logoutMutation.isPending} closeOnClick={false} onClick={handleLogout} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-3 text-sm text-destructive outline-none data-[highlighted]:bg-destructive/10 data-[disabled]:opacity-50">

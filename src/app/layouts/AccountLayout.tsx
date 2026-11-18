@@ -21,6 +21,10 @@ const accountLinks = [
     to: "/account/reviews",
     label: "Đánh giá của tôi",
   },
+  {
+    to: "/account/wishlist",
+    label: "Sản phẩm yêu thích",
+  },
 ];
 
 export function AccountLayout() {

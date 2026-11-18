@@ -154,6 +154,7 @@ test("Mở chi tiết sản phẩm khác danh mục cũng dọn so sánh sau khi
     "@/features/catalog/components/SpecTable": { SpecTable: () => null },
     "@/features/catalog/components/ProductPurchaseOptions": { ProductPurchaseOptions: () => null },
     "@/features/catalog/components/CompareToggleButton": { CompareToggleButton: () => null },
+    "@/features/wishlist": { WishlistToggleButton: () => null },
   });
   const { ProductDetailPage } = load("@/features/catalog/pages/ProductDetailPage");
   function render() {

@@ -32,6 +32,7 @@ import { ChangePasswordPage } from "@/features/auth/pages/ChangePasswordPage";
 import { OrdersPage } from "@/features/orders/pages/OrdersPage";
 import { OrderDetailPage } from "@/features/orders/pages/OrderDetailPage";
 import { ReviewsPage } from "@/features/reviews/pages/ReviewsPage";
+import { WishlistPage } from "@/features/wishlist/pages/WishlistPage";
 
 
 export const router = createBrowserRouter([
@@ -132,6 +133,10 @@ export const router = createBrowserRouter([
                     {
                         path: "reviews",
                         Component: ReviewsPage,
+                    },
+                    {
+                        path: "wishlist",
+                        Component: WishlistPage,
                     },
                 ],
             },

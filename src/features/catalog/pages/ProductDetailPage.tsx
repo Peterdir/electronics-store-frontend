@@ -7,6 +7,7 @@ import { ProductPurchaseOptions } from "../components/ProductPurchaseOptions";
 import { useEffect, useState } from "react";
 import { CompareToggleButton } from "../components/CompareToggleButton";
 import { useCompare } from "../compare.store";
+import { WishlistToggleButton } from "@/features/wishlist";
 
 export function ProductDetailPage() {
     const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
@@ -94,7 +95,10 @@ export function ProductDetailPage() {
                         {product.name}
                     </h1>
 
-                    <CompareToggleButton id={product.id} name={product.name} categoryName={product.categoryName} />
+                    <div className="flex flex-wrap gap-2">
+                        <CompareToggleButton id={product.id} name={product.name} categoryName={product.categoryName} />
+                        <WishlistToggleButton productId={product.id} productName={product.name} />
+                    </div>
 
                     {product.averageRating !== null && (
                         <p>Đánh giá trung bình: {product.averageRating.toFixed(1)}/5</p>

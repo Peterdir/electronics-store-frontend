@@ -7,4 +7,5 @@ export const qk = {
     addresses: ["addresses"] as const,
     orders: ["orders"] as const,
     reviews: ["reviews"] as const,
+    wishlist: ["wishlist"] as const,
 }

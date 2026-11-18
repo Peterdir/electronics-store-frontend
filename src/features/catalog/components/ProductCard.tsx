@@ -3,6 +3,7 @@ import { formatVND } from "@/lib/format";
 import { useState } from "react";
 import { Link } from "react-router";
 import { CompareToggleButton } from "./CompareToggleButton";
+import { WishlistToggleButton } from "@/features/wishlist";
 
 interface ProductCardProps {
   product: ProductResponse;
@@ -50,7 +51,10 @@ export function ProductCard({ product }: ProductCardProps) {
                     {formatVND(product.basePrice)}
                 </p>
 
-                <CompareToggleButton id={product.id} name={product.name} categoryName={product.categoryName} />
+                <div className="flex flex-wrap gap-2">
+                    <CompareToggleButton id={product.id} name={product.name} categoryName={product.categoryName} />
+                    <WishlistToggleButton productId={product.id} productName={product.name} />
+                </div>
             </div>
         </article>
     )
