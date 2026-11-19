@@ -2,7 +2,7 @@
 
 > Ngày lập: **07/11/2026**. Đối chiếu frontend tại HEAD `7df522e`; working tree sạch trước khi tạo tài liệu.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase3.md](phase3.md), source frontend và source tham chiếu tại `../ecommerce-backend`.
-> **Điểm tiếp tục — cập nhật 17/11/2026: D11 đã có code wishlist, chờ kiểm thử tích hợp.** Có trang danh sách, bỏ yêu thích và nút tim đồng bộ ở ProductCard/PDP. D10 đã có code sửa/xóa đánh giá, vẫn chờ kiểm thử tích hợp; backend sửa review nằm trong commit `3606098` và `46a2c1c`. Người dùng đã báo kiểm thử D9/D9a không gặp vấn đề. D8 vẫn còn ca tích hợp cần xác nhận theo bàn giao riêng.
+> **Điểm tiếp tục — cập nhật 18/11/2026: D12 đã triển khai frontend và chạy kiểm tra tự động.** Tiếp tục kiểm thử D12 với backend và trình duyệt, rồi ghi kết quả hồi quy D13 để chốt Phase 4. D8/D10/D11 vẫn còn ca tích hợp theo các bàn giao trước. Người dùng đã báo kiểm thử D9/D9a không gặp vấn đề.
 > Phase 3: C1–C12 đã được chốt trong phạm vi ghi ở `phase3.md`; C12 hoàn thành theo xác nhận thử VNPay của người dùng ngày 07/11/2026. **C13 còn hồi quy tổng thể**, không tự đánh dấu Phase 3 hoàn tất và không giao lại code C12. Có thể bắt đầu phần tài khoản độc lập; kiểm tra các luồng checkout/payment liên quan khi tích hợp D5–D8 và chốt D13.
 
 ## 1. Cách thực hiện
@@ -23,10 +23,10 @@
 | Điều hướng đăng nhập | `RequireAuth` giữ `location.state.from`; whitelist có orders detail, reviews, wishlist, catalog list/detail | Hồi quy đích quay lại sau login, giữ search/hash và chặn URL ngoài |
 | Đơn hàng | `/account/orders` lấy danh sách từ API, có lọc và phân trang. Checkout COD/VNPay có bản xác nhận đơn | Chi tiết lấy từ server, đường dẫn sau checkout, hủy, thanh toán lại, mua lại |
 | Thanh toán | `features/payment` có redirect helper, API return public và trang kết quả | Dùng lại cho thanh toán đơn đã có; nối đường xem đơn và làm mới dữ liệu |
-| Đánh giá/yêu thích/trả hàng | Đã có `features/reviews` và `features/wishlist`; chưa có `features/returns` | Kiểm thử tích hợp D10/D11; tạo returns ở D12 |
+| Đánh giá/yêu thích/trả hàng | Đã có `features/reviews`, `features/wishlist` và `features/returns` | Kiểm thử tích hợp D10–D12 |
 | Shared | ID dạng string; enum đơn/thanh toán/trả hàng; `formatVND`; `normalizePage`; cache theo user ở hồ sơ/cart/địa chỉ | Thêm query keys đang dùng, format ngày, badge trạng thái, dialog xác nhận, chọn ảnh khi cần |
 | UI catalog | ProductCard/PDP đã có so sánh và nút wishlist; PDP có `averageRating` và chọn variant | Hồi quy wishlist giữa các màn hình; chưa có API đọc danh sách review công khai |
-| Kiểm tra | `lint`, `typecheck`, `build`, `verify:checkout`, `verify:catalog`, `verify:reviews`, `verify:wishlist` trong `package.json` | Chạy kiểm tra phù hợp với phần thay đổi; không coi script giả lập là thử backend |
+| Kiểm tra | `lint`, `typecheck`, `build`, `verify:checkout`, `verify:catalog`, `verify:profile`, `verify:reviews`, `verify:wishlist`, `verify:returns` trong `package.json` | Chạy kiểm tra phù hợp với phần thay đổi; không coi script giả lập là thử backend |
 
 Không nằm trong Phase 4: giao diện admin P5, policy B11, phần còn hoãn của B12, guest order tracking, gửi email xác nhận đơn và lịch sử trả hàng khi backend chưa hỗ trợ. Giữ các việc này trong backlog, không đánh dấu hoàn thành theo Phase 4.
 
@@ -43,8 +43,8 @@ Theo yêu cầu ngày 14/11/2026, upload ảnh đánh giá được đưa vào P
 | Ảnh review | Từ `b07beb3`, POST nhận JSON không ảnh hoặc multipart với part `image`; server sinh URL khi lưu file | D9a hiển thị `imageUrl` trong lịch sử. D10 xử lý giữ/thay/bỏ ảnh khi sửa |
 | Tạo review | Từ `b07beb3`, `createReview` kiểm tra chủ dòng đơn, trạng thái DELIVERED, product/variant và review trùng | UI cho chọn từ pending list. Backend xác minh lại khi tạo |
 | Null trong DTO | `OrderItemResponse.variantId` có thể null; `ReviewResponse.productId` có thể null khi sản phẩm bị xóa; pending review chưa map `productImage` | Type/fallback phải phản ánh null; không tạo link sản phẩm từ `variantId` |
-| Tạo yêu cầu trả hàng | `createReturnRequest` lưu request PENDING nhưng **không đổi order sang RETURN_REQUESTED** | Hiện thành công từ `ReturnRequestResponse`, refetch đơn nhưng không tự gán trạng thái đơn. Muốn đúng kỳ vọng master phải phối hợp backend |
-| Xem lại yêu cầu trả hàng | Customer controller chỉ có POST, không có GET list/detail | Không tạo trang theo dõi giả. Sau reload không hứa khôi phục trạng thái pending; 409 được xử lý rõ |
+| Tạo yêu cầu trả hàng | Cập nhật 18/11/2026: service lưu request PENDING và đổi order sang RETURN_REQUESTED trong cùng transaction | Refetch đơn sau thành công. Tab customer lọc trạng thái tổng hợp từ các request, bao gồm dữ liệu cũ. Chi tiết từng dòng có returnStatus |
+| Xem lại yêu cầu trả hàng | Customer controller có POST. GET đơn bổ sung returnStatus theo dòng; chưa có GET request list/detail | Reload chi tiết đơn hiện trạng thái theo dòng. Mã yêu cầu, lý do và ảnh chi tiết vẫn lấy từ response POST trong lượt gửi |
 | Timeline đơn | DTO chỉ có `createdAt`, `updatedAt`, `cancelledAt`; không có lịch sử từng lần chuyển trạng thái | Hiện tiến trình/trạng thái hiện tại, chỉ gắn thời gian có thật; `updatedAt` không phải ngày giao hàng chắc chắn |
 | Tài khoản bị khóa | D4 nhận diện HTTP 400 với thông báo `This account has been locked. Please contact support` có hoặc không có dấu chấm cuối | Client chỉ clear phiên khi Bearer token của request còn khớp phiên hiện tại. Provider hiển thị thông báo qua sự kiện `locked` |
 
@@ -165,8 +165,8 @@ Không đặt token vào query key. Nếu giữ dữ liệu trang trước, ch�
 | D9a | Upload một ảnh tùy chọn khi tạo review, xem ảnh ở history | D9; backend multipart/validation/storage | Đã triển khai backend và frontend. Người dùng báo kiểm thử không gặp vấn đề |
 | D10 | Sửa/xóa đánh giá | D9 | Đã có backend và frontend ngày 17/11/2026; chờ kiểm thử tích hợp với tài khoản thật |
 | D11 | Wishlist và nút tim ở catalog | D1, catalog | Đã có frontend ngày 17/11/2026; kiểm tra tĩnh và 11 ca giả lập đạt; chờ kiểm thử tích hợp |
-| D12 | Tạo yêu cầu trả hàng và gửi ảnh | D5, dữ liệu DELIVERED | Chưa làm; giới hạn theo mục 2.1 |
-| D13 | Hồi quy, ghi nhận phạm vi hoàn thành và bàn giao P5 | Các mốc trên | Chưa làm |
+| D12 | Tạo yêu cầu trả hàng và gửi ảnh | D5, dữ liệu DELIVERED | Đã có frontend và backend đồng bộ trạng thái ngày 18/11/2026. Ảnh theo lý do. `verify:returns` (12/12), backend liên quan (61/61) đạt. Còn kiểm thử tích hợp |
+| D13 | Hồi quy, ghi nhận phạm vi hoàn thành và bàn giao P5 | Các mốc trên | Đã chạy các bộ hồi quy tự động. Còn kiểm thử backend/trình duyệt và ghi kết quả bàn giao |
 
 Thứ tự thực hiện, cập nhật 14/11/2026: D1 → D2 → D3 → D4 → D5 → D6 → D7 → D8 → D9 → D9a → D10 → D11 → D12 → D13. D0 được bỏ qua như một mốc riêng. Nếu backend chưa gỡ phần upload/sửa review, ghi rõ D9a/D10 còn thiếu và tiếp tục D11/D12; không chặn cả phase vì một endpoint.
 
@@ -375,13 +375,13 @@ Wishlist là cấp sản phẩm, không có variantId đủ để thêm cart. CT
 
 **Contract:** POST multipart `/api/return-requests` → **201 ReturnRequestResponse**. Append `orderItemId`, `quantity`, `reason`, `description` nếu có và nhiều part cùng tên **`images`**. Để trình duyệt tạo Content-Type/boundary cho FormData.
 
-**Thực hiện:** lấy orderId/orderItemId từ URL, GET chi tiết đơn có auth, tìm item thuộc đơn; không tin navigation state là dữ liệu chuẩn. Điều kiện gợi ý trên UI: DELIVERED, trong 7 ngày từ updatedAt theo service hiện tại; backend quyết định cuối cùng, đồng hồ client có thể lệch. Đây là hạn theo code hiện tại, không gọi updatedAt là deliveredAt.
+**Thực hiện:** lấy orderId/orderItemId từ URL, GET chi tiết đơn có auth, tìm item thuộc đơn. Đơn DELIVERED hoặc các trạng thái hậu mãi RETURN_REQUESTED/RETURNED/RETURN_REJECTED cho gửi yêu cầu với dòng chưa có returnStatus. Backend dùng returnDeadline cố định sau yêu cầu đầu tiên. Đơn cũ thiếu deadline dùng updatedAt + 7 ngày làm fallback. Frontend dùng returnDeadline khi có và đối chiếu cùng điều kiện, backend quyết định cuối cùng.
 
-Validate số lượng nguyên 1..item.quantity, lý do không rỗng, 1–5 file không rỗng, JPG/JPEG/PNG/WebP, tối đa **5 × 1024 × 1024 byte mỗi file**; kiểm tra giới hạn tổng request theo môi trường D0. Có preview, xóa/chọn lại và revoke object URLs khi bỏ ảnh/unmount. Không lưu File/base64 vào Zustand persist/localStorage.
+Validate số lượng nguyên 1..item.quantity, lý do không rỗng. Theo điều chỉnh ngày 18/11/2026, hai lý do “Sản phẩm bị lỗi hoặc không hoạt động” và “Sản phẩm bị hư hỏng, móp méo hoặc vỡ” yêu cầu ít nhất một ảnh. Các lý do phổ biến còn lại và lý do khách nhập cho ảnh tùy chọn. Mọi ảnh gửi lên đều phải không rỗng, JPG/JPEG/PNG/WebP, tối đa **5 × 1024 × 1024 byte mỗi file** và tối đa 5 ảnh; kiểm tra giới hạn tổng request theo môi trường D0. Có preview, xóa/chọn lại và revoke object URLs khi bỏ ảnh/unmount. File được giữ trong bộ nhớ của form.
 
-Thành công hiện mã yêu cầu, trạng thái PENDING và dữ liệu response; khóa gửi lại trong màn hiện tại, refetch order. Source hiện chưa đổi orderStatus và chưa có GET request của customer: không ghi “đơn đã chuyển RETURN_REQUESTED”, không coi đơn còn DELIVERED là chưa từng gửi. 409 báo đã có yêu cầu. Sau reload chưa thể tải lại pending request từ server; hướng người dùng giữ mã yêu cầu/liên hệ cửa hàng. Muốn theo dõi đầy đủ cần backend bổ sung API đọc và thống nhất chuyển trạng thái; giữ ngoài phần FE có thể hoàn thành hiện tại.
+Thành công hiện mã yêu cầu, trạng thái PENDING và dữ liệu response; khóa gửi lại trong màn hiện tại, refetch order. Backend đổi đơn sang RETURN_REQUESTED. Chi tiết đơn và danh sách nhận trạng thái từ GET. Sau reload, returnStatus trong mỗi dòng cho biết trạng thái yêu cầu và khóa tạo trùng; HTTP 409 vẫn xử lý khi gửi từ dữ liệu cũ. Customer chưa có API list/detail request để đọc lại đầy đủ mã, lý do và ảnh. Khi cần đối chiếu, dùng mã yêu cầu trên màn xác nhận.
 
-**Kiểm tra:** hợp lệ, thiếu ảnh, 6 ảnh, sai loại/quá dung lượng, vượt số lượng, hết hạn, URL sửa ID, item khác chủ, gửi trùng, lỗi multipart/413 và lỗi mạng. Timeout chưa rõ kết quả không tự retry upload; vì chưa có API tra cứu, giữ trạng thái chưa xác nhận và hướng dẫn đối chiếu, không hứa GET order sẽ xác nhận được yêu cầu.
+**Kiểm tra:** hợp lệ, thiếu ảnh với lý do lỗi/hư hỏng, lý do khác gửi thành công khi thiếu part images, đổi lý do sau lỗi ảnh, 6 ảnh, sai loại/quá dung lượng kể cả ảnh tùy chọn, vượt số lượng, hết hạn, URL sửa ID, item khác chủ, gửi trùng, lỗi multipart/413 và lỗi mạng. Timeout chưa rõ kết quả không tự retry upload; vì chưa có API tra cứu, giữ trạng thái chưa xác nhận và hướng dẫn đối chiếu, không hứa GET order sẽ xác nhận được yêu cầu.
 
 **Commit:** `feat(returns): submit return requests with evidence images`.
 
@@ -427,7 +427,7 @@ Tất cả hàng dưới đây **chưa chạy trong lượt lập kế hoạch**
 | Reviews | Pending/history; tạo/409; sửa sau reload; xóa 204 | Payload đúng ID, cache hai tab, rating catalog; kiểm tra quyền tại backend |
 | Ảnh review D9a/D10 | Upload/preview/reload; giữ/thay/bỏ ảnh; file sai/413; DB rollback | Field multipart, HTTP, URL ảnh server, file cũ/mới sau commit/rollback; hồi quy storage dùng chung |
 | Wishlist | Hai vị trí render, rollback, hai item đồng thời, guest | ProductId dùng trong endpoint, state sau refetch |
-| Returns | Hợp lệ, ảnh/số lượng/hạn sai, khác chủ, trùng 409 | Multipart field names, 201/4xx, request status và order status thực tế |
+| Returns | Hợp lệ, ảnh/số lượng/hạn sai, khác chủ, trùng 409 | 18/11/2026: 8 ca Node với API giả lập đạt, gồm kiểm tra field và boundary multipart, trạng thái UI, hạn, đổi phiên và gửi lặp. Cần ghi 201/4xx cùng trạng thái request/đơn thực tế từ trình duyệt |
 | Hồi quy P3 | User/guest COD và VNPay, địa chỉ, giỏ/merge | Checklist C13 liên quan, giữ nguyên nguồn xác nhận |
 | UI/chất lượng | Mobile/desktop, keyboard/dialog, scripts | Kích thước thử, lỗi còn lại, lệnh và kết quả |
 
@@ -587,3 +587,48 @@ Các vấn đề thấy trực tiếp trong source cần xử lý khi triển kh
 - Thông báo wishlist chuyển riêng xuống góc dưới bên phải để tránh che header. Thành công hiển thị 1,5 giây, lỗi 3 giây; lời nhắc guest 4 giây để có thời gian bấm Đăng nhập. Dùng ID ổn định để các thông báo cùng loại thay thế nhau thay vì xếp chồng.
 - Ảnh và tên trong WishlistCard đều là Link tới `/products/{productId}`, hỗ trợ bàn phím. Hết hàng/ngừng bán vẫn cho mở chi tiết; chỉ CTA Chọn phiên bản bị khóa. Nút tim nằm ngoài Link. `features/wishlist/index.ts` có public export WishlistToggleButton cho catalog sử dụng.
 - Lint, build (gồm typecheck) và verify:wishlist (11/11) đạt sau điều chỉnh. Đã cập nhật kiểm tra render cho link ảnh/tên và trường hợp hết hàng/ngừng bán. Chưa kiểm thử tương tác trình duyệt; build vẫn có cảnh báo chunk trên 500 kB.
+
+### Bàn giao D12 — 18/11/2026
+
+- Chi tiết đơn có link **Yêu cầu trả hàng** trên từng dòng đủ điều kiện. Route `returns/new` thuộc nhóm tài khoản. Sau đăng nhập, whitelist giữ cả hai ID trên URL. Trang dùng GET chi tiết đơn để xác minh dòng hàng trước khi mở nút gửi, kể cả khi cache đã có dữ liệu.
+- Cửa sổ trả hàng là 7 ngày tính từ `updatedAt` theo service. Frontend kiểm tra lại lúc gửi và dùng đồng hồ thiết bị. Backend xác minh chủ sở hữu, thời gian, số lượng và ảnh. Source backend hiện có `max-file-size=5MB`, `max-request-size=30MB` và handler 413. Cần xác nhận giới hạn thực của môi trường chạy.
+- Form dùng React Hook Form và Zod. Quy tắc cho từng ảnh được dùng chung với review. File chỉ nằm trong bộ nhớ, preview thu hồi object URL khi ảnh bị gỡ hoặc component unmount. `FormData` gửi một part `images` cho mỗi ảnh, giữ `orderItemId` dạng chuỗi.
+- Mutation khóa gửi lặp theo tài khoản và dòng đơn, kiểm tra user/token trước và sau POST. Response tạo thành công cung cấp mã yêu cầu và trạng thái **Chờ xử lý**. Frontend làm mới cache chi tiết/danh sách đơn từ server. Customer API hiện chỉ hỗ trợ tạo yêu cầu, nên mã trên màn xác nhận chỉ có trong lượt gửi. HTTP 409 báo đã tồn tại. Timeout hoặc 5xx hiện kết quả chưa xác nhận và hướng dẫn liên hệ cửa hàng bằng mã đơn.
+- Build với `npm run build -- --outDir dist/d12-frontend` (gồm typecheck), lint, `verify:returns` (8/8), checkout (24/24), catalog (13/13), profile (7/7), reviews (7/7) và wishlist (11/11) đạt. Vite còn cảnh báo chunk trên 500 kB. Các ca Node dùng API giả lập và render React tĩnh. Thử kết nối `localhost:8081` chưa nhận được phản hồi HTTP. Chưa gửi POST D12 bằng tài khoản thật hoặc kiểm tra UI tương tác.
+- Thử D12 bằng một đơn test còn hạn và đã giao. Kiểm tra preview/xóa ảnh, Network có GET đơn trước POST, POST multipart trả 201, mã yêu cầu và trạng thái `PENDING`, rồi GET đơn trả trạng thái từ server. Tải lại và thử lại trên chính dòng đó để xác nhận 409. Chạy thêm các ca dữ liệu sai, đơn tài khoản khác, lỗi tải lên và timeout theo mục 6. Khi các luồng tích hợp trong D13 có kết quả, ghi ngày, môi trường và bằng chứng trước khi chốt Phase 4.
+
+### Điều chỉnh nút thao tác trong chi tiết đơn — 18/11/2026
+
+- Nút Đánh giá dùng nền primary và biểu tượng sao. Nút Yêu cầu trả hàng dùng viền trung tính và biểu tượng quay lại. Hai nút có bo góc, vùng bấm tối thiểu 44 px, hiệu ứng hover/nhấn và vòng focus bàn phím. Nhãn hỗ trợ trình đọc màn hình kèm tên sản phẩm.
+- Điện thoại xếp nút dọc, chiếm chiều rộng dòng sản phẩm. Từ breakpoint sm, nút nằm cạnh nhau dưới thông tin sản phẩm và tự xuống hàng khi thiếu chỗ. Màu dùng design tokens để phù hợp cả giao diện sáng và tối.
+- ESLint cho `OrderItems.tsx` và build (gồm typecheck) đạt. Build còn cảnh báo chunk trên 500 kB. Chưa kiểm tra trực quan trên trình duyệt sau chỉnh sửa.
+
+### Chọn lý do trả hàng — 18/11/2026
+
+- Trường lý do mở popup `ReturnReasonPicker`, có sáu lựa chọn phổ biến về lỗi hoạt động, hư hỏng, sai sản phẩm/phiên bản, sai mô tả, thiếu phụ kiện và dấu hiệu đã qua sử dụng. Lựa chọn Lý do khác cho nhập nội dung riêng.
+- Khách chọn một lý do rồi xác nhận để điền vào form. Hủy hoặc đóng popup bỏ thay đổi tạm. Mở lại popup hiển thị lý do đã xác nhận. Controller nối giá trị với React Hook Form và gửi chuỗi reason trong multipart như contract hiện tại.
+- Popup dùng Base UI Dialog, có lựa chọn radio dùng bàn phím, vùng nội dung cuộn khi thiếu chiều cao và nút đóng/xác nhận riêng. Cần thử mở/chọn/xác nhận, hủy sau khi đổi lựa chọn, nhập lý do khác và gửi bằng tài khoản thật.
+- ESLint các file thay đổi, build (gồm typecheck) và `verify:returns` (8/8) đạt. Chưa kiểm thử popup tương tác trên trình duyệt. Build còn cảnh báo chunk trên 500 kB.
+
+### Ảnh trả hàng theo lý do — 18/11/2026
+
+- Frontend đặt danh sách lý do và cờ requiresImages trong `features/returns/reasons.ts`. Hai lý do lỗi/không hoạt động và hư hỏng/móp méo/vỡ bắt buộc ảnh. Các lý do còn lại và nội dung khách nhập cho ảnh tùy chọn. Zod kiểm tra theo lý do, form cập nhật nhãn bắt buộc/tùy chọn và kiểm tra lại lỗi ảnh ngay khi thay lý do. Ảnh đã chọn vẫn được giữ khi đổi lý do.
+- Backend `ReturnRequestServiceImpl` dùng cùng hai nhãn lý do để kiểm tra ảnh. Request thiếu images được chuẩn hóa thành danh sách rỗng, imageUrls trong response là mảng rỗng. Giới hạn số lượng, định dạng và dung lượng tiếp tục áp dụng cho mọi ảnh gửi lên. Các yêu cầu vẫn đi qua quy trình duyệt PENDING.
+- Kiểm thử tích hợp cần gửi một lý do khác với 0 ảnh và xác nhận POST trả 201, imageUrls rỗng. Thử đổi sang lý do hư hỏng để xác nhận form bắt ảnh. Kiểm tra thêm lỗi ảnh tùy chọn và đổi lại lý do sau khi form báo thiếu ảnh.
+- ESLint phần returns, build frontend và `verify:returns` (9/9) đạt. Backend chạy `ReturnRequestServiceImplTest` trên Java 21, 10 ca đạt, gồm null/rỗng, hai nhóm lý do, ảnh sai và ảnh hợp lệ. Đây là kiểm thử service với repository/storage giả lập. Chưa gửi API thật trên trình duyệt sau thay đổi. Vite còn cảnh báo chunk lớn; báo cáo JaCoCo cảnh báo dữ liệu coverage cũ không khớp một số class.
+
+### Đồng bộ trạng thái trả hàng — 18/11/2026
+
+- Backend tạo request PENDING và cập nhật order RETURN_REQUESTED trong cùng transaction. Dùng khóa ghi trên đơn khi tạo request, khóa request và đơn khi duyệt để tuần tự hóa các thao tác liên quan. Các dòng chưa tạo yêu cầu tiếp tục được trả trong các trạng thái hậu mãi, theo cùng hạn của đơn. Khi duyệt, trạng thái tổng hợp ưu tiên còn PENDING, sau đó có APPROVED, sau đó REJECTED. Đây là quyết định triển khai cho đơn trả một phần.
+- `Order.getEffectiveOrderStatus()` và truy vấn customer `findByUserIdAndOrderStatus` cùng áp dụng thứ tự ưu tiên. Vì vậy request cũ đang chờ vẫn đưa đơn vào tab Yêu cầu trả hàng khi trạng thái lưu trên đơn còn DELIVERED. Khi hết request chờ, có ít nhất một request được chấp nhận thì đơn vào Đã trả hàng; nếu các request đều bị từ chối thì vào Từ chối trả hàng. Tab là bộ lọc đơn, mỗi dòng có trạng thái chi tiết riêng.
+- Thêm cột nullable `orders.return_deadline` qua field `Order.returnDeadline`. Cấu hình hiện tại `spring.jpa.hibernate.ddl-auto=update` sẽ cập nhật schema khi backend khởi động. Với môi trường quản lý schema riêng, cần migration thêm cột timestamp nullable tương ứng trước khi chạy bản mới. Hạn được chụp từ updatedAt + 7 ngày trước lần thay đổi trạng thái đầu tiên. Dữ liệu cũ chưa có cột hạn dùng fallback từ updatedAt hiện có, chưa khôi phục được thời điểm giao thực tế nếu timestamp cũ từng thay đổi.
+- GET chi tiết đơn trả `returnDeadline`; các dòng trong list/detail có `returnStatus`. Frontend hiện trạng thái dòng đã gửi, bỏ nút tạo trùng và giữ nút cho dòng còn lại. Trang tạo cũng kiểm tra dòng đã có request. Các cờ hủy/thanh toán được xử lý như đơn đã giao, và luồng đánh giá tiếp tục nhận các trạng thái hậu mãi để tránh mất khả năng đánh giá khi một dòng gửi trả hàng.
+- Đọc code theo thứ tự `OrderStatus.hasBeenDelivered` → `Order.getReturnDeadline/getEffectiveOrderStatus` → `ReturnRequestServiceImpl.createReturnRequest/processReturnRequest` → `OrderRepository.findByUserIdAndOrderStatus` → mapper `OrderServiceImpl` → frontend `returns/eligibility.ts` và `orders/components/OrderItems.tsx`. Request APPROVED vẫn hoàn kho theo cơ chế backend hiện có.
+- Lint toàn frontend, build (gồm typecheck), `verify:returns` (12/12), checkout (24/24) và reviews (7/7) đạt. Backend chạy returns/order/admin-order/review, 61 ca đạt. Hibernate SessionFactory được dựng với metadata entity và cấu hình không kết nối DB để kiểm tra hai HQL customer order filter và pending reviews, cả hai đạt. Đây là kiểm tra query và service, chưa phải kiểm thử SQL/HTTP với database thật. Vite còn cảnh báo chunk lớn; JaCoCo còn cảnh báo coverage cũ không khớp một số class.
+- Kiểm thử tích hợp tiếp theo gồm đơn hai sản phẩm, gửi trả dòng A rồi mở tab Yêu cầu trả hàng; reload chi tiết và gửi dòng B trong cùng hạn; xử lý từng request để xác nhận đơn giữ RETURN_REQUESTED khi còn request chờ; kiểm tra trạng thái tổng hợp sau khi xử lý hết. Kiểm tra thêm request cũ và GET thiếu quyền, ảnh tùy chọn, gửi trùng từ tab khác và thao tác gửi/duyệt đồng thời.
+
+### Lỗi tích hợp tab Yêu cầu trả hàng — 19/11/2026
+
+- Người dùng cung cấp stack trace lúc 09:30:16, lỗi `Could not determine ValueMapping for SqmParameter: SqmNamedParameter(orderStatus)` tại `OrderRepository.findByUserIdAndOrderStatus`, qua `OrderServiceImpl.getMyOrders` dòng 64. Truy vấn so sánh tham số enum với CASE chưa ánh xạ được tham số khi chuyển sang SQL để thực thi.
+- Kiểm tra Hibernate trước đó mới xác nhận bước đọc HQL. Kết quả service test dùng repository giả lập chưa bao phủ lỗi thực thi này. Tab Yêu cầu trả hàng còn lỗi backend cần xử lý trước khi xác nhận tích hợp D12/D13 đạt.
+- Đã phân tích và đề xuất tách truy vấn theo trạng thái, dùng EXISTS cho các yêu cầu trả hàng và so sánh tham số trực tiếp với thuộc tính enum. Người dùng yêu cầu chỉ phân tích ở lượt báo lỗi. Chưa áp dụng bản sửa truy vấn trong lượt đó.
