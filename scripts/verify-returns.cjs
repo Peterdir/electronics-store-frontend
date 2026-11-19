@@ -49,6 +49,8 @@ function fixture(t) {
     const base = name.startsWith("@/") ? path.join(src, name.slice(2))
       : name.startsWith(".") ? path.resolve(path.dirname(parent), name) : null;
     if (!base) return require(name);
+    const alias = "@/" + path.relative(src, base).split(path.sep).join("/");
+    if (Object.hasOwn(mocks, alias)) return mocks[alias];
 
     const filename = [base + ".ts", base + ".tsx"].find(fs.existsSync);
     if (!filename) throw new Error(`Module missing: ${name}`);

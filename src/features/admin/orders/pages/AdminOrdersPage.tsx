@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { useDebounce } from "@/hooks/useDebounce";
 import { formatDateTime, formatVND } from "@/lib/format";
@@ -23,7 +23,11 @@ const columns: readonly DataTableColumn<OrderListAdminResponse, AdminOrderSortBy
   {
     id: "id",
     header: "Mã đơn",
-    cell: (order) => <span className="font-semibold">#{order.id}</span>,
+    cell: (order) => (
+      <Link to={`/admin/orders/${order.id}`} className="font-semibold text-primary underline underline-offset-4">
+        <span className="sr-only">Xem chi tiết đơn </span>#{order.id}
+      </Link>
+    ),
   },
   {
     id: "customer",

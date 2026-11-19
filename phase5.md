@@ -2,7 +2,7 @@
 
 > Ngày lập: **13/11/2026**. Đối chiếu frontend tại HEAD `87eaa75`; working tree sạch trước khi lập kế hoạch.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase4.md](phase4.md), source frontend và source backend tham chiếu tại `../ecommerce-backend`.
-> **Trạng thái — 19/11/2026: E1–E2 đã có code, chờ review và kiểm thử browser/backend; E3–E22 chưa triển khai.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy. Xem bàn giao cuối tài liệu.
+> **Trạng thái — 19/11/2026: E1–E3 đã có code, chờ review và kiểm thử browser/backend; E4–E22 chưa triển khai.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy. Xem bàn giao cuối tài liệu.
 > **Cách học bắt buộc: khi bắt đầu mỗi nhiệm vụ, sinh mã hướng dẫn theo từng bước và từng file để người dùng tự học, tự gõ code; cuối nhiệm vụ có nội dung commit.** Không tự triển khai source khi người dùng chỉ yêu cầu hướng dẫn.
 
 ## 1. Mục tiêu và điểm bắt đầu
@@ -192,7 +192,7 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 |---|---|---|---|
 | E1 | Admin shell, menu và guard theo quyền | Auth đang có | Đã code, chờ review và kiểm thử |
 | E2 | Danh sách đơn và DataTable server | E1 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
-| E3 | Chi tiết đơn admin | E2 | Chưa bắt đầu |
+| E3 | Chi tiết đơn admin | E2 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
 | E4 | Chuyển trạng thái xử lý/giao hàng | E3 | Chưa bắt đầu |
 | E5 | Hủy đơn có lý do | E3 | Chưa bắt đầu |
 | E6 | Danh mục và upload ảnh | E1 | Chưa bắt đầu |
@@ -251,6 +251,8 @@ Thứ tự mặc định E1 → E22. Có thể chuyển sang module độc lập
 **Commit cuối nhiệm vụ:** `feat(admin-orders): add searchable paginated order list`
 
 ### E3 — Chi tiết đơn quản trị
+
+**Code và hướng dẫn — 19/11/2026:** đã triển khai theo yêu cầu trực tiếp. Flow, từng file và cú pháp đã được giải thích trong chat; file hướng dẫn riêng đã xóa. Bộ test admin orders đã được khôi phục theo yêu cầu mới, chạy đạt 13/13; toàn bộ 7 bộ kiểm tra đạt 87/87. Kết quả và giới hạn xem bàn giao E3 cuối tài liệu.
 
 **Kết quả:** `/admin/orders/:id` reload được và hiển thị chi tiết từ GET `/api/admin/orders/{id}`.
 
@@ -560,9 +562,25 @@ Bước tiếp theo:
 - Query key theo `admin/userId/role/orders/list/params`, không có token và không giữ dữ liệu trang trước. Query chỉ chạy khi phiên còn hạn/có quyền, URL canonical và hết debounce. Truyền AbortSignal/token đã chụp, kiểm tra phiên trước/sau GET và signal trước khi trả kết quả vào cache. Không sửa lifecycle 401/403/logout hiện có.
 - Contract đã đọc lại từ `AdminOrderController`, `OrderListAdminResponse`, `OrderAdminServiceImpl` và `OrderRepository` tại repo backend. Keyword hiện tìm mã đơn/tên khách hoặc người nhận/điện thoại người nhận, không tìm email. List có email null; không gắn nhãn guest từ list. ID giữ string, `orderDate` chỉ là field hiển thị, sort ngày dùng `createdAt`.
 - Lint, typecheck và build đạt; build có chunk riêng `AdminOrdersPage` khoảng 8,16 kB. Cảnh báo chunk storefront/HeroScene trên 500 kB còn tồn tại, chưa xử lý trong E2.
-- `npm run verify:admin-orders`: **7/7 đạt**, dùng HTTP/hook giả lập và QueryClient/QueryObserver thật. Bao phủ parse/serialize/params URL, giữ khoảng trắng input và trim request, ID lớn dạng chuỗi/nullable email, normalize Spring Page, key/enabled theo quyền/phiên, đổi user/token/role/logout trước dispatch hoặc sau GET, hủy request tìm kiếm cũ và kết quả sai thứ tự, redirect/deep link theo role. Round trip URL không phải kiểm thử Back/Forward thật trên browser.
+- Kết quả kiểm tra tại thời điểm E2: **7/7 đạt**, dùng HTTP/hook giả lập và QueryClient/QueryObserver thật. Bao phủ parse/serialize/params URL, giữ khoảng trắng input và trim request, ID lớn dạng chuỗi/nullable email, normalize Spring Page, key/enabled theo quyền/phiên, đổi user/token/role/logout trước dispatch hoặc sau GET, hủy request tìm kiếm cũ và kết quả sai thứ tự, redirect/deep link theo role. Round trip URL không phải kiểm thử Back/Forward thật trên browser. Script test admin orders và lệnh npm tương ứng đã được khôi phục và mở rộng trong E3.
 - Đã giải thích flow đọc và từng file trong chat, gồm ví dụ UI page 2 → API page 1. Checklist browser gồm empty/nhiều trang, query sai, vượt trang, sort tiền, Back/Forward/reload, mạng chậm, 401/403/lỗi refetch, đổi tài khoản, mobile/bàn phím và tải chunk.
 - Sau review tự học, đã rút gọn `GetAdminOrdersParams` thành type alias của `AdminOrdersFilters` và đặt nút Xóa bộ lọc cao `h-10` bằng các input/select.
 - Chưa chạy browser hoặc API bằng tài khoản thật; chưa xác minh dữ liệu/phân trang/sort thực tế, chuyển trang vượt phạm vi và điều hướng history trên browser. Chưa triển khai E3–E5, chưa sửa backend. E1 vẫn còn kiểm thử theo bàn giao trước.
 - Trạng thái: **đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend**. Người dùng yêu cầu lưu commit E2 với nội dung `feat(admin-orders): add searchable paginated order list`; chưa push. Việc commit không thay thế kiểm thử tích hợp còn thiếu.
 - Bước tiếp theo: đọc hướng dẫn, chạy ứng dụng với backend, thử checklist và ghi kết quả thực tế; sau đó làm E3 để nối trang chi tiết đơn quản trị.
+
+### Bàn giao E3 — 19/11/2026
+
+- Người dùng yêu cầu triển khai trực tiếp và giải thích flow/từng file/cú pháp. Đã thêm `/admin/orders/:id` lazy-load dưới guard admin; mã đơn trong bảng E2 là Link tới detail. Trang tự GET theo route param nên không phụ thuộc dữ liệu list trong RAM. Whitelist đăng nhập giữ deep link detail hợp lệ, query/hash và quyền A/M/S; CUSTOMER không được quay vào route admin.
+- Mở rộng DTO/API/query admin riêng. ID luôn là string, kiểm tra số nguyên dương trong miền Java Long trước GET, kể cả khi refetch thủ công. Key là `admin/userId/role/orders/detail/orderId`; không có token, không giữ dữ liệu đơn trước làm placeholder. Truyền AbortSignal/token đã chụp; kiểm tra user/token/role/hạn token trước GET và sau await trước return vào cache. Tách assertion phiên để list/detail dùng chung, giữ các ca E2 đạt.
+- Tách ba component thuần trình bày: AdminOrderRecipient, AdminOrderItems, AdminOrderSummary. Guest dựa trên `userId === null`, tách thông tin tài khoản và người nhận. Dòng đơn giữ tên/SKU/ảnh/giá snapshot, hỗ trợ variant null, không dựng link catalog từ variantId. Các khoản tiền và thành tiền dòng lấy từ server, không tính lại tổng. Trạng thái order/payment độc lập; không tự đặt COD thành PAID theo DELIVERED.
+- Hiển thị ngày đặt/cập nhật và ngày hủy/lý do khi có; không suy diễn ngày giao từ updatedAt. Có loading/chờ mạng, ID sai, 403/404, lỗi GET và thử lại. Refetch lỗi thông thường giữ dữ liệu kèm cảnh báo cũ; 403/404 ẩn chi tiết dù từng có cache. Chưa thêm mutation status/hủy E4/E5.
+- File chức năng tạo: `src/features/admin/orders/pages/AdminOrderDetailPage.tsx`, `src/features/admin/orders/components/{AdminOrderRecipient,AdminOrderItems,AdminOrderSummary}.tsx`. File sửa: `src/features/admin/orders/{types,api,queries}.ts`, `src/features/admin/orders/pages/AdminOrdersPage.tsx`, `src/app/router.tsx`, `src/shared/auth/redirect.ts`, `scripts/{verify-admin-orders,verify-returns}.cjs`, `phase5.md`. Npm script được khôi phục về cấu hình E2. Không thêm dependency và không sửa backend.
+- Contract đã đọc lại từ backend: `AdminOrderController`, `OrderDetailAdminResponse`, `OrderItemResponse`, `OrderAdminServiceImpl`. GET detail cho A/M/S, userId/variantId JSON string hoặc null; service đọc snapshot dòng đơn, hiện chưa gán returnStatus vào builder admin nên không suy diễn trạng thái return từ field này. Đây là đối chiếu source, chưa phải response thật.
+- `npm run verify:admin-orders` được khôi phục: **13/13 đạt** (7 ca E2 và 6 ca E3). Mock HTTP/session, QueryClient/QueryObserver thật và ReactDOMServer render HTML. Bao phủ endpoint/token/signal, ID lớn/ID sai/quyền/phiên, đổi phiên trước dispatch/sau GET, chuyển đơn/abort/kết quả về sai thứ tự, redirect detail, guest/user/nullable variant/SKU/ảnh/email, tổng server, loading/offline/403/404/lỗi refetch/ngày hủy/dòng rỗng. Không phải kiểm thử browser hay xác nhận quyền server.
+- Toàn bộ 7 bộ kiểm tra hiện có đạt **87/87**. Sửa loader của `verify-returns.cjs` để import tương đối cũng nhận mock theo alias, tránh nạp store thật khi kiểm tra redirect. Không sửa code nghiệp vụ returns. Kiểm tra trên snapshot E3 riêng để các thay đổi E4 đang làm trong workspace không bị đưa vào commit E3.
+- Lint, typecheck, build và `git diff --check` đạt. Build tạo chunk AdminOrderDetailPage khoảng **8,30 kB**; cảnh báo chunk storefront/HeroScene trên 500 kB đã tồn tại, chưa xử lý trong E3.
+- Flow và cú pháp đã giải thích trong chat. File hướng dẫn riêng vẫn được xóa; bộ test admin orders và npm script tương ứng đã khôi phục theo yêu cầu mới của người dùng.
+- Chưa chạy browser/backend thật. Cần thử list → detail → reload/tab mới/Back, guest/user, ID lớn/sai/không tồn tại, 401/403/404 thật, nullable/variant bị xóa, tiền/giảm giá, mạng chậm/đổi phiên, tải lại lỗi, mobile/bàn phím và Network chunk. E1/E2 vẫn giữ các kiểm thử tích hợp còn chờ theo bàn giao trước.
+- Trạng thái: **đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend**. Người dùng yêu cầu lưu commit E3 sau khi toàn bộ kiểm tra đạt, với nội dung `feat(admin-orders): show order details and recipient information`; chưa push. Commit không thay thế kiểm thử tích hợp còn thiếu.
+- Bước tiếp theo: đọc code chức năng và thử checklist với backend; sau đó làm E4 — cập nhật trạng thái xử lý/giao hàng.

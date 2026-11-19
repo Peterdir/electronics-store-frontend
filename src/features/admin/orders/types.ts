@@ -1,5 +1,41 @@
 import type { ID, ISODateTime, Money } from "@/shared/types/common";
-import type { OrderStatus, PaymentStatus } from "@/shared/types/enums";
+import type { OrderStatus, PaymentMethod, PaymentStatus, ReturnStatus } from "@/shared/types/enums";
+
+export interface AdminOrderItemResponse {
+  id: ID;
+  variantId: ID | null;
+  productName: string;
+  variantSku: string | null;
+  thumbnailUrl: string | null;
+  unitPrice: Money;
+  quantity: number;
+  subtotal: Money;
+  returnStatus: ReturnStatus | null;
+}
+
+export interface OrderDetailAdminResponse {
+  id: ID;
+  userId: ID | null;
+  customerName: string | null;
+  customerEmail: string | null;
+  recipientName: string | null;
+  recipientPhone: string | null;
+  shippingAddress: string | null;
+  subtotal: Money;
+  shippingFee: Money;
+  couponCode: string | null;
+  discountAmount: Money;
+  totalPrice: Money;
+  orderStatus: OrderStatus;
+  paymentStatus: PaymentStatus;
+  paymentMethod: PaymentMethod;
+  cancelReason: string | null;
+  cancelledAt: ISODateTime | null;
+  createdAt: ISODateTime;
+  updatedAt: ISODateTime;
+  message: string | null;
+  items: AdminOrderItemResponse[];
+}
 
 export interface OrderListAdminResponse {
   id: ID;

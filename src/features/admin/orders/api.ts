@@ -1,6 +1,15 @@
 import { api } from "@/shared/api/client";
 import { normalizePage, type BackendPage } from "@/shared/api/pagination";
-import type { GetAdminOrdersParams, OrderListAdminResponse } from "./types";
+import type { ID } from "@/shared/types/common";
+import type { GetAdminOrdersParams, OrderDetailAdminResponse, OrderListAdminResponse } from "./types";
+
+export async function getAdminOrderDetail(id: ID, signal: AbortSignal, authToken: string) {
+  const { data } = await api.get<OrderDetailAdminResponse>(`/api/admin/orders/${id}`, {
+    signal,
+    meta: { authToken, noPublicRetry: true },
+  });
+  return data;
+}
 
 export async function getAdminOrders(
   params: GetAdminOrdersParams,
