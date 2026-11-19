@@ -156,6 +156,13 @@ export const router = createBrowserRouter([
                 index: true,
                 Component: AdminIndexRoute,
             },
+            {
+                path: "orders",
+                lazy: async () => {
+                    const { AdminOrdersPage } = await import("@/features/admin/orders/pages/AdminOrdersPage");
+                    return { Component: AdminOrdersPage };
+                },
+            },
         ],
     },
     {

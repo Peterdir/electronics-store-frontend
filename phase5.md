@@ -2,7 +2,7 @@
 
 > Ngày lập: **13/11/2026**. Đối chiếu frontend tại HEAD `87eaa75`; working tree sạch trước khi lập kế hoạch.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase4.md](phase4.md), source frontend và source backend tham chiếu tại `../ecommerce-backend`.
-> **Trạng thái — 19/11/2026: E1 đã có code, chờ review và kiểm thử browser/backend; E2–E22 chưa triển khai.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy. Xem bàn giao E1 cuối tài liệu.
+> **Trạng thái — 19/11/2026: E1–E2 đã có code, chờ review và kiểm thử browser/backend; E3–E22 chưa triển khai.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy. Xem bàn giao cuối tài liệu.
 > **Cách học bắt buộc: khi bắt đầu mỗi nhiệm vụ, sinh mã hướng dẫn theo từng bước và từng file để người dùng tự học, tự gõ code; cuối nhiệm vụ có nội dung commit.** Không tự triển khai source khi người dùng chỉ yêu cầu hướng dẫn.
 
 ## 1. Mục tiêu và điểm bắt đầu
@@ -191,7 +191,7 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 | Mốc | Kết quả | Phụ thuộc chính | Trạng thái |
 |---|---|---|---|
 | E1 | Admin shell, menu và guard theo quyền | Auth đang có | Đã code, chờ review và kiểm thử |
-| E2 | Danh sách đơn và DataTable server | E1 | Chưa bắt đầu |
+| E2 | Danh sách đơn và DataTable server | E1 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
 | E3 | Chi tiết đơn admin | E2 | Chưa bắt đầu |
 | E4 | Chuyển trạng thái xử lý/giao hàng | E3 | Chưa bắt đầu |
 | E5 | Hủy đơn có lý do | E3 | Chưa bắt đầu |
@@ -237,6 +237,8 @@ Thứ tự mặc định E1 → E22. Có thể chuyển sang module độc lập
 **Commit cuối nhiệm vụ:** `feat(admin): add role-aware admin shell and navigation`
 
 ### E2 — Danh sách đơn và DataTable đầu tiên
+
+**Code và hướng dẫn — 19/11/2026:** đã bổ sung theo yêu cầu triển khai trực tiếp. Đọc code theo thứ tự types → filters → API → query → page → components → router/menu/redirect. Bảng khai báo cột bằng React thuần, chưa thêm TanStack Table/dependency mới. Kết quả kiểm tra và giới hạn ở bàn giao E2 cuối tài liệu.
 
 **Kết quả:** `/admin/orders` lấy đơn thật, tìm kiếm/lọc/phân trang/sort được giữ trong URL.
 
@@ -548,3 +550,19 @@ Bước tiếp theo:
 - Cần thử `/admin` với guest/CUSTOMER/STAFF/MANAGER/ADMIN, đăng nhập quay lại, đăng xuất, account routes, mobile/Tab/Enter/Escape, loading và lỗi tải module. Xác nhận Network trên bản preview chỉ tải chunk admin khi vào khu vực quản trị.
 - Trạng thái: **đã code, chờ review và kiểm thử browser/backend**. Người dùng yêu cầu lưu commit E1 với nội dung `feat(admin): add role-aware admin shell and navigation`; chưa push. Việc commit không thay thế các ca kiểm thử còn thiếu ở trên.
 - Bước tiếp theo: review diff, thử các ca trên và ghi kết quả thực tế; sau đó tiếp tục E2.
+
+### Bàn giao E2 — 19/11/2026
+
+- Người dùng yêu cầu thêm code trực tiếp và hướng dẫn đọc theo flow. Đã thêm `/admin/orders` với GET danh sách admin, tìm kiếm debounce 350 ms, lọc order/payment status, size 10/20/50, sort server `createdAt/totalPrice`, phân trang server. URL giữ bộ lọc, size, page và sort; sửa URL sai trước request, đổi điều kiện về page 1, đưa trang vượt phạm vi về trang cuối theo response.
+- DataTable khai báo cột bằng React thuần, có caption/scope/aria-sort, thao tác sort bằng button và cuộn ngang. Chưa thêm TanStack Table/dependency mới. Tái sử dụng Pagination, badge/nhãn trạng thái thuần trình bày, format tiền/ngày, debounce, client và normalizePage hiện có; không dùng query/DTO customer cho API admin.
+- File tạo: `src/features/admin/orders/{types,filters,api,queries}.ts`, `src/features/admin/orders/pages/AdminOrdersPage.tsx`, `src/features/admin/components/{DataTable,FilterBar}.tsx`, `scripts/verify-admin-orders.cjs`. File sửa: `src/app/router.tsx`, `src/features/admin/navigation.ts`, `src/shared/api/queryKeys.ts`, `src/shared/auth/redirect.ts`, `package.json`, `phase5.md`.
+- Thêm menu Đơn hàng theo quyền `order.view`, whitelist redirect đúng route đã có, fallback đăng nhập STAFF đến `/admin/orders`; giữ ưu tiên đích hợp lệ và query/hash. Route orders lazy-load dưới guard E1. Không thêm link detail khi E3 chưa có.
+- Query key theo `admin/userId/role/orders/list/params`, không có token và không giữ dữ liệu trang trước. Query chỉ chạy khi phiên còn hạn/có quyền, URL canonical và hết debounce. Truyền AbortSignal/token đã chụp, kiểm tra phiên trước/sau GET và signal trước khi trả kết quả vào cache. Không sửa lifecycle 401/403/logout hiện có.
+- Contract đã đọc lại từ `AdminOrderController`, `OrderListAdminResponse`, `OrderAdminServiceImpl` và `OrderRepository` tại repo backend. Keyword hiện tìm mã đơn/tên khách hoặc người nhận/điện thoại người nhận, không tìm email. List có email null; không gắn nhãn guest từ list. ID giữ string, `orderDate` chỉ là field hiển thị, sort ngày dùng `createdAt`.
+- Lint, typecheck và build đạt; build có chunk riêng `AdminOrdersPage` khoảng 8,16 kB. Cảnh báo chunk storefront/HeroScene trên 500 kB còn tồn tại, chưa xử lý trong E2.
+- `npm run verify:admin-orders`: **7/7 đạt**, dùng HTTP/hook giả lập và QueryClient/QueryObserver thật. Bao phủ parse/serialize/params URL, giữ khoảng trắng input và trim request, ID lớn dạng chuỗi/nullable email, normalize Spring Page, key/enabled theo quyền/phiên, đổi user/token/role/logout trước dispatch hoặc sau GET, hủy request tìm kiếm cũ và kết quả sai thứ tự, redirect/deep link theo role. Round trip URL không phải kiểm thử Back/Forward thật trên browser.
+- Đã giải thích flow đọc và từng file trong chat, gồm ví dụ UI page 2 → API page 1. Checklist browser gồm empty/nhiều trang, query sai, vượt trang, sort tiền, Back/Forward/reload, mạng chậm, 401/403/lỗi refetch, đổi tài khoản, mobile/bàn phím và tải chunk.
+- Sau review tự học, đã rút gọn `GetAdminOrdersParams` thành type alias của `AdminOrdersFilters` và đặt nút Xóa bộ lọc cao `h-10` bằng các input/select.
+- Chưa chạy browser hoặc API bằng tài khoản thật; chưa xác minh dữ liệu/phân trang/sort thực tế, chuyển trang vượt phạm vi và điều hướng history trên browser. Chưa triển khai E3–E5, chưa sửa backend. E1 vẫn còn kiểm thử theo bàn giao trước.
+- Trạng thái: **đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend**. Người dùng yêu cầu lưu commit E2 với nội dung `feat(admin-orders): add searchable paginated order list`; chưa push. Việc commit không thay thế kiểm thử tích hợp còn thiếu.
+- Bước tiếp theo: đọc hướng dẫn, chạy ứng dụng với backend, thử checklist và ghi kết quả thực tế; sau đó làm E3 để nối trang chi tiết đơn quản trị.

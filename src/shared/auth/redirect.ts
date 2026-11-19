@@ -1,6 +1,7 @@
 import type { Role as RoleType } from "@/shared/types/enums"
 import { isPositiveLongId } from "../types/common"
 import { hasPermission } from "./permissions"
+import { Role } from "../types/enums"
 
 export function getLoginDestination(
     role: RoleType | undefined,
@@ -9,7 +10,7 @@ export function getLoginDestination(
 ): string {
     const canAccessAdmin = hasPermission("admin.access", role)
 
-    const fallback = canAccessAdmin ? "/admin" : "/"
+    const fallback = role === Role.STAFF ? "/admin/orders" : canAccessAdmin ? "/admin" : "/"
 
     for (const candidate of [redirect, from]) {
         if (
@@ -44,7 +45,7 @@ export function getLoginDestination(
                 isPositiveLongId(productDetailMatch?.[1]) ||
                 isPositiveLongId(orderDetailMatch?.[1]) ||
                 (
-                    url.pathname === "/admin" &&
+                    (url.pathname === "/admin" || url.pathname === "/admin/orders") &&
                     canAccessAdmin
                 )
 

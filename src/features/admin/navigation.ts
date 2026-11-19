@@ -14,4 +14,9 @@ export const adminNavigation: readonly AdminNavigationItem[] = [
         permission: "admin.access",
         end: true,
     },
+    {
+        to: "/admin/orders",
+        label: "Đơn hàng",
+        permission: "order.view",
+    },
 ];

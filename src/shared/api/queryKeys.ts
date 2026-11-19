@@ -1,4 +1,5 @@
 export const qk = {
+    admin: ["admin"] as const,
     me: ["me"] as const,
     products: ["products"] as const,
     categories: ["categories"] as const,
