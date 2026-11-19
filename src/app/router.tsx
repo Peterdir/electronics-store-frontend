@@ -33,6 +33,7 @@ import { OrdersPage } from "@/features/orders/pages/OrdersPage";
 import { OrderDetailPage } from "@/features/orders/pages/OrderDetailPage";
 import { ReviewsPage } from "@/features/reviews/pages/ReviewsPage";
 import { WishlistPage } from "@/features/wishlist/pages/WishlistPage";
+import { ReturnRequestPage } from "@/features/returns/pages/ReturnRequestPage";
 
 
 export const router = createBrowserRouter([
@@ -137,6 +138,10 @@ export const router = createBrowserRouter([
                     {
                         path: "wishlist",
                         Component: WishlistPage,
+                    },
+                    {
+                        path: "returns/new",
+                        Component: ReturnRequestPage,
                     },
                 ],
             },

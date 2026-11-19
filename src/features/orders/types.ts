@@ -7,6 +7,7 @@ import type {
   OrderStatus,
   PaymentMethod,
   PaymentStatus,
+  ReturnStatus,
 } from "@/shared/types/enums";
 import type { CartResponse } from "../cart/types";
 
@@ -19,6 +20,7 @@ export interface OrderItemResponse {
   unitPrice: Money;
   quantity: number;
   subtotal: Money;
+  returnStatus?: ReturnStatus | null;
 }
 
 export interface OrderListUserResponse {
@@ -60,6 +62,7 @@ export interface OrderDetailUserResponse {
   cancelledAt: ISODateTime | null;
   createdAt: ISODateTime;
   updatedAt: ISODateTime;
+  returnDeadline?: ISODateTime | null;
   canCancel: boolean;
   canPay: boolean;
   canBuyAgain: boolean;

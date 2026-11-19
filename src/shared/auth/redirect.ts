@@ -42,6 +42,7 @@ export function getLoginDestination(
                 url.pathname === "/account/orders" ||
                 url.pathname === "/account/reviews" ||
                 url.pathname === "/account/wishlist" ||
+                url.pathname === "/account/returns/new" ||
                 url.pathname === "/products" ||
                 isPositiveLongId(productDetailMatch?.[1]) ||
                 isPositiveLongId(orderDetailMatch?.[1]) ||

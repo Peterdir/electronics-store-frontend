@@ -1,10 +1,11 @@
 import { Link, useParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { usePendingReviews } from "@/features/reviews";
+import { getReturnEligibility } from "@/features/returns/eligibility";
 import { formatDateTime, formatVND } from "@/lib/format";
 import { ApiError } from "@/shared/api/errors";
 import { isPositiveLongId } from "@/shared/types/common";
-import { OrderStatus } from "@/shared/types/enums";
+import { isDeliveredOrderStatus } from "../orderStatus";
 import { BuyAgainOrderAction } from "../components/BuyAgainOrderAction";
 import { CancelOrderDialog } from "../components/CancelOrderDialog";
 import { OrderItems } from "../components/OrderItems";
@@ -24,7 +25,7 @@ function OrderDetailContent({
   refreshing: boolean;
   onRefresh: () => void;
 }) {
-  const delivered = order.orderStatus === OrderStatus.DELIVERED;
+  const delivered = isDeliveredOrderStatus(order.orderStatus);
   const pendingReviews = usePendingReviews(delivered);
   const reviewableItemIds = new Set(
     delivered && pendingReviews.isSuccess && pendingReviews.fetchStatus === "idle"
@@ -75,7 +76,11 @@ function OrderDetailContent({
       </header>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
-        <OrderItems items={order.items} reviewableItemIds={reviewableItemIds} />
+        <OrderItems
+          items={order.items}
+          reviewableItemIds={reviewableItemIds}
+          returnOrderId={getReturnEligibility(order).deadline !== undefined ? order.id : undefined}
+        />
 
         <div className="min-w-0 space-y-4">
           <section className="space-y-1 rounded-2xl border border-border bg-card p-4 wrap-anywhere">

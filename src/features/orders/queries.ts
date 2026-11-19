@@ -85,7 +85,7 @@ function assertOrdersSession(userId: ID, token: string) {
   }
 }
 
-function invalidateOrderQueries(
+export function invalidateOrderQueries(
   queryClient: ReturnType<typeof useQueryClient>,
   userId: ID,
   orderId: ID,
@@ -96,7 +96,7 @@ function invalidateOrderQueries(
   ]);
 }
 
-export function useOrderDetail(orderId: ID | undefined) {
+export function useOrderDetail(orderId: ID | undefined, verifyOnMount = false) {
   const queryClient = useQueryClient();
   const userId = useSession((state) => state.user?.id);
   const token = useSession((state) => state.token);
@@ -105,6 +105,7 @@ export function useOrderDetail(orderId: ID | undefined) {
     queryKey: [...qk.orders, userId, "detail", orderId],
     enabled: Boolean(orderId && userId && token && !isExpired(token)),
     retry: false,
+    refetchOnMount: verifyOnMount ? "always" : true,
 
     queryFn: async ({ signal }) => {
       if (!orderId || !userId || !token) {

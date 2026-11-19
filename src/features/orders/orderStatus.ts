@@ -4,6 +4,10 @@ import type {
 } from "@/shared/types/enums";
 import type { StatusTone } from "@/shared/components/StatusBadge";
 
+export function isDeliveredOrderStatus(status: OrderStatus) {
+  return ["DELIVERED", "RETURN_REQUESTED", "RETURNED", "RETURN_REJECTED"].includes(status);
+}
+
 export const orderStatusLabels = {
   PENDING: "Chờ xác nhận",
   PROCESSING: "Đang xử lý",
