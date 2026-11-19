@@ -1,9 +1,13 @@
 import { useState } from "react";
+import { Star, Undo2 } from "lucide-react";
 import { Link } from "react-router";
 import { formatVND } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { ID } from "@/shared/types/common";
 import type { ReturnStatus } from "@/shared/types/enums";
 import type { OrderItemResponse } from "../types";
+
+const itemActionClass = "inline-flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-xl border px-4 py-2.5 text-center text-sm font-semibold outline-none transition-[background-color,border-color,color,box-shadow,transform] duration-200 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card motion-safe:hover:-translate-y-0.5 motion-safe:active:translate-y-0 motion-reduce:transition-none sm:flex-none";
 
 const returnStatusLabels: Record<ReturnStatus, string> = {
   PENDING: "Yêu cầu trả hàng đang chờ xử lý",
@@ -74,25 +78,27 @@ export function OrderItems({ items, reviewableItemIds, returnOrderId }: {
                 <div className="col-span-2 flex flex-col gap-2 sm:col-span-1 sm:col-start-2 sm:flex-row sm:flex-wrap sm:gap-3">
                   {reviewableItemIds?.has(item.id) && (
                     <Link
-                      className="text-sm font-medium text-primary underline"
+                      className={cn(itemActionClass, "border-primary/20 bg-primary text-primary-foreground shadow-sm hover:border-primary/40 hover:bg-primary/90 hover:shadow-md")}
                       aria-label={`Đánh giá ${item.productName}`}
                       to={`/account/reviews?${new URLSearchParams({
                         tab: "pending",
                         orderItemId: item.id,
                       })}`}
                     >
+                      <Star aria-hidden="true" className="size-4 shrink-0" strokeWidth={1.75} />
                       <span>Đánh giá</span>
                     </Link>
                   )}
                   {returnOrderId && !item.returnStatus && (
                     <Link
-                      className="text-sm font-medium text-primary underline"
+                      className={cn(itemActionClass, "border-border bg-background/60 text-muted-foreground shadow-xs hover:border-foreground/25 hover:bg-muted hover:text-foreground hover:shadow-sm")}
                       aria-label={`Yêu cầu trả hàng cho ${item.productName}`}
                       to={`/account/returns/new?${new URLSearchParams({
                         orderId: returnOrderId,
                         orderItemId: item.id,
                       })}`}
                     >
+                      <Undo2 aria-hidden="true" className="size-4 shrink-0" strokeWidth={1.75} />
                       <span>Yêu cầu trả hàng</span>
                     </Link>
                   )}
