@@ -6,8 +6,9 @@ import { ImagePlus, LoaderCircle, Send, Star, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/shared/api/errors";
 import { useSession } from "@/shared/auth/session.store";
+import { imageUploadAccept, imageUploadSchema } from "@/shared/validation/imageUpload";
 import { isCurrentReviewSession, useCreateReview, useManageReview } from "../queries";
-import { reviewImageAccept, reviewImageSchema, reviewSchema, type ReviewValues } from "../schemas";
+import { reviewSchema, type ReviewValues } from "../schemas";
 import type { CreateReviewRequest, PendingReview, ReviewResponse } from "../types";
 import { ReviewAttachment } from "./ReviewCards";
 
@@ -56,7 +57,7 @@ export function ReviewForm({ item, review, canSubmit, onClose }: ReviewFormProps
   function selectImage(image: File | null) {
     if (image) setValue("removeImage", false);
     setValue("image", image, { shouldValidate: true });
-    setPreviewUrl(image && reviewImageSchema.safeParse(image).success
+    setPreviewUrl(image && imageUploadSchema.safeParse(image).success
       ? URL.createObjectURL(image)
       : undefined);
   }
@@ -265,7 +266,7 @@ export function ReviewForm({ item, review, canSubmit, onClose }: ReviewFormProps
             ref={imageInput}
             type="file"
             aria-labelledby={`${fieldId}-image-label`}
-            accept={reviewImageAccept}
+            accept={imageUploadAccept}
             disabled={submitting}
             aria-invalid={Boolean(errors.image)}
             aria-describedby={`${fieldId}-image-help${errors.image ? ` ${fieldId}-image-error` : ""}`}
