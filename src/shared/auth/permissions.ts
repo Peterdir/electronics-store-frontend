@@ -3,6 +3,7 @@ import type { Role as RoleType } from "../types/enums";
 import { useSession } from "./session.store";
 
 export const PERMISSIONS = {
+    "admin.access": [Role.ADMIN, Role.MANAGER, Role.STAFF],
     "dashboard.view": [Role.ADMIN, Role.MANAGER],
     "report.view": [Role.ADMIN, Role.MANAGER],
     "user.view": [Role.ADMIN, Role.MANAGER],

@@ -1,16 +1,13 @@
-import { Role } from "@/shared/types/enums"
 import type { Role as RoleType } from "@/shared/types/enums"
 import { isPositiveLongId } from "../types/common"
+import { hasPermission } from "./permissions"
 
 export function getLoginDestination(
     role: RoleType | undefined,
     redirect?: string | null,
     from?: string | null,
 ): string {
-    const canAccessAdmin =
-        role === Role.ADMIN ||
-        role === Role.MANAGER ||
-        role === Role.STAFF
+    const canAccessAdmin = hasPermission("admin.access", role)
 
     const fallback = canAccessAdmin ? "/admin" : "/"
 

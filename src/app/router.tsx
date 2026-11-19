@@ -1,8 +1,6 @@
 import { createBrowserRouter, Navigate } from "react-router";
 import { StorefrontLayout } from "./layouts/StorefrontLayout";
 import { HomePage } from "../features/home/pages/HomePage";
-import { AdminLayout } from "./layouts/AdminLayout";
-import { AdminHomePage } from "../features/admin/pages/AdminHomePage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { RouteErrorBoundary } from "./pages/RouteErrorBoundary";
 import { ForbiddenPage } from "./pages/ForbiddenPage"
@@ -11,9 +9,8 @@ import { ProfilePage } from "@/features/auth/pages/ProfilePage"
 import {
     GuestOnly,
     RequireAuth,
-    RequireRole,
 } from "@/shared/auth/guards"
-import { Role } from "@/shared/types/enums"
+import { AdminIndexRoute, AdminRoute } from "./routes/AdminRoute";
 import { RegisterPage } from "@/features/auth/pages/RegisterPage"
 import { CheckEmailPage } from "@/features/auth/pages/CheckEmailPage"
 import { VerifyEmailPage } from "@/features/auth/pages/VerifyEmailPage"
@@ -34,7 +31,6 @@ import { OrderDetailPage } from "@/features/orders/pages/OrderDetailPage";
 import { ReviewsPage } from "@/features/reviews/pages/ReviewsPage";
 import { WishlistPage } from "@/features/wishlist/pages/WishlistPage";
 import { ReturnRequestPage } from "@/features/returns/pages/ReturnRequestPage";
-
 
 export const router = createBrowserRouter([
     {
@@ -153,18 +149,12 @@ export const router = createBrowserRouter([
     },
     {
         path: "/admin",
-        element: (
-            <RequireRole
-                roles={[Role.ADMIN, Role.MANAGER, Role.STAFF]}
-            >
-                <AdminLayout />
-            </RequireRole>
-        ),
+        Component: AdminRoute,
         ErrorBoundary: RouteErrorBoundary,
         children: [
             {
                 index: true,
-                Component: AdminHomePage,
+                Component: AdminIndexRoute,
             },
         ],
     },

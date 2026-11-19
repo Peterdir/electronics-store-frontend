@@ -2,7 +2,7 @@
 
 > Ngày lập: **13/11/2026**. Đối chiếu frontend tại HEAD `87eaa75`; working tree sạch trước khi lập kế hoạch.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase4.md](phase4.md), source frontend và source backend tham chiếu tại `../ecommerce-backend`.
-> **Trạng thái: chỉ lập kế hoạch cho giai đoạn sau, chưa triển khai E1–E22.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy.
+> **Trạng thái — 19/11/2026: E1 đã có code, chờ review và kiểm thử browser/backend; E2–E22 chưa triển khai.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy. Xem bàn giao E1 cuối tài liệu.
 > **Cách học bắt buộc: khi bắt đầu mỗi nhiệm vụ, sinh mã hướng dẫn theo từng bước và từng file để người dùng tự học, tự gõ code; cuối nhiệm vụ có nội dung commit.** Không tự triển khai source khi người dùng chỉ yêu cầu hướng dẫn.
 
 ## 1. Mục tiêu và điểm bắt đầu
@@ -190,7 +190,7 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 
 | Mốc | Kết quả | Phụ thuộc chính | Trạng thái |
 |---|---|---|---|
-| E1 | Admin shell, menu và guard theo quyền | Auth đang có | Chưa bắt đầu |
+| E1 | Admin shell, menu và guard theo quyền | Auth đang có | Đã code, chờ review và kiểm thử |
 | E2 | Danh sách đơn và DataTable server | E1 | Chưa bắt đầu |
 | E3 | Chi tiết đơn admin | E2 | Chưa bắt đầu |
 | E4 | Chuyển trạng thái xử lý/giao hàng | E3 | Chưa bắt đầu |
@@ -218,6 +218,8 @@ Thứ tự mặc định E1 → E22. Có thể chuyển sang module độc lập
 ## 7. Chi tiết từng nhiệm vụ
 
 ### E1 — Admin shell, điều hướng và phân quyền
+
+**Trạng thái — 19/11/2026:** đã triển khai theo yêu cầu trực tiếp của người dùng để review. Xem bàn giao cuối tài liệu; chưa nghiệm thu browser/backend.
 
 **Kết quả:** A/M/S mở `/admin`, thấy khung quản trị responsive; CUSTOMER bị đưa tới `/forbidden`, guest đăng nhập rồi quay lại route hợp lệ.
 
@@ -533,3 +535,16 @@ Bước tiếp theo:
 - Đã kiểm tra đủ 22 mốc liên tục, mỗi mốc có hướng dẫn/tiêu chí kiểm tra/commit ở cuối; liên kết nội bộ, code fence, UTF-8 và whitespace đạt. Master plan đã có liên kết tới kế hoạch chi tiết này.
 - Chỉ lập tài liệu; chưa code Phase 5, chưa sửa backend, chưa chạy API/browser hoặc build/lint cho chức năng admin, chưa tạo commit/push.
 - Khi bắt đầu giai đoạn này: đọc lại trạng thái Phase 4 và source hiện tại, rồi hướng dẫn **E1**. Không giao lại phần auth/guard/session đã có.
+
+### Bàn giao E1 — 19/11/2026
+
+- Người dùng đã nhận hướng dẫn tự học rồi yêu cầu thêm code trực tiếp để review. Đã thêm admin shell responsive tại `/admin`, menu cấu hình và lọc bằng `hasPermission` với role đọc một lần. Chỉ có mục Trang quản trị; chưa thêm menu hoặc whitelist tới các trang nghiệp vụ chưa tồn tại.
+- Thêm `admin.access` dùng chung cho guard và redirect; giữ whitelist account/product, query/hash và fallback hiện có. Tái sử dụng guard, session, UserMenu và RouteErrorBoundary. Chưa thêm `user.changeStatus` hay `product.deleteVariant` vì chưa tới mốc sử dụng.
+- Sidebar mobile đóng/mở bằng nút có aria-expanded/aria-controls; Escape trả focus về nút, chọn link chuyển focus tới nội dung. Desktop luôn hiện sidebar, Escape trên desktop không chuyển focus tới nút bị ẩn. Có skip link và AdminPageHeader dùng lại cho các trang sau.
+- File: sửa `src/app/{router.tsx,layouts/AdminLayout.tsx}`, `src/shared/auth/{permissions,redirect}.ts`, `src/features/admin/pages/AdminHomePage.tsx`; tạo `src/app/routes/AdminRoute.tsx`, `src/features/admin/navigation.ts`, `src/features/admin/components/{AdminSidebar,AdminPageHeader}.tsx`.
+- Tách component vào AdminRoute để phù hợp quy tắc Fast Refresh của ESLint; layout và trang chủ admin dùng React.lazy/Suspense. Build tạo riêng chunk AdminLayout khoảng 3,61 kB và AdminHomePage khoảng 0,78 kB; storefront vẫn còn cảnh báo chunk trên 500 kB.
+- Contract source đã đối chiếu: SecurityConfig bật method security; controller quản trị áp dụng PreAuthorize, ví dụ AdminOrderController cho A/M/S xem đơn. E1 không thêm API/DTO/schema hoặc query quản trị. Chưa gọi API bằng tài khoản thật.
+- Lint, typecheck, build và `verify:profile` (7/7) đạt. Kiểm tra Node tạm thời đạt cho quyền A/M/S, CUSTOMER bị forbidden, guest/token hết hạn tới login, giữ đường dẫn account với ID lớn dạng chuỗi và query/hash, chặn redirect ngoài origin, menu theo quyền và quyền hạn chế của STAFF. Guard/router/session được giả lập ở mức cần thiết; đây không phải kiểm thử trình duyệt hay xác nhận bảo vệ API.
+- Cần thử `/admin` với guest/CUSTOMER/STAFF/MANAGER/ADMIN, đăng nhập quay lại, đăng xuất, account routes, mobile/Tab/Enter/Escape, loading và lỗi tải module. Xác nhận Network trên bản preview chỉ tải chunk admin khi vào khu vực quản trị.
+- Trạng thái: **đã code, chờ review và kiểm thử browser/backend**. Người dùng yêu cầu lưu commit E1 với nội dung `feat(admin): add role-aware admin shell and navigation`; chưa push. Việc commit không thay thế các ca kiểm thử còn thiếu ở trên.
+- Bước tiếp theo: review diff, thử các ca trên và ghi kết quả thực tế; sau đó tiếp tục E2.
