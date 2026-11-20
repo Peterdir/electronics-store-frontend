@@ -2,6 +2,14 @@ import { api } from "@/shared/api/client";
 import { normalizePage, type BackendPage } from "@/shared/api/pagination";
 import type { ID } from "@/shared/types/common";
 import type { GetAdminOrdersParams, OrderDetailAdminResponse, OrderListAdminResponse } from "./types";
+import type { UpdateOrderStatusValues } from "./schemas";
+
+export async function updateAdminOrderStatus(id: ID, payload: UpdateOrderStatusValues, authToken: string) {
+  const { data } = await api.put<OrderDetailAdminResponse>(`/api/admin/orders/${id}/status`, payload, {
+    meta: { authToken, noPublicRetry: true },
+  });
+  return data;
+}
 
 export async function getAdminOrderDetail(id: ID, signal: AbortSignal, authToken: string) {
   const { data } = await api.get<OrderDetailAdminResponse>(`/api/admin/orders/${id}`, {

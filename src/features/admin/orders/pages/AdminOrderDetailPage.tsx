@@ -8,6 +8,7 @@ import { AdminPageHeader } from "../../components/AdminPageHeader";
 import { AdminOrderItems } from "../components/AdminOrderItems";
 import { AdminOrderRecipient } from "../components/AdminOrderRecipient";
 import { AdminOrderSummary } from "../components/AdminOrderSummary";
+import { UpdateOrderStatusDialog } from "../components/UpdateOrderStatusDialog";
 import { useAdminOrderDetail } from "../queries";
 
 export function AdminOrderDetailPage() {
@@ -50,6 +51,7 @@ export function AdminOrderDetailPage() {
               </Button>
             </div>
             <OrderStatusBadges orderStatus={order.orderStatus} paymentStatus={order.paymentStatus} />
+            <UpdateOrderStatusDialog key={order.id} order={order} disabled={query.isFetching || query.isError} />
             <dl className="grid gap-3 text-sm sm:grid-cols-2">
               <div><dt className="text-muted-foreground">Ngày đặt</dt><dd>{formatDateTime(order.createdAt)}</dd></div>
               <div><dt className="text-muted-foreground">Cập nhật lần cuối</dt><dd>{formatDateTime(order.updatedAt)}</dd></div>

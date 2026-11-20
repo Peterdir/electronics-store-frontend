@@ -2,7 +2,7 @@
 
 > Ngày lập: **13/11/2026**. Đối chiếu frontend tại HEAD `87eaa75`; working tree sạch trước khi lập kế hoạch.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase4.md](phase4.md), source frontend và source backend tham chiếu tại `../ecommerce-backend`.
-> **Trạng thái — 19/11/2026: E1–E3 đã có code, chờ review và kiểm thử browser/backend; E4–E22 chưa triển khai.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy. Xem bàn giao cuối tài liệu.
+> **Trạng thái — 20/11/2026: E1–E4 đã có code, chờ review và kiểm thử browser/backend; E5–E22 chưa triển khai.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy. Xem bàn giao cuối tài liệu.
 > **Cách học bắt buộc: khi bắt đầu mỗi nhiệm vụ, sinh mã hướng dẫn theo từng bước và từng file để người dùng tự học, tự gõ code; cuối nhiệm vụ có nội dung commit.** Không tự triển khai source khi người dùng chỉ yêu cầu hướng dẫn.
 
 ## 1. Mục tiêu và điểm bắt đầu
@@ -193,7 +193,7 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 | E1 | Admin shell, menu và guard theo quyền | Auth đang có | Đã code, chờ review và kiểm thử |
 | E2 | Danh sách đơn và DataTable server | E1 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
 | E3 | Chi tiết đơn admin | E2 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
-| E4 | Chuyển trạng thái xử lý/giao hàng | E3 | Chưa bắt đầu |
+| E4 | Chuyển trạng thái xử lý/giao hàng | E3 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
 | E5 | Hủy đơn có lý do | E3 | Chưa bắt đầu |
 | E6 | Danh mục và upload ảnh | E1 | Chưa bắt đầu |
 | E7 | Thương hiệu và logo | E6 để dùng lại upload/form | Chưa bắt đầu |
@@ -584,3 +584,20 @@ Bước tiếp theo:
 - Chưa chạy browser/backend thật. Cần thử list → detail → reload/tab mới/Back, guest/user, ID lớn/sai/không tồn tại, 401/403/404 thật, nullable/variant bị xóa, tiền/giảm giá, mạng chậm/đổi phiên, tải lại lỗi, mobile/bàn phím và Network chunk. E1/E2 vẫn giữ các kiểm thử tích hợp còn chờ theo bàn giao trước.
 - Trạng thái: **đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend**. Người dùng yêu cầu lưu commit E3 sau khi toàn bộ kiểm tra đạt, với nội dung `feat(admin-orders): show order details and recipient information`; chưa push. Commit không thay thế kiểm thử tích hợp còn thiếu.
 - Bước tiếp theo: đọc code chức năng và thử checklist với backend; sau đó làm E4 — cập nhật trạng thái xử lý/giao hàng.
+
+### Bàn giao E4 — 19/11/2026
+
+- Người dùng yêu cầu triển khai trực tiếp, giải thích flow/từng file/cú pháp. Đã thêm hành động xác nhận trên `/admin/orders/:id` cho A/M/S: `PENDING → PROCESSING → SHIPPED → DELIVERED`, mỗi lần một bước. Không expose CANCELLED/RETURN_* trong hành động E4; trạng thái cuối không có nút chuyển tiếp.
+- File chức năng tạo: `src/features/admin/orders/orderActions.ts`, `src/features/admin/orders/schemas.ts`, `src/features/admin/orders/components/UpdateOrderStatusDialog.tsx`. File chức năng sửa trong E4: `src/features/admin/orders/api.ts`, `src/features/admin/orders/queries.ts`, `src/features/admin/orders/pages/AdminOrderDetailPage.tsx`. Cập nhật thêm `package.json`, `phase5.md`. Giữ các thay đổi E3 có sẵn; không thêm dependency hoặc sửa backend.
+- Đối chiếu lại `AdminOrderController`, `UpdateOrderStatusRequest`, `OrderAdminServiceImpl` và `OrderStatus`: PUT `/api/admin/orders/{id}/status` nhận JSON `{ newStatus }`, trả `OrderDetailAdminResponse`. Backend kiểm tra `canTransitionTo`; nhánh giao hàng chưa tự đổi paymentStatus COD thành PAID. Frontend giữ nguyên trạng thái thanh toán server trả về.
+- Dialog chụp user/token/role, trạng thái đang thấy và đích chuyển ngay khi mở. Mutation kiểm tra schema, ID string, quyền, phiên và bảng chuyển; GET mới trước PUT để phát hiện trạng thái đã đổi. Nếu khác thì yêu cầu đóng dialog/chọn lại. GET trước PUT không thay thế kiểm tra đồng thời và phân quyền phía backend.
+- Khóa submit bằng ref, pending UI và đếm mutation cùng đơn/phiên. `retry: false`, `networkMode: "always"`, `gcTime: 0`; không xếp hàng PUT tự chạy khi reconnect. Kiểm tra lại phiên sau các await và trước ghi cache/toast. Query/mutation key chứa user/role, không chứa token.
+- Thành công hủy GET cũ, ghi detail chuẩn từ PUT rồi invalidate detail/list orders và prefix dashboard/reports cùng user/role (hai module này chưa triển khai). Không optimistic status/payment. GET sau lưu thất bại vẫn giữ kết quả lưu và cảnh báo dữ liệu trên trang, không biến thành yêu cầu gửi lại PUT. Lỗi PUT/timeout tải lại detail bằng GET; dialog yêu cầu kiểm tra/chọn lại, không tự gửi mutation lần hai. 403 hiển thị hướng dẫn cập nhật phiên và khóa hành động trong component hiện tại.
+- Kết quả trước khi xóa test admin: E4 **13/13**, E2–E3 **13/13**, returns **12/12**. E4 dùng API/session giả lập, QueryClient/MutationObserver/QueryObserver thật và render HTML: ba bước cho A/M/S, chặn bước nhảy/hủy/trả hàng, ID lớn, key/invalidation theo phiên, trạng thái đã đổi, submit lặp, timeout sau server lưu, offline không replay, đổi phiên trước dispatch/sau GET/sau PUT, lỗi quyền/server, PUT thành công nhưng GET tiếp theo lỗi, trạng thái cuối không có action. Đây là kết quả đã chạy trước đó, không phải kiểm thử browser/backend thật.
+- Theo yêu cầu người dùng sau triển khai E4, đã xóa `scripts/verify-admin-order-status.cjs`, `scripts/verify-admin-orders.cjs` và hai npm script tương ứng để tập trung đọc code chức năng. Các bộ kiểm tra của module khác vẫn giữ nguyên; các ghi nhận test admin ở bàn giao E2/E3 là lịch sử, không phải script hiện còn trong repository.
+- Cập nhật giao diện ngày 20/11/2026: `UpdateOrderStatusDialog.tsx` hiển thị cặp “Hiện tại → Sau khi xác nhận” trên trang và trong dialog; nút hai dòng nhấn mạnh tên trạng thái đích, có icon theo bước xử lý/giao hàng. Nút xác nhận ghi rõ đích chuyển và có loading; bố cục tự xếp dọc trên màn hình nhỏ, hỗ trợ màu sáng/tối. Đưa tiêu đề ra ngoài hàng flex để nút căn giữa theo phần chuyển trạng thái. Luồng API/mutation giữ nguyên; chưa kiểm tra trực quan trên browser.
+- Typecheck (qua `tsc -b` trong build), lint, build và `git diff --check` đạt khi chốt E4 ngày 20/11/2026. Chunk AdminOrderDetailPage khoảng **14,13 kB**; cảnh báo chunk storefront/HeroScene trên 500 kB còn tồn tại.
+- Giới hạn backend vẫn còn theo source đã đọc: STAFF có thể gửi CANCELLED trực tiếp qua `/status`; controller/service chưa tách quyền nhánh này. E4 không sửa được gap bằng cách giới hạn UI. Chưa xác nhận dữ liệu DELIVERED thật phục vụ D9/D12.
+- Cần thử browser/backend: ba bước và Network payload, xác nhận/đóng bằng bàn phím, nhiều tab thay trạng thái, double click/mạng chậm/offline, timeout, 401/403/404, đổi tài khoản khi request đang chờ, cập nhật list sau Back/reload và payment COD sau DELIVERED. E1–E3 vẫn giữ các mục tích hợp chưa thử.
+- Trạng thái: **đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend**. Người dùng yêu cầu lưu commit E4 với nội dung `feat(admin-orders): update fulfillment status with confirmation`; chưa push. Commit không thay thế kiểm thử tích hợp còn thiếu.
+- Bước tiếp theo: đọc flow trong chat, thử checklist với backend và ghi kết quả; sau đó tiếp tục E5 — hủy đơn có lý do theo quyền.

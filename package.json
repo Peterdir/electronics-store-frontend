@@ -13,7 +13,6 @@
     "verify:reviews": "node --test scripts/verify-reviews.cjs",
     "verify:wishlist": "node --test scripts/verify-wishlist.cjs",
     "verify:returns": "node --test scripts/verify-returns.cjs",
-    "verify:admin-orders": "node --test scripts/verify-admin-orders.cjs",
     "gen:api": "openapi-typescript http://localhost:8080/v3/api-docs -o src/shared/types/openapi.d.ts",
     "lint": "eslint .",
     "preview": "vite preview"
