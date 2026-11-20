@@ -19,4 +19,9 @@ export const adminNavigation: readonly AdminNavigationItem[] = [
         label: "Đơn hàng",
         permission: "order.view",
     },
+    {
+        to: "/admin/categories",
+        label: "Danh mục",
+        permission: "category.manage",
+    },
 ];

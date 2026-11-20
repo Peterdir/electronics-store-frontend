@@ -2,7 +2,7 @@
 
 > Ngày lập: **13/11/2026**. Đối chiếu frontend tại HEAD `87eaa75`; working tree sạch trước khi lập kế hoạch.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase4.md](phase4.md), source frontend và source backend tham chiếu tại `../ecommerce-backend`.
-> **Trạng thái — 20/11/2026: E1–E5 đã có code, chờ review và kiểm thử browser/backend; E6–E22 chưa triển khai.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy. Xem bàn giao cuối tài liệu.
+> **Trạng thái — 20/11/2026: E1–E6 đã có code, chờ review và kiểm thử browser/backend; E7–E22 chưa triển khai.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy. Xem bàn giao cuối tài liệu.
 > **Cách học bắt buộc: khi bắt đầu mỗi nhiệm vụ, sinh mã hướng dẫn theo từng bước và từng file để người dùng tự học, tự gõ code; cuối nhiệm vụ có nội dung commit.** Không tự triển khai source khi người dùng chỉ yêu cầu hướng dẫn.
 
 ## 1. Mục tiêu và điểm bắt đầu
@@ -195,7 +195,7 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 | E3 | Chi tiết đơn admin | E2 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
 | E4 | Chuyển trạng thái xử lý/giao hàng | E3 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
 | E5 | Hủy đơn có lý do | E3 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
-| E6 | Danh mục và upload ảnh | E1 | Chưa bắt đầu |
+| E6 | Danh mục và upload ảnh | E1 | Đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend |
 | E7 | Thương hiệu và logo | E6 để dùng lại upload/form | Chưa bắt đầu |
 | E8 | Danh sách sản phẩm admin | E2, E6–E7 | Chưa bắt đầu |
 | E9 | Tạo sản phẩm, thông số, biến thể | E8 | Chưa bắt đầu |
@@ -291,6 +291,8 @@ Thứ tự mặc định E1 → E22. Có thể chuyển sang module độc lập
 **Commit cuối nhiệm vụ:** `feat(admin-orders): cancel eligible orders with a reason`
 
 ### E6 — Quản lý danh mục và ảnh danh mục
+
+**Code và hướng dẫn — 20/11/2026:** đã triển khai theo yêu cầu trực tiếp. Đọc `categories/types.ts` → `schemas.ts` → `api.ts` → `queries.ts` → `filters.ts` → `shared/components/ImageDropzone.tsx` → `categories/components/{CategoryFormDialog,DeleteCategoryDialog}.tsx` → `categories/pages/AdminCategoriesPage.tsx` → router/menu/redirect. Flow, từng file và cú pháp được giải thích trong chat. Kết quả kiểm tra, giới hạn và nội dung commit ở bàn giao E6 cuối tài liệu.
 
 **Kết quả:** `/admin/categories` cho A/M xem, tạo, sửa và xóa danh mục hợp lệ.
 
@@ -619,3 +621,19 @@ Bước tiếp theo:
 - Chưa chạy browser/backend thật: cần thử A/M/S và 403 trực tiếp, PAID/UNPAID, kiểm tra Network GET → PUT `{ reason }`, trim/lỗi field, double click, focus/Escape/mobile, nhiều tab thay trạng thái, timeout/mạng chậm/offline/đổi tài khoản, Back/list/reload, payment/kho/lịch sử kho và chống hoàn tồn lặp. E1–E4 vẫn giữ các mục tích hợp chưa thử.
 - Trạng thái: **đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend**. Người dùng yêu cầu lưu commit E5 với nội dung `feat(admin-orders): cancel eligible orders with a reason`; chưa push. Commit không thay thế kiểm thử tích hợp còn thiếu.
 - Bước tiếp theo: đọc code theo thứ tự ở E5, thử checklist với backend và ghi kết quả thực tế; sau đó tiếp tục E6 — quản lý danh mục và upload ảnh.
+
+### Bàn giao E6 — Danh mục và ảnh danh mục — 20/11/2026
+
+- Đã triển khai trực tiếp theo yêu cầu người dùng: `/admin/categories` lazy-load cho ADMIN/MANAGER; menu và đích quay lại sau đăng nhập dùng `category.manage`. STAFF/CUSTOMER bị route guard chặn; query và mutation kiểm tra lại quyền/phiên trước HTTP. Không sửa backend, không thêm dependency, không chạy `gen:api`.
+- Danh sách đọc GET public `/api/categories` vào DTO/cache quản trị riêng. Backend source hiện dùng `findAll`/`findByNameContaining`, không lọc ACTIVE, nên quản trị dùng được cả INACTIVE theo contract source. UI tìm theo tên, lọc trạng thái rồi phân trang client trên toàn bộ mảng; không giả tham số page/size trên API. Bộ lọc/page/size giữ trong URL, chuẩn hóa URL sai và đưa trang vượt phạm vi về trang hợp lệ sau khi dữ liệu thay đổi.
+- Tạo/sửa bằng React Hook Form + Zod: trim/bắt buộc tên, chọn rõ ACTIVE/INACTIVE, ảnh tùy chọn. POST/PUT `/api/admin/categories[/{id}]` gửi FormData `name`, `status`, `image?`; browser/Axios đặt multipart boundary. Không gửi `imageUrl` thay File và không gửi image khi không chọn file mới; backend giữ ảnh cũ. Không có thao tác xóa riêng ảnh đang lưu vì chưa có API.
+- `ImageDropzone` là component chọn/kéo thả một ảnh, dùng validation ảnh hiện có: JPEG/PNG/WebP, đúng MIME/đuôi, không rỗng, tối đa 5 MiB. Chỉ preview File hợp lệ, thu hồi object URL khi thay file/unmount. “Bỏ ảnh mới” bỏ lựa chọn vừa nhập và quay lại preview ảnh server. Backend còn kiểm tra chữ ký file; FE không thay thế bước đó.
+- Xóa có dialog xác nhận, hiển thị `totalProducts` của lần tải gần nhất nhưng server quyết định được xóa hay không. DELETE xử lý 204, không đọc body JSON. Trùng tên/lỗi field/server giữ form đang nhập; 403 khóa thao tác trong dialog và hướng dẫn cập nhật phiên. Không tự logout chỉ vì 403.
+- Query keys chứa userId/role, không chứa token/File/object URL. Chụp phiên khi mở dialog, kiểm tra trước dispatch/sau await và trước invalidate/toast/đóng dialog. Mutation `retry: false`, `networkMode: "always"`, `gcTime: 0`; khóa submit bằng ref và khóa ghi danh mục theo user/role trong QueryClient hiện tại. Không phải khóa giữa các tab hay chống ghi đè đồng thời trên server.
+- Sau mutation thành công: cancel GET cũ và invalidate list category admin/public, admin products, catalog products/detail/compare/mốc giá và brands liên quan. Không chờ GET mới để quyết định kết quả lưu; GET lỗi sau lưu hiển thị cảnh báo dữ liệu cũ và chỉ yêu cầu tải lại. Timeout/5xx/response sai ID được coi là chưa chắc chắn, refetch để đối chiếu và khóa gửi lại trong dialog; người dùng đóng, kiểm tra danh sách trước khi thao tác lại. Không tự POST/PUT/DELETE lại khi reconnect.
+- File tạo: `src/features/admin/categories/{types,schemas,api,filters,queries}.ts`, `categories/components/{CategoryFormDialog,DeleteCategoryDialog}.tsx`, `categories/pages/AdminCategoriesPage.tsx`, `src/shared/components/ImageDropzone.tsx`. File sửa: `src/app/router.tsx`, `src/features/admin/navigation.ts`, `src/shared/auth/redirect.ts`, `src/features/admin/components/DataTable.tsx`, `phase5.md`. DataTable nhận sort tùy chọn để dùng được bảng không sort; giữ behavior sort của orders, không gán aria-sort cho cột tĩnh.
+- Kiểm tra: `npm run typecheck`, `npm run lint`, `npm run build`, `git diff --check` đạt; `npm run verify:catalog` **13/13 đạt**. Bộ kiểm tra E6 tạm bằng Node **16/16 đạt**, dùng schema/FormData thật, HTTP/session giả lập, QueryClient/MutationObserver/QueryObserver thật và SSR: multipart, ID lớn/sai, lọc trước phân trang, ACTIVE/INACTIVE, quyền, deep link, cache đúng phiên/catalog, hai mutation đồng thời, đổi phiên trước/sau request/cancel GET, timeout/offline không replay, lỗi server/field, lưu thành công nhưng GET lỗi, response sai ID và hồi quy DataTable sort. Script tạm đã được xóa; không thêm npm script/test admin lâu dài.
+- Build tách chunk AdminCategoriesPage khoảng **17,20 kB**; cảnh báo chunk storefront/HeroScene trên 500 kB vẫn còn. Chưa kiểm thử browser: tương tác dialog, focus/Escape/mobile, drop/select/bỏ/thay ảnh và cleanup object URL cần thử trực tiếp.
+- Backend thật chưa xác nhận: `.env.development` và `application.properties` dùng **8081**; GET `http://localhost:8081/api/categories` bị từ chối kết nối tại thời điểm kiểm tra. Cần chạy backend rồi thử A/M tạo/sửa/xóa, trùng tên, dữ liệu INACTIVE, giữ/thay ảnh, file giả định dạng/quá dung lượng, xóa danh mục trống/còn sản phẩm, Network multipart/204, timeout/đổi phiên và dữ liệu catalog sau lưu. Kiểm tra trực tiếp quyền backend bằng STAFF vẫn cần thực hiện.
+- Trạng thái: **đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend**. Người dùng yêu cầu lưu commit E6 với nội dung `feat(admin-categories): manage categories with image uploads`; chưa push. Commit không thay thế kiểm thử tích hợp còn thiếu.
+- Bước tiếp theo: đọc flow E6 trong chat, chạy checklist tích hợp trên backend/browser; tiếp tục E7 khi người dùng yêu cầu.

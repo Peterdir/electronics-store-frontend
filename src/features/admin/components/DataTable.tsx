@@ -12,9 +12,9 @@ interface DataTableProps<T, TSort extends string> {
   columns: readonly DataTableColumn<T, TSort>[];
   rows: readonly T[];
   rowKey: (row: T) => Key;
-  sortBy: TSort;
-  direction: "asc" | "desc";
-  onSort: (sortBy: TSort) => void;
+  sortBy?: TSort;
+  direction?: "asc" | "desc";
+  onSort?: (sortBy: TSort) => void;
   emptyMessage?: string;
 }
 
@@ -33,11 +33,13 @@ export function DataTable<T, TSort extends string>({
                 key={column.id}
                 scope="col"
                 className="px-4 py-3 font-semibold"
-                aria-sort={column.sortBy === sortBy
-                  ? direction === "asc" ? "ascending" : "descending"
-                  : column.sortBy ? "none" : undefined}
+                aria-sort={column.sortBy && onSort
+                  ? column.sortBy === sortBy
+                    ? direction === "asc" ? "ascending" : "descending"
+                    : "none"
+                  : undefined}
               >
-                {column.sortBy ? (
+                {column.sortBy && onSort ? (
                   <button
                     type="button"
                     className="inline-flex items-center gap-2 rounded focus-visible:outline-2 focus-visible:outline-ring"
