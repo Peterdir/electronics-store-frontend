@@ -7,9 +7,12 @@ import { hasPermission } from "@/shared/auth/permissions";
 import { useSession } from "@/shared/auth/session.store";
 import { isPositiveLongId } from "@/shared/types/common";
 import type { OrderStatus, Role } from "@/shared/types/enums";
-import { getAdminOrderDetail, getAdminOrders, updateAdminOrderStatus } from "./api";
-import { canUpdateFulfillmentStatus } from "./orderActions";
-import { updateOrderStatusSchema, type UpdateOrderStatusValues } from "./schemas";
+import { cancelAdminOrder, getAdminOrderDetail, getAdminOrders, updateAdminOrderStatus } from "./api";
+import { canCancelAdminOrder, canUpdateFulfillmentStatus } from "./orderActions";
+import {
+  cancelAdminOrderSchema, updateOrderStatusSchema,
+  type CancelAdminOrderValues, type UpdateOrderStatusValues,
+} from "./schemas";
 import type { GetAdminOrdersParams } from "./types";
 
 export function isCurrentAdminOrdersSession(
@@ -58,33 +61,49 @@ export function useAdminOrderDetail(orderId: string | undefined) {
   });
 }
 
-export interface UpdateAdminOrderStatusVariables {
+interface AdminOrderActionSession {
   userId: string;
   role: Role;
   token: string;
   expectedStatus: OrderStatus;
+}
+
+export interface UpdateAdminOrderStatusVariables extends AdminOrderActionSession {
   payload: UpdateOrderStatusValues;
 }
 
-export function useUpdateAdminOrderStatus(orderId: string) {
+export interface CancelAdminOrderVariables extends AdminOrderActionSession {
+  payload: CancelAdminOrderValues;
+}
+
+// Hai hành động dùng chung khóa để không vừa chuyển trạng thái vừa hủy cùng một đơn.
+function useAdminOrderActionContext(orderId: string, action: "update-status" | "cancel") {
   const queryClient = useQueryClient();
   const userId = useSession((state) => state.user?.id);
   const role = useSession((state) => state.user?.role);
-  const mutationKey = [...qk.admin, userId, role, "orders", "update-status", orderId];
-  const pendingCount = useIsMutating({ mutationKey, exact: true });
+  const actionKey = [...qk.admin, userId, role, "orders", "actions", orderId];
+  const mutationKey = [...actionKey, action];
+  const pendingCount = useIsMutating({ mutationKey: actionKey });
 
-  function assertActionSession(session: UpdateAdminOrderStatusVariables) {
+  function assertActionSession(session: AdminOrderActionSession) {
     assertCurrentSession(session.userId, session.role, session.token);
-    if (!hasPermission("order.updateStatus", session.role)) {
-      throw new ApiError(403, "Bạn không có quyền cập nhật trạng thái đơn hàng.");
+    const permission = action === "cancel" ? "order.cancel" : "order.updateStatus";
+    if (!hasPermission(permission, session.role)) {
+      throw new ApiError(403, "Bạn không có quyền thực hiện hành động này trên đơn hàng.");
     }
   }
 
-  function detailKey(session: UpdateAdminOrderStatusVariables) {
+  function assertNotBusy() {
+    if (queryClient.isMutating({ mutationKey: actionKey }) > 1) {
+      throw new ApiError(409, "Đơn hàng đang được cập nhật. Vui lòng chờ.", "ORDER_ACTION_BUSY");
+    }
+  }
+
+  function detailKey(session: AdminOrderActionSession) {
     return [...qk.admin, session.userId, session.role, "orders", "detail", orderId];
   }
 
-  async function reloadDetail(session: UpdateAdminOrderStatusVariables) {
+  async function reloadDetail(session: AdminOrderActionSession) {
     assertActionSession(session);
     const queryKey = detailKey(session);
     await queryClient.cancelQueries({ queryKey, exact: true });
@@ -105,12 +124,30 @@ export function useUpdateAdminOrderStatus(orderId: string) {
     });
   }
 
-  function invalidateRelated(session: UpdateAdminOrderStatusVariables) {
+  function invalidateRelated(session: AdminOrderActionSession) {
     const prefix = [...qk.admin, session.userId, session.role];
     for (const resource of ["orders", "dashboard", "reports"]) {
       void queryClient.invalidateQueries({ queryKey: [...prefix, resource] });
     }
+    if (action === "cancel") {
+      for (const resource of ["inventory", "products"]) {
+        void queryClient.invalidateQueries({ queryKey: [...prefix, resource] });
+      }
+      void queryClient.invalidateQueries({ queryKey: qk.products });
+    }
   }
+
+  return {
+    queryClient, mutationKey, pendingCount, assertActionSession, assertNotBusy,
+    detailKey, reloadDetail, invalidateRelated,
+  };
+}
+
+export function useUpdateAdminOrderStatus(orderId: string) {
+  const {
+    queryClient, mutationKey, pendingCount, assertActionSession, assertNotBusy,
+    detailKey, reloadDetail, invalidateRelated,
+  } = useAdminOrderActionContext(orderId, "update-status");
 
   const mutation = useMutation({
     mutationKey,
@@ -120,9 +157,7 @@ export function useUpdateAdminOrderStatus(orderId: string) {
     mutationFn: async (session: UpdateAdminOrderStatusVariables) => {
       assertActionSession(session);
       if (!isPositiveLongId(orderId)) throw new ApiError(400, "Mã đơn hàng không hợp lệ.");
-      if (queryClient.isMutating({ mutationKey, exact: true }) > 1) {
-        throw new ApiError(409, "Đơn hàng đang được cập nhật. Vui lòng chờ.", "ORDER_STATUS_BUSY");
-      }
+      assertNotBusy();
       const payload = updateOrderStatusSchema.parse(session.payload);
       if (!canUpdateFulfillmentStatus(session.expectedStatus, payload.newStatus)) {
         throw new ApiError(400, "Chỉ được chuyển trạng thái xử lý/giao hàng theo từng bước.", "INVALID_FULFILLMENT_TRANSITION");
@@ -149,7 +184,64 @@ export function useUpdateAdminOrderStatus(orderId: string) {
     onError: async (error, session) => {
       if (
         !isPositiveLongId(orderId) || !(error instanceof ApiError) ||
-        error.code === "ORDER_STATUS_BUSY" || error.code === "INVALID_FULFILLMENT_TRANSITION" ||
+        error.code === "ORDER_ACTION_BUSY" || error.code === "INVALID_FULFILLMENT_TRANSITION" ||
+        !isCurrentAdminOrdersSession(session.userId, session.role, session.token)
+      ) return;
+      await reloadDetail(session).catch(() => undefined);
+      if (!isCurrentAdminOrdersSession(session.userId, session.role, session.token)) return;
+      invalidateRelated(session);
+    },
+  });
+
+  return { ...mutation, isPending: mutation.isPending || pendingCount > 0 };
+}
+
+export function useCancelAdminOrder(orderId: string) {
+  const {
+    queryClient, mutationKey, pendingCount, assertActionSession, assertNotBusy,
+    detailKey, reloadDetail, invalidateRelated,
+  } = useAdminOrderActionContext(orderId, "cancel");
+
+  const mutation = useMutation({
+    mutationKey,
+    retry: false,
+    networkMode: "always",
+    gcTime: 0,
+    mutationFn: async (session: CancelAdminOrderVariables) => {
+      assertActionSession(session);
+      if (!isPositiveLongId(orderId)) throw new ApiError(400, "Mã đơn hàng không hợp lệ.");
+      assertNotBusy();
+      const payload = cancelAdminOrderSchema.parse(session.payload);
+      if (!canCancelAdminOrder(session.expectedStatus)) {
+        throw new ApiError(400, "Chỉ được hủy đơn chờ xác nhận hoặc đang xử lý.", "INVALID_CANCEL_STATUS");
+      }
+
+      const latest = await reloadDetail(session);
+      assertActionSession(session);
+      if (latest.orderStatus !== session.expectedStatus || !canCancelAdminOrder(latest.orderStatus)) {
+        throw new ApiError(409, "Trạng thái đơn đã thay đổi. Hãy đóng hộp thoại và kiểm tra dữ liệu mới.");
+      }
+      const detail = await cancelAdminOrder(orderId, payload, session.token);
+      assertActionSession(session);
+      if (detail.id !== orderId || detail.orderStatus !== "CANCELLED") {
+        throw new ApiError(0, "Chưa xác nhận được kết quả hủy đơn. Hãy tải lại dữ liệu.");
+      }
+      return detail;
+    },
+    onSuccess: async (detail, session) => {
+      if (!isCurrentAdminOrdersSession(session.userId, session.role, session.token)) return;
+      await queryClient.cancelQueries({ queryKey: detailKey(session), exact: true });
+      if (!isCurrentAdminOrdersSession(session.userId, session.role, session.token)) return;
+      queryClient.setQueryData(detailKey(session), detail);
+      invalidateRelated(session);
+      toast.success(detail.paymentStatus === "PENDING_REFUND"
+        ? "Đã hủy đơn hàng. Thanh toán đang chờ hoàn tiền."
+        : "Đã hủy đơn hàng.", { duration: 2000 });
+    },
+    onError: async (error, session) => {
+      if (
+        !isPositiveLongId(orderId) || !(error instanceof ApiError) ||
+        error.code === "ORDER_ACTION_BUSY" || error.code === "INVALID_CANCEL_STATUS" ||
         !isCurrentAdminOrdersSession(session.userId, session.role, session.token)
       ) return;
       await reloadDetail(session).catch(() => undefined);

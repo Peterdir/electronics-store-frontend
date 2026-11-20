@@ -2,7 +2,7 @@
 
 > Ngày lập: **13/11/2026**. Đối chiếu frontend tại HEAD `87eaa75`; working tree sạch trước khi lập kế hoạch.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase4.md](phase4.md), source frontend và source backend tham chiếu tại `../ecommerce-backend`.
-> **Trạng thái — 20/11/2026: E1–E4 đã có code, chờ review và kiểm thử browser/backend; E5–E22 chưa triển khai.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy. Xem bàn giao cuối tài liệu.
+> **Trạng thái — 20/11/2026: E1–E5 đã có code, chờ review và kiểm thử browser/backend; E6–E22 chưa triển khai.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy. Xem bàn giao cuối tài liệu.
 > **Cách học bắt buộc: khi bắt đầu mỗi nhiệm vụ, sinh mã hướng dẫn theo từng bước và từng file để người dùng tự học, tự gõ code; cuối nhiệm vụ có nội dung commit.** Không tự triển khai source khi người dùng chỉ yêu cầu hướng dẫn.
 
 ## 1. Mục tiêu và điểm bắt đầu
@@ -113,7 +113,7 @@ src/features/admin/
 | Tồn kho khi sửa product | Gửi variant đã có sẽ `setQuantity(stock)` từ payload, chưa thấy lịch sử điều chỉnh ở nhánh này | E10 sửa thông tin chung bằng cách **bỏ trường variants**. Chặn riêng sửa giá/thuộc tính variant đã có cho đến khi backend có contract không ghi đè kho; không coi readonly stock/refetch trước lưu là giải quyết race |
 | Ảnh sản phẩm | Có thêm/xóa/chọn primary; chưa có endpoint lưu thứ tự ảnh đã upload | E11 không hứa lưu drag-and-drop reorder. Kiểm tra field `isPrimary` thật, không đổi mọi field bắt đầu bằng `is` thành tên khác |
 | Ngừng bán variant | DELETE `/products/{id}/variants/{variantId}` hiện đặt status INACTIVE | Dùng nhãn “Ngừng bán biến thể”, không mô tả là xóa cứng hoặc hứa khôi phục khi chưa có API |
-| Trạng thái đơn | `/status` vẫn nhận CANCELLED; controller cho S gọi, service vẫn thực hiện hủy. `/cancel` riêng chỉ A/M; service chưa giới hạn mọi nhánh ngoài PENDING/PROCESSING | E4 chỉ expose luồng xử lý/giao hàng; E5 hủy riêng từ PENDING/PROCESSING. Ghi gap backend và kiểm thử quyền server, không kết luận ẩn nút đã sửa lỗ hổng |
+| Trạng thái đơn | Đọc lại 20/11/2026: `/status` vẫn nhận CANCELLED và cho S gọi. `/cancel` riêng chỉ A/M; service hiện đã chặn SHIPPED, DELIVERED, CANCELLED và RETURN_*, chỉ còn PENDING/PROCESSING trong enum hiện tại | E4 chỉ expose luồng xử lý/giao hàng; E5 hủy riêng từ PENDING/PROCESSING. Còn gap quyền S qua `/status`; cần kiểm thử server và hai request đồng thời/hoàn tồn lặp, không kết luận ẩn nút đã sửa lỗ hổng |
 | Trả hàng | Tạo request chưa đổi order sang RETURN_REQUESTED. Process duyệt/từ chối đổi trạng thái **cả đơn**; duyệt cộng tồn theo lượng trả | E15 xử lý qua return API, không qua dropdown status đơn. Ghi giới hạn trả một phần, nhiều request cùng đơn, variant bị xóa |
 | Hoàn tiền/lịch sử kho khi trả | Chưa thấy process return cập nhật paymentStatus, gọi cổng hoàn tiền hoặc ghi InventoryHistory | Không hiển thị “Đã hoàn tiền” từ APPROVED. Refetch dữ liệu, ghi phần backend cần bổ sung |
 | Chi tiết return | Admin controller chỉ có GET list và PUT process, chưa có GET detail | Mở drawer từ dữ liệu dòng; không tạo route chi tiết phụ thuộc RAM rồi hứa reload dùng được |
@@ -194,7 +194,7 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 | E2 | Danh sách đơn và DataTable server | E1 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
 | E3 | Chi tiết đơn admin | E2 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
 | E4 | Chuyển trạng thái xử lý/giao hàng | E3 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
-| E5 | Hủy đơn có lý do | E3 | Chưa bắt đầu |
+| E5 | Hủy đơn có lý do | E3 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
 | E6 | Danh mục và upload ảnh | E1 | Chưa bắt đầu |
 | E7 | Thương hiệu và logo | E6 để dùng lại upload/form | Chưa bắt đầu |
 | E8 | Danh sách sản phẩm admin | E2, E6–E7 | Chưa bắt đầu |
@@ -278,13 +278,15 @@ Thứ tự mặc định E1 → E22. Có thể chuyển sang module độc lập
 
 ### E5 — Hủy đơn có lý do theo quyền
 
+**Code và hướng dẫn — 20/11/2026:** đã triển khai theo yêu cầu trực tiếp. Đọc theo thứ tự `types.ts` → `schemas.ts` → `orderActions.ts` → `api.ts` → `queries.ts` → `components/AdminCancelOrderDialog.tsx` → `pages/AdminOrderDetailPage.tsx`. Flow, trách nhiệm từng file và cú pháp được giải thích trong chat; kết quả kiểm tra và phần tích hợp còn thiếu ở bàn giao E5 cuối tài liệu.
+
 **Kết quả:** A/M hủy đơn PENDING/PROCESSING qua dialog; S không có hành động này.
 
 **Kiến thức và mã hướng dẫn:** tái sử dụng dialog nhưng tách nghiệp vụ customer/admin, lỗi form và phản hồi không chắc chắn. Tạo `orders/components/AdminCancelOrderDialog.tsx`, request/schema/mutation trong module orders.
 
 **Các bước tự code:** PUT `/api/admin/orders/{id}/cancel` với `{ reason }`; trim và yêu cầu lý do theo DTO hiện hành. Kiểm tra quyền và trạng thái trước gửi, khóa dialog submit khi pending; sau thành công cập nhật đơn và invalidate kho/catalog liên quan. Nếu server trả PENDING_REFUND thì hiển thị “Chờ hoàn tiền”; không mô tả tiền đã về. Timeout phải GET lại trước khi đề xuất gửi hủy lần nữa.
 
-**Kiểm tra/hoàn thành:** đơn chưa trả tiền/đã trả tiền, thiếu lý do, S bị 403 khi gọi trực tiếp, đơn đã giao/đã hủy và hai tab cùng thao tác. Đối chiếu số lượng kho sau hủy để phát hiện hoàn tồn lặp. Gap kiểm tra trạng thái backend ghi ở mục 4 vẫn cần phối hợp. Bài tập: giải thích vì sao không dùng `/status` để hủy.
+**Kiểm tra/hoàn thành:** đơn chưa trả tiền/đã trả tiền, thiếu lý do, S bị 403 khi gọi trực tiếp, đơn đã giao/đã hủy và hai tab cùng thao tác. Đối chiếu số lượng kho sau hủy để phát hiện hoàn tồn lặp. Đọc lại 20/11/2026 cho thấy `/cancel` đã chặn trạng thái ngoài PENDING/PROCESSING trong enum hiện tại; còn cần phối hợp gap quyền `/status` và xác nhận chống hoàn tồn lặp khi có request đồng thời. Bài tập: giải thích vì sao không dùng `/status` để hủy.
 
 **Commit cuối nhiệm vụ:** `feat(admin-orders): cancel eligible orders with a reason`
 
@@ -505,7 +507,7 @@ Thứ tự mặc định E1 → E22. Có thể chuyển sang module độc lập
 
 | Việc | Khi cần xử lý | Ảnh hưởng tới hoàn thành |
 |---|---|---|
-| Chặn CANCELLED qua status của S; giới hạn cancel đúng trạng thái | Trước nghiệm thu E4/E5 về quyền/nghiệp vụ | UI vẫn triển khai được, bảo vệ server còn phải xác nhận |
+| Chặn CANCELLED qua status của S; xác nhận cancel đồng thời không hoàn tồn lặp | Trước nghiệm thu E4/E5 về quyền/nghiệp vụ | Source 20/11/2026: `/cancel` đã giới hạn đúng trạng thái trong enum hiện tại; quyền `/status` và tính đồng thời còn phải xác nhận với server |
 | Tách cập nhật variant metadata khỏi tồn kho, định danh variant ổn định | Khi làm phần sửa variant cũ E10 | Không chặn sửa thông tin chung; chưa chốt quản lý variant đầy đủ |
 | Cưỡng chế validation tạo product và quy tắc coupon phía server | Khi tích hợp E9/E17 | Validation FE không thay thế server |
 | Return: trạng thái đơn khi tạo, trả một phần/nhiều request, hoàn tiền, lịch sử kho | E15 và hồi quy D12/E22 | Chỉ ghi kết quả đã có; không hứa tự động hoàn tiền |
@@ -601,3 +603,19 @@ Bước tiếp theo:
 - Cần thử browser/backend: ba bước và Network payload, xác nhận/đóng bằng bàn phím, nhiều tab thay trạng thái, double click/mạng chậm/offline, timeout, 401/403/404, đổi tài khoản khi request đang chờ, cập nhật list sau Back/reload và payment COD sau DELIVERED. E1–E3 vẫn giữ các mục tích hợp chưa thử.
 - Trạng thái: **đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend**. Người dùng yêu cầu lưu commit E4 với nội dung `feat(admin-orders): update fulfillment status with confirmation`; chưa push. Commit không thay thế kiểm thử tích hợp còn thiếu.
 - Bước tiếp theo: đọc flow trong chat, thử checklist với backend và ghi kết quả; sau đó tiếp tục E5 — hủy đơn có lý do theo quyền.
+
+### Bàn giao E5 — 20/11/2026
+
+- Người dùng yêu cầu triển khai trực tiếp và giải thích flow/từng file/cú pháp. Đã thêm dialog hủy trên `/admin/orders/:id` cho A/M khi đơn PENDING/PROCESSING; STAFF và đơn ngoài hai trạng thái này không có nút hủy. Quyền được kiểm tra lại trong mutation trước HTTP. Không dùng endpoint `/status` để hủy, không import mutation/schema hủy customer.
+- Luồng: nhập lý do → React Hook Form + Zod trim/bắt buộc → chụp user/token/role/trạng thái khi mở dialog → GET mới → kiểm tra trạng thái và phiên → PUT `/api/admin/orders/{id}/cancel` với `{ reason }` → ghi detail từ response → invalidate dữ liệu liên quan → UI render lại. Schema không thêm giới hạn 200 ký tự của customer vì DTO admin hiện chỉ có `@NotBlank`.
+- File tạo: `src/features/admin/orders/components/AdminCancelOrderDialog.tsx`. File sửa: `src/features/admin/orders/{types,schemas,orderActions,api,queries}.ts`, `src/features/admin/orders/pages/AdminOrderDetailPage.tsx`, `phase5.md`. Không thêm dependency, route hay sửa backend. Hướng dẫn đọc code trong chat, không tạo file hướng dẫn riêng.
+- Tách `useAdminOrderActionContext` nội bộ để E4/E5 dùng chung kiểm tra phiên/quyền, GET mới và khóa mutation theo user/role/order. Mutation key có prefix `admin/userId/role/orders/actions/orderId`, không chứa token. `useIsMutating`, kiểm tra số mutation và ref submit ngăn gửi lặp/hai hành động cùng đơn trong QueryClient hiện tại; không phải khóa giữa hai tab hay phía server.
+- Mutation `retry: false`, `networkMode: "always"`, `gcTime: 0`; không xếp hàng PUT tự chạy khi reconnect. Kiểm tra ID string trong miền Java Long và phiên trước dispatch/sau await/trước cache/toast. Response sai ID hoặc chưa xác nhận CANCELLED được coi là kết quả chưa chắc chắn và đọc lại detail.
+- Thành công: hủy GET cũ, ghi detail chuẩn từ PUT, invalidate orders/dashboard/reports/inventory/products theo user/role và prefix catalog `products` (gồm list/detail/compare/mốc giá). Prefix của module admin chưa triển khai chỉ đánh dấu cache nếu tồn tại. Không tự cộng kho hoặc đổi paymentStatus ở frontend. PENDING_REFUND hiển thị “Chờ hoàn tiền”, toast không hứa đã hoàn tiền hay thời hạn hoàn; thời gian toast hủy thành công đặt 2 giây theo yêu cầu người dùng.
+- Lỗi PUT/timeout: GET lại rồi invalidate để đọc trạng thái và kho/catalog có thể đã thay đổi. Dialog giữ lý do, hiển thị lỗi trường `reason` nếu server trả validationErrors, khóa xác nhận sau lỗi và yêu cầu đóng/kiểm tra lại. Mỗi lần thử tiếp vẫn bắt buộc GET thành công trước PUT; không tự hủy lần hai. PUT thành công nhưng GET sau lưu lỗi vẫn giữ kết quả lưu và cảnh báo dữ liệu trên trang. 403 khóa hành động trong component và hướng dẫn cập nhật phiên.
+- Contract đã đọc lại từ source backend: `AdminOrderController`, `CancelOrderRequest`, `OrderAdminServiceImpl`, `OrderStatus`. `/cancel` chỉ A/M, nhận JSON, trả `OrderDetailAdminResponse`; backend hoàn tồn và ghi InventoryHistory, đơn PAID chuyển PENDING_REFUND. Source hiện đã chặn SHIPPED/DELIVERED/CANCELLED/RETURN_* ở `/cancel`, khác ghi chú kế hoạch cũ. Vẫn còn nhánh STAFF hủy qua `/status`; chưa xác minh request đồng thời không hoàn tồn lặp. Đây là đọc source, chưa phải xác nhận API thật.
+- Kiểm tra tĩnh: `npm run typecheck`, `npm run lint`, `npm run build`, `git diff --check` đạt. Chunk AdminOrderDetailPage khoảng **18,90 kB**; cảnh báo chunk storefront/HeroScene trên 500 kB vẫn còn.
+- Kiểm tra logic tạm thời bằng Node: **20/20 đạt**, dùng HTTP/session giả lập, QueryClient/MutationObserver/QueryObserver thật và SSR. Bao phủ A/M với PENDING/PROCESSING, schema, quyền STAFF ở hook/UI, ID lớn/sai, payment UNPAID/PENDING_REFUND, cache đúng phiên/catalog, trạng thái đổi ở tab khác, đổi phiên trước/sau GET/PUT, timeout sau server lưu, GET thất bại chặn PUT, offline không replay, hai hành động E4/E5 cùng đơn, lưu thành công nhưng refetch lỗi, lỗi field/403 và hồi quy ba bước E4. Script kiểm tra tạm đã xóa sau khi chạy; không khôi phục npm script/test admin đã được bỏ ở E4. `npm run verify:catalog`: **13/13 đạt**. SSR không thay thế kiểm thử tương tác dialog trên browser.
+- Chưa chạy browser/backend thật: cần thử A/M/S và 403 trực tiếp, PAID/UNPAID, kiểm tra Network GET → PUT `{ reason }`, trim/lỗi field, double click, focus/Escape/mobile, nhiều tab thay trạng thái, timeout/mạng chậm/offline/đổi tài khoản, Back/list/reload, payment/kho/lịch sử kho và chống hoàn tồn lặp. E1–E4 vẫn giữ các mục tích hợp chưa thử.
+- Trạng thái: **đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend**. Người dùng yêu cầu lưu commit E5 với nội dung `feat(admin-orders): cancel eligible orders with a reason`; chưa push. Commit không thay thế kiểm thử tích hợp còn thiếu.
+- Bước tiếp theo: đọc code theo thứ tự ở E5, thử checklist với backend và ghi kết quả thực tế; sau đó tiếp tục E6 — quản lý danh mục và upload ảnh.

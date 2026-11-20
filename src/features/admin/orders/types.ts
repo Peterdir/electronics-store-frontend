@@ -1,6 +1,10 @@
 import type { ID, ISODateTime, Money } from "@/shared/types/common";
 import type { OrderStatus, PaymentMethod, PaymentStatus, ReturnStatus } from "@/shared/types/enums";
 
+export interface CancelAdminOrderRequest {
+  reason: string;
+}
+
 export interface AdminOrderItemResponse {
   id: ID;
   variantId: ID | null;

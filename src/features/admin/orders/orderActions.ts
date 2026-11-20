@@ -16,3 +16,7 @@ export function getNextFulfillmentStatus(status: OrderStatus): FulfillmentStatus
 export function canUpdateFulfillmentStatus(current: OrderStatus, next: FulfillmentStatus) {
   return getNextFulfillmentStatus(current) === next;
 }
+
+export function canCancelAdminOrder(status: OrderStatus) {
+  return status === "PENDING" || status === "PROCESSING";
+}
