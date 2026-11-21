@@ -31,3 +31,20 @@ export interface AdminProductsFilters {
 }
 
 export type GetAdminProductsParams = AdminProductsFilters;
+
+export interface AdminProductVariantRequest {
+  sku: string;
+  price: Money;
+  stock: number;
+  attributes: Record<string, string>;
+}
+
+export interface CreateAdminProductRequest {
+  name: string;
+  categoryId: ID;
+  brandId: ID | null;
+  basePrice: Money;
+  description: string;
+  specification: Record<string, string>;
+  variants: AdminProductVariantRequest[];
+}

@@ -2,7 +2,7 @@
 
 > Ngày lập: **13/11/2026**. Đối chiếu frontend tại HEAD `87eaa75`; working tree sạch trước khi lập kế hoạch.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase4.md](phase4.md), source frontend và source backend tham chiếu tại `../ecommerce-backend`.
-> **Trạng thái — 21/11/2026: E1–E8 đã có code, chờ review và kiểm thử browser/backend; E9–E22 chưa triển khai.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy. Xem bàn giao cuối tài liệu.
+> **Trạng thái — 21/11/2026: E1–E9 đã có code, chờ review và kiểm thử browser/backend; E10–E22 chưa triển khai.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy. Xem bàn giao cuối tài liệu.
 > **Cách học bắt buộc: khi bắt đầu mỗi nhiệm vụ, sinh mã hướng dẫn theo từng bước và từng file để người dùng tự học, tự gõ code; cuối nhiệm vụ có nội dung commit.** Không tự triển khai source khi người dùng chỉ yêu cầu hướng dẫn.
 
 ## 1. Mục tiêu và điểm bắt đầu
@@ -198,7 +198,7 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 | E6 | Danh mục và upload ảnh | E1 | Đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend |
 | E7 | Thương hiệu và logo | E6 để dùng lại upload/form | Đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend |
 | E8 | Danh sách sản phẩm admin | E2, E6–E7 | Đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend |
-| E9 | Tạo sản phẩm, thông số, biến thể | E8 | Chưa bắt đầu |
+| E9 | Tạo sản phẩm, thông số, biến thể | E8 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
 | E10 | Sửa thông tin sản phẩm an toàn với tồn kho | E9; contract riêng cho sửa variant cũ | Chưa bắt đầu |
 | E11 | Quản lý ảnh sản phẩm | E10 | Chưa bắt đầu |
 | E12 | Trạng thái sản phẩm, ngừng bán variant | E10 | Chưa bắt đầu |
@@ -361,6 +361,101 @@ Thứ tự mặc định E1 → E22. Có thể chuyển sang module độc lập
 **Các bước tự code:** POST multipart `/api/admin/products`, `data` chứa JSON AdminProductRequest, nhiều `images` nếu có. Validate tên/category, tiền không âm, stock nguyên không âm, SKU không rỗng/trùng trong form, khóa key/value trùng gây mất dữ liệu. Giữ ID dạng string. Bản đầu tự thêm từng variant; sinh tổ hợp thuộc tính/SKU tự động để mở rộng sau khi luồng thủ công ổn định. Response hiện chỉ có text, nên sau thành công về danh sách và refetch; không bịa ID để navigate detail.
 
 **Kiểm tra/hoàn thành:** nhiều variant, ảnh lỗi, SKU trùng, category đã bị xóa, submit lặp, tạo thành công rồi refetch lỗi. Timeout không POST lại tự động; kiểm tra danh sách trước. Ghi thiếu validation create phía backend, không tuyên bố Zod đã xử lý toàn bộ nghiệp vụ. Bài tập: viết một payload mẫu từ form và giải thích string ID/number stock.
+
+**Hướng dẫn đọc code E9 — triển khai trực tiếp theo yêu cầu ngày 21/11/2026:**
+
+Mở `/admin/products`, bấm **Tạo sản phẩm**, hoặc vào `/admin/products/new` bằng ADMIN/MANAGER/STAFF. Nhập thông tin chung → thêm thông số → nhập SKU/giá/tồn ban đầu cho từng biến thể → thêm thuộc tính → chọn ảnh nếu cần → tạo. Thành công quay về danh sách ở trang đầu, mặc định mới nhất trước. E9 chưa mở chức năng sửa E10.
+
+Đường dẫn dưới đây tính từ root frontend. Đọc theo thứ tự này để đi từ giao diện đến request và quay lại giao diện:
+
+```text
+router.tsx → AdminCreateProductPage.tsx → ProductForm.tsx
+  ├─ ProductField.tsx                        đăng ký input/select/textarea
+  ├─ SpecificationEditor.tsx                 mảng key/value sản phẩm
+  ├─ VariantFields.tsx                       mảng biến thể
+  │    └─ SpecificationEditor.tsx            mảng key/value thuộc tính
+  └─ ProductImagesField.tsx                  File[] và preview
+
+handleSubmit → zodResolver(createProductSchema) → submit(values)
+  → useCreateAdminProduct.mutateAsync({ values, session })
+  → createAdminProduct → buildCreateProductFormData
+  → buildCreateProductRequest → FormData(data JSON + images lặp key)
+  → Axios client → POST /api/admin/products
+  → AdminProductController → ProductServiceImpl → repository/storage
+  → HTTP 200 text → invalidate cache → toast → navigate danh sách
+  → useAdminProducts GET lại → bảng danh sách mới
+```
+
+1. **Điểm vào — `src/app/router.tsx`, `src/shared/auth/redirect.ts`, `products/pages/AdminProductsPage.tsx`.** Router thêm child `path: "products/new"` dưới `/admin`. `lazy: async () => { const { AdminCreateProductPage } = await import(...); return { Component: AdminCreateProductPage }; }` là hàm bất đồng bộ: `import()` chỉ tải module khi router cần, destructuring lấy component được export, object trả về đăng ký component với router. `AdminRoute` hiện có kiểm tra role A/M/S. Trang list thêm `<Link to="/admin/products/new">`: Link điều hướng phía React Router. Whitelist redirect cho phép giữ URL tạo sau đăng nhập, kể cả query/hash; CUSTOMER không được nhận đích này. Không cần thêm menu con vì menu Sản phẩm E8 đã có. Kiểm tra nhanh: vào URL trực tiếp, reload và thử truy cập khi chưa đăng nhập. Bài tập: vì sao Link, router và guard là ba trách nhiệm riêng?
+
+2. **Page — `src/features/admin/products/pages/AdminCreateProductPage.tsx`.** Component page lấy session bằng `useProductSession`, kiểm tra `isCurrentProductSession` và ghép tiêu đề với `<ProductForm session={session} />`. `session={session}` truyền object qua props. ``key={`${session.userId}:${session.role}`}`` yêu cầu React tạo form mới khi user/role đổi, tránh giữ dữ liệu form của tài khoản trước; token không được đưa vào query key. Page không gọi POST trực tiếp. Kiểm tra nhanh: thấy tiêu đề Tạo sản phẩm và các nhóm nhập. Bài tập: điều gì khác nhau giữa `ProductForm` là tên hàm và `<ProductForm />` là JSX?
+
+3. **Điều phối form — `products/components/ProductForm.tsx`.** `useForm<ProductFormValues>({ resolver: zodResolver(createProductSchema), defaultValues: newProductFormValues() })` tạo form: generic `<ProductFormValues>` giúp TypeScript kiểm tra tên field; `resolver` nối Zod với React Hook Form; `defaultValues` là dữ liệu khởi tạo, không reset khi GET lựa chọn refetch. `FormProvider {...form}` cung cấp các phương thức form cho component con, không cần truyền `register/control` qua mọi tầng. Spread `...form` truyền từng thuộc tính của object thành prop. `useWatch({ control, name: "categoryId" })` đăng ký theo dõi giá trị lựa chọn để giữ option tạm nếu danh mục bị xóa hoặc GET lỗi. Nó không gọi API.
+
+   `handleSubmit(submit)` tạo event handler: validate trước, chỉ gọi `submit(values)` nếu hợp lệ. `noValidate` tắt popup validation của trình duyệt để dùng thông báo Zod thống nhất; thuộc tính `required` vẫn mô tả ý nghĩa field. `void handleSubmit(submit)(event)` chủ động bỏ giá trị Promise trả về ở event handler; lỗi mutation được xử lý trong `try/catch` của submit. `useRef(false)` giữ khóa gửi giữa các lần render; đổi `.current` không tự render như state. `try` chờ `await mutation.mutateAsync`, `catch` gắn lỗi server và giữ dữ liệu, `finally` mở khóa ref. `setError("root.server", ...)` là lỗi toàn form; một số lỗi backend theo field được đưa về `name/categoryId/brandId/basePrice/description`.
+
+   `busy` ghép trạng thái React Hook Form và mutation; `<fieldset disabled={locked}>` khóa nhóm input. Timeout/mất mạng/408/5xx được xem là kết quả chưa rõ, khóa POST tiếp và chỉ đường tới danh sách. 403 yêu cầu cập nhật phiên. 404 như category bị xóa vẫn giữ form để sửa lựa chọn. `mounted` ref được `useEffect` đặt true khi mount và false trong cleanup: nếu đã rời trang, POST trả về sẽ không kéo người dùng về list hoặc gắn lỗi vào form cũ. Kiểm tra nhanh: nhập dữ liệu, gây lỗi GET hoặc POST rồi xác nhận dữ liệu còn nguyên. Bài tập: vì sao `retry: false` vẫn cần khóa submit và cảnh báo timeout?
+
+4. **Field cơ bản — `products/components/ProductField.tsx`.** Đây là component trình bày dùng riêng cho form E9. `interface ProductFieldProps` mô tả props; `required?: boolean` nghĩa là prop có thể vắng mặt; `kind?: "text" | "textarea" | "select"` là union chỉ nhận ba chuỗi. `name: FieldPath<ProductFormValues>` giới hạn tên field, bao gồm đường dẫn nested như `variants.0.sku`. `useFormContext<ProductFormValues>()` lấy form từ Provider. `register(name)` trả về `name`, `onChange`, `onBlur`, `ref`; `{...register(name)}` gắn chúng lên input để thư viện quản lý giá trị. `getFieldState(name, formState)` lấy lỗi đúng đường dẫn, không cần tự truy cập nhiều tầng `errors`.
+
+   `useId()` sinh ID ổn định để `label htmlFor` trỏ đến field. `aria-invalid` và `aria-describedby` giúp công nghệ hỗ trợ nhận biết lỗi. Toán tử `condition ? A : B` chọn JSX theo kind. `options?.map(...)` chỉ duyệt nếu options tồn tại; `key={option.value}` giúp React nhận diện option. Tiền/stock dùng input text và `inputMode` để gợi ý bàn phím; `inputMode` không tự validate hay đổi dữ liệu thành number. Kiểm tra nhanh: bấm label phải focus đúng input. Bài tập: `register("variants.0.price")` liên quan gì đến cấu trúc payload?
+
+5. **Thông số/thuộc tính — `products/components/SpecificationEditor.tsx`.** `useFieldArray({ control, name })` quản lý một mảng object, cung cấp `fields`, `append`, `remove`. `fields.map((row, index) => ...)` tạo UI từng dòng; `row.id` là ID nội bộ của React Hook Form để làm React key, không phải ID backend. `append({ key: "", value: "" })` thêm dòng và `remove(index)` xóa dòng. Tên field `` `${name}.${index}.key` `` dùng template literal để tạo đường dẫn. Ví dụ `name="specification"` cho `specification.0.key`; `name="variants.1.attributes"` cho `variants.1.attributes.0.key`. Type `` "specification" | `variants.${number}.attributes` `` mô tả hai dạng đường dẫn được chấp nhận.
+
+   Editor giữ dữ liệu dạng mảng `{ key, value }` để thêm/xóa/hiển thị lỗi từng dòng. Nó chưa đổi sang object; builder làm việc đó khi submit. Key trùng sẽ bị chặn trước khi `Object.fromEntries` có thể ghi đè. Hai key khác nhau được phép cùng value, ví dụ RAM và Bộ nhớ cùng là `8 GB`; chỉ key phải duy nhất trong từng nhóm. Kiểm tra nhanh: nhập `RAM` và ` RAM ` ở hai dòng, submit phải báo trùng dòng thứ hai. Bài tập: vì sao không giữ thông số ngay từ đầu dưới dạng object và liên tục gán `object[key] = value`?
+
+6. **Biến thể — `products/components/VariantFields.tsx`.** Một `useFieldArray` khác quản lý `variants`. Mỗi variant có `sku`, `price`, `stock`, `attributes`. `newProductVariant()` trả object mới khi thêm dòng, tránh chia sẻ mảng thuộc tính giữa các variant. `ProductFormValues["variants"][number]` trong kiểu trả về là indexed access type: lấy kiểu một phần tử của mảng variants. Không cho xóa variant cuối vì UI yêu cầu ít nhất một; schema cũng kiểm tra quy tắc này. Editor thuộc tính có key theo đường dẫn index để khởi tạo lại khi xóa variant trước đó làm index đổi. SKU được kiểm tra sau trim và không phân biệt hoa/thường trong cùng form; đây không phải xác nhận SKU duy nhất trên toàn database. Kiểm tra nhanh: thêm hai biến thể màu khác nhau, xóa một dòng giữa và xem thuộc tính còn gắn đúng variant. Bài tập: SKU và React `row.id` khác nhau thế nào?
+
+7. **Ảnh — `products/components/ProductImagesField.tsx`.** `Controller` nối `File[]` với React Hook Form vì file input cần cách đọc riêng. `Array.from(event.currentTarget.files ?? [])` đổi FileList thành mảng; `?? []` dùng mảng rỗng khi files null. `[...field.value, ...files]` giữ ảnh cũ và thêm ảnh mới, không mutate mảng cũ. Gán `event.currentTarget.value = ""` cho phép chọn lại cùng file. `filter((_, position) => position !== index)` tạo mảng bỏ đúng ảnh; `_` đánh dấu tham số file không dùng. Có thể bỏ file lỗi mà không mất file còn lại. Ảnh đầu tiên là primary do service backend đặt khi tạo.
+
+   `ImagePreview` dùng `URL.createObjectURL(file)` trong `useEffect`; hàm cleanup gọi `URL.revokeObjectURL(url)` khi thay file/unmount để thu hồi tài nguyên. Ref trỏ tới DOM `<img>`. Chỉ file vượt qua schema ảnh mới được preview; validation này kiểm tra tên/MIME/dung lượng, không đọc chữ ký nội dung. Backend `FileValidator` tiếp tục kiểm tra magic bytes. Không đưa File/object URL vào cache hoặc Zustand persist. Tái sử dụng `shared/validation/imageUpload.ts`; không sửa `ImageDropzone` một ảnh đã có của E6/E7. Kiểm tra nhanh: chọn nhiều ảnh, bỏ ảnh đầu, chọn lại cùng file, thử ảnh rỗng/sai MIME/quá dung lượng. Bài tập: vì sao không dùng URL.createObjectURL trực tiếp trong JSX mỗi lần render?
+
+8. **Schema — `products/schemas.ts`.** `z.object` khai báo cấu trúc, `z.array` khai báo mảng, `z.string().trim().min(1, message)` bỏ khoảng trắng đầu/cuối rồi bắt buộc có nội dung. `refine` thêm một điều kiện; `superRefine((items, context) => ...)` có thể thêm nhiều lỗi bằng `context.addIssue`. `path: [index, "sku"]` đưa lỗi về đúng ô trong mảng; với schema con React Hook Form ghép thêm prefix `variants`. `new Set<string>()` nhớ các SKU/key đã gặp; `.has` kiểm tra trùng và `.add` ghi nhận.
+
+   Regex `/^\d+(\.\d+)?$/` chấp nhận số tiền không âm dạng thập phân, không nhận ô rỗng, dấu âm, NaN/Infinity hoặc dạng `1e3`. Stock dùng `/^\d+$/` và `Number.isSafeInteger` để chặn số lẻ/vượt giới hạn JS. Tiền cũng bị giới hạn bởi `Number.MAX_SAFE_INTEGER`, dùng kiểu Money=number theo repo; không phải phép toán tiền thập phân chính xác tùy ý. Không dùng `z.coerce.number()` vì `Number("")` là 0. `isPositiveLongId` kiểm tra ID bằng chuỗi, giữ nguyên cả Long lớn hơn giới hạn số an toàn JS. Brand nhận `""` khi không chọn. `z.infer<typeof createProductSchema>` suy ra type từ schema; `typeof` ở vị trí type lấy kiểu của biến schema. Kiểm tra nhanh: thử giá rỗng, `-1`, stock `1.5` và SKU trùng. Bài tập: TypeScript interface có tự kiểm tra dữ liệu khi chạy không, vì sao vẫn cần Zod?
+
+9. **DTO — `products/types.ts`.** Bổ sung `CreateAdminProductRequest` và `AdminProductVariantRequest`, tách dữ liệu gửi backend khỏi form. `interface` mô tả object trong lúc biên dịch; nó không xuất hiện như validator ở runtime. `Record<string, string>` là object có key động và value chuỗi. `brandId: ID | null` bắt buộc có property nhưng cho phép null; khác với `brandId?: ID` có thể không có property. `variants: AdminProductVariantRequest[]` là mảng variant. `ID` alias string; `Money` alias number. Không tái dùng DTO này làm payload cập nhật variant cũ E10 vì có nguy cơ ghi đè kho. Kiểm tra nhanh: so kiểu form `basePrice: string` với DTO `basePrice: Money`. Bài tập: vì sao categoryId `"9007199254740993"` không được đi qua `Number()`?
+
+10. **Builder — `products/buildCreateProductRequest.ts`.** `buildCreateProductRequest(values): CreateAdminProductRequest` validate lại ở biên API, trim bằng schema, đổi tiền/stock sang number, đổi brand trống sang null và đổi các dòng key/value thành object. Trong `parsed.specification.map(({ key, value }) => [key, value])`, destructuring lấy hai property rồi tạo cặp `[key, value]`; `Object.fromEntries` biến mảng cặp thành object. `variants.map` tạo mảng DTO mới; không sửa object form đang nhập. `images` không nằm trong JSON.
+
+    `buildCreateProductFormData` tạo `new FormData()`, append `data` bằng `JSON.stringify(payload)` và append từng File cùng key `images`. Không append File vào chuỗi JSON, không đổi Long ID thành number, không tự tạo ID sản phẩm. Browser/Axios tạo multipart boundary, không tự đặt Content-Type application/json hoặc multipart thiếu boundary. Kiểm tra nhanh: Network phải có một part data và nhiều part images đúng thứ tự. Bài tập: phân biệt `JSON.stringify(payload)` và `new FormData()`.
+
+11. **HTTP — `products/api.ts`.** `createAdminProduct(values, authToken): Promise<string>` gọi `api.post<string>`; `<string>` khai báo kiểu data trả về, không phải chuyển đổi dữ liệu tại runtime. `await` chờ Promise và `{ data }` lấy nội dung response Axios. Backend thành công trả text `Product created successfully.`, không có ID. Giữ chế độ đọc mặc định của Axios: text thành công còn nguyên; JSON lỗi vẫn được parse để `normalizeError` lấy message/validationErrors và nhận diện tài khoản khóa. Ép `responseType: "text"` ở đây sẽ làm lỗi JSON thành chuỗi. `meta.authToken` dùng token đã chụp; `noPublicRetry` cấm thử lại dưới phiên guest. Client có sẵn chịu trách nhiệm Bearer header, timeout, lỗi 401/tài khoản khóa. Kiểm tra nhanh: API lỗi category phải hiển thị message, không nguyên chuỗi JSON. Bài tập: tại sao không gọi public product API để tạo sản phẩm?
+
+12. **Mutation/cache — `products/queries.ts`.** `useCreateAdminProduct` dùng `useMutation` cho POST. Khác `useQuery` dùng để đọc GET, mutation chỉ chạy khi gọi `mutateAsync`. Snapshot gồm userId/role/token được kiểm tra trước request, sau await và trước toast/cache/navigate. Query/mutation keys chỉ có userId/role và mô tả tài nguyên; không chứa token/File. `retry: false` không tự lặp mutation; `networkMode: "always"` cho request thử ngay cả khi offline để lỗi được trả về ngay, không nằm chờ tự POST khi reconnect. `gcTime: 0` tránh giữ mutation chứa File lâu sau khi không còn observer.
+
+    `useIsMutating` cập nhật trạng thái pending ở UI; `queryClient.isMutating` kiểm tra lúc thực thi để chặn hai form cùng phiên dispatch đồng thời. Server vẫn cần idempotency nếu muốn ngăn mọi trường hợp gửi trùng; khóa FE không thay thế server. Sau thành công, `cancelQueries` dừng GET cũ rồi `invalidateQueries` đánh dấu dữ liệu liên quan cũ và refetch query đang active. Làm mới products/inventory/category/brand admin hiện tại và public products/categories/brands. Không chờ GET thành công để quyết định POST đã thành công: refetch lỗi phải thử lại GET ở list, không tạo lại sản phẩm. `.catch(() => undefined)` chỉ bắt lỗi tác vụ refresh nền; lỗi POST vẫn đi vào form. Kiểm tra nhanh: tạo xong, chặn GET danh sách và xác nhận không có POST thứ hai. Bài tập: `invalidateQueries` có tự ghi một sản phẩm giả vào cache không?
+
+13. **Kiểm thử — `scripts/verify-admin-product-create.cjs`.** Chạy `node --test scripts/verify-admin-product-create.cjs`. Đây là bộ kiểm tra Node bổ sung theo cách repo đang dùng, không thêm dependency/framework. Loader TypeScript tạm trong bộ kiểm tra giúp chạy module nguồn và thay các biên môi trường bằng fixture. Các test dùng schema/builder thật, Axios với HTTP loopback giả lập, MutationObserver/QueryClient thật để kiểm tra phiên, đồng thời, retry/cache và refetch lỗi; SSR kiểm tra render form, redirect kiểm tra deep link. `assert.equal/deepEqual/rejects` lần lượt kiểm tra giá trị, cấu trúc và Promise bị reject. File ảnh fixture chỉ dùng kiểm tra FE/transport; không thay thế test magic bytes của backend. SSR không chứng minh thao tác DOM/focus hoặc hành vi trình duyệt. Kiểm tra nhanh: bộ test phải kết thúc với 16 pass. Bài tập: test HTTP giả lập có đủ kết luận upload vào storage thật thành công không?
+
+**Payload mẫu để đối chiếu:** form giữ `basePrice="12000000"`, `stock="2"`, specification/attributes là mảng dòng. Sau builder, part `data` chứa chuỗi JSON của object sau; file ảnh nằm ở các part images riêng:
+
+```json
+{
+  "name": "Điện thoại mẫu",
+  "categoryId": "9007199254740993",
+  "brandId": null,
+  "basePrice": 12000000,
+  "description": "Mô tả sản phẩm",
+  "specification": { "Màn hình": "6.1 inch" },
+  "variants": [
+    {
+      "sku": "DT-DEN-128",
+      "price": 12500000,
+      "stock": 2,
+      "attributes": { "color": "Đen", "storage": "128 GB" }
+    },
+    {
+      "sku": "DT-TRANG-256",
+      "price": 14000000,
+      "stock": 0,
+      "attributes": { "color": "Trắng", "storage": "256 GB" }
+    }
+  ]
+}
+```
+
+Backend đọc category/brand bằng ID, tạo Product ACTIVE, từng ProductVariant ACTIVE và Inventory với quantity ban đầu; upload ảnh, đặt ảnh đầu primary rồi save. POST hiện parse JSON thủ công và chưa gọi Bean Validation, do đó request bỏ qua frontend vẫn có thể thiếu/sai dữ liệu nghiệp vụ. Source `FileValidator` kiểm tra tối đa 5 MiB/file và chữ ký ảnh; cấu hình multipart hiện giới hạn toàn request 30 MB. SKU trong form chỉ được kiểm tra nội bộ, chưa xác nhận uniqueness toàn hệ thống. Không sửa backend trong E9.
 
 **Commit cuối nhiệm vụ:** `feat(admin-products): create products with specifications and variants`
 
@@ -694,3 +789,18 @@ Bước tiếp theo:
 - Checklist tiếp theo: chạy backend và frontend; thử A/M/S với cả ba status, phối hợp tên/category/brand, INACTIVE, null/ID tham chiếu đã mất, sort ba cột, reset trang, Back/Forward/reload/deep link, trang rỗng/vượt phạm vi, ảnh hỏng, mobile/bàn phím, 403/lỗi mạng/refetch lỗi và đổi tài khoản khi đang GET. Network phải gọi admin products, đúng params/page từ 0, không sort totalStock/variantCount; thử CUSTOMER gọi trực tiếp endpoint để xác nhận quyền backend.
 - Trạng thái: **đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend**. Chưa commit/push. Nội dung commit đề xuất: `feat(admin-products): list products with server-side filters`. Sau nghiệm thu E8, tiếp tục E9 khi người dùng yêu cầu.
 - Chỉnh giao diện trạng thái: dùng ProductStatusBadge riêng, một dòng, bỏ caption dư, icon nhỏ và màu riêng cho ba trạng thái ở light/dark mode. Typecheck, lint phần sửa và build đạt; chưa kiểm tra trực quan do quyền điều khiển trình duyệt không được cấp.
+
+### Bàn giao E9 — Tạo sản phẩm, thông số và biến thể — 21/11/2026
+
+- Đã triển khai `/admin/products/new` lazy-load cho ADMIN/MANAGER/STAFF, thêm link tạo ở danh sách E8 và whitelist redirect sau login. Tạo thông tin chung, thông số, ít nhất một biến thể thủ công, thuộc tính từng variant và nhiều ảnh tùy chọn. Giữ các thay đổi E7/E8 có sẵn; không sửa backend, thêm dependency, chạy `gen:api`, commit hoặc push.
+- File mới: `src/features/admin/products/schemas.ts`, `buildCreateProductRequest.ts`, `components/{ProductForm,ProductField,SpecificationEditor,VariantFields,ProductImagesField}.tsx`, `pages/AdminCreateProductPage.tsx`, `scripts/verify-admin-product-create.cjs`. Mở rộng `products/{types,api,queries}.ts`, `pages/AdminProductsPage.tsx`, `src/app/router.tsx`, `src/shared/auth/redirect.ts` và tài liệu này.
+- Đọc lại source `AdminProductController`, `AdminProductRequest`, `AdminProductVariantRequest`, `ProductServiceImpl.createProduct`, entity Product/ProductVariant, `FileValidator` và cấu hình multipart. Request đúng POST multipart: một part `data` là chuỗi JSON; nhiều part `images` nếu có, browser/Axios tạo boundary. Thành công trả text, về danh sách; không suy đoán ID để mở detail/edit. Axios đọc mặc định để text thành công và JSON lỗi cùng hoạt động; test HTTP đã phát hiện và ngăn việc ép `responseType: "text"` làm mất message/fieldErrors của lỗi JSON.
+- React Hook Form/Zod kiểm tra tên/category, ID Long dạng string, tiền không âm/hữu hạn/trong giới hạn số JS, stock nguyên không âm/an toàn, SKU không trống/trùng sau trim và không phân biệt hoa/thường trong cùng form, key/value không trống và key không trùng trong từng nhóm. Thông số/thuộc tính giữ dạng mảng khi nhập, chuyển sang object khi gửi. Brand không chọn gửi null; không gửi status vì backend đặt ACTIVE. Dữ liệu nhập còn nguyên khi lỗi; refetch lựa chọn không reset form, ID tham chiếu đã mất có option tạm để không làm sai giá trị đang chọn.
+- Ảnh dùng lại schema dùng chung E6/E7, không sửa ImageDropzone một ảnh: kiểm tra extension/MIME/dung lượng, chọn nhiều lần và bỏ từng ảnh, preview file hợp lệ, cleanup object URL khi file đổi/unmount. Chưa kiểm tra chữ ký nội dung ở FE; backend chịu trách nhiệm FileValidator và storage. Cấu hình backend hiện tối đa 5 MiB/file và 30 MB/toàn request.
+- Mutation `retry: false`, `networkMode: "always"`, `gcTime: 0`; ref khóa submit, trạng thái pending dùng chung phiên và kiểm tra đồng thời tại mutation. Kiểm tra snapshot user/token/role trước/sau request và trước side effect; response cũ không toast/cache/navigate cho phiên mới. Không navigate hoặc gắn lỗi form khi đã rời page. Timeout/mất mạng/408/5xx khóa POST tiếp, yêu cầu kiểm tra danh sách trước; không tự replay khi reconnect. 403 giữ lỗi quyền; 404 cho sửa tham chiếu và thử lại sau khi kiểm tra.
+- Thành công cancel/invalidate products/inventory/categories/brands admin đúng user/role và public products/categories/brands. Refresh GET chạy riêng; lỗi GET không biến POST thành thất bại, không gợi ý tạo lại. Không lưu File/token/object URL vào query key hoặc Zustand persist.
+- Hướng dẫn 13 bước ngay trong mục E9 giải thích từng file, thứ tự đọc và flow từ JSX/form/schema tới DTO/multipart/backend/cache/UI; có cú pháp TypeScript/React, payload hai variant, thao tác kiểm tra và câu hỏi tự học từng bước.
+- Kiểm tra tự động: `npm run typecheck`, `npm run lint`, `npm run build`, `git diff --check` đạt. `node --test scripts/verify-admin-product-create.cjs` **16/16 đạt**: schema nested, ID lớn, số/stock, SKU/key trùng, ảnh sai, DTO/FormData, Axios multipart thật qua HTTP giả lập và lỗi JSON, snapshot/quyền, hai mutation đồng thời, đổi phiên trong POST, cache thật với refetch lỗi, offline/timeout không replay, SSR form và deep link. `npm run verify:catalog` **13/13 đạt**. Bộ kiểm tra E9 được giữ lại để chạy hồi quy; không thêm framework/CI/npm script mới.
+- Backend dev `127.0.0.1:8081` kết nối được: GET `/api/categories`, `/api/brands` trả **200**; GET `/api/admin/products` chưa đăng nhập trả **401**. Đây là kiểm tra chỉ đọc, chưa chứng minh quyền A/M/S, POST tạo mới, inventory hoặc storage. Chưa kiểm thử browser tương tác và POST có đăng nhập trên backend thật; không đánh dấu nghiệm thu đầy đủ. Build vẫn có cảnh báo chunk storefront/HeroScene trên 500 kB đã có từ trước.
+- Checklist tiếp theo: đăng nhập lần lượt A/M/S, tạo sản phẩm hai variant với ảnh thật, xem request multipart và reload list/catalog; thử category bị xóa, SKU đã tồn tại, file giả nội dung/quá dung lượng/tổng request lớn, thêm/xóa variant giữa với thuộc tính, bỏ/thay/chọn lại ảnh, bàn phím/mobile/focus, gửi lặp, lỗi GET sau thành công, timeout và đổi tài khoản/rời page khi POST chậm. CUSTOMER phải bị chặn route/API. Backend vẫn cần cưỡng chế validation create và xác định chính sách SKU; FE không thay thế chúng. Không tự gửi POST lần nữa nếu kết quả trước chưa rõ.
+- Trạng thái E9: **đã code, kiểm tra tự động đạt; chờ review và kiểm thử nghiệp vụ browser/backend có đăng nhập**. Người dùng yêu cầu commit E9; chưa push. Nội dung commit: `feat(admin-products): create products with specifications and variants`. E10 chưa nằm trong commit này.

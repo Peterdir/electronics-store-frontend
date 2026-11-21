@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { ImageOff } from "lucide-react";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { useDebounce } from "@/hooks/useDebounce";
 import { formatDateTime, formatVND } from "@/lib/format";
@@ -106,7 +106,8 @@ export function AdminProductsPage() {
 
   return (
     <section className="space-y-6">
-      <AdminPageHeader title="Quản lý sản phẩm" description="Tìm theo tên hoặc mô tả, bao gồm sản phẩm đang bán, ngừng bán và đang ẩn." />
+      <AdminPageHeader title="Quản lý sản phẩm" description="Tìm theo tên hoặc mô tả, bao gồm sản phẩm đang bán, ngừng bán và đang ẩn."
+        actions={<Link to="/admin/products/new" className="inline-flex min-h-10 items-center rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-ring">Tạo sản phẩm</Link>} />
       <FilterBar>
         <label className="grid min-w-56 flex-1 gap-2 text-sm font-medium">
           Tìm kiếm sản phẩm
