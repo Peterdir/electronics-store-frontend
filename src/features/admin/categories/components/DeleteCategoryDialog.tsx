@@ -27,6 +27,7 @@ export function DeleteCategoryDialog({ category, session, onClose }: {
       await mutation.mutateAsync({ kind: "delete", id: category.id, session });
       if (isCurrentCategorySession(session)) onClose();
     } catch {
+      // Mutation giữ lỗi để hiển thị trong dialog; không đóng khi xóa thất bại.
     } finally {
       submitting.current = false;
     }
