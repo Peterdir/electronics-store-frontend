@@ -2,7 +2,7 @@
 
 > Ngày lập: **13/11/2026**. Đối chiếu frontend tại HEAD `87eaa75`; working tree sạch trước khi lập kế hoạch.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase4.md](phase4.md), source frontend và source backend tham chiếu tại `../ecommerce-backend`.
-> **Trạng thái — 21/11/2026: E1–E9 và phần sửa thông tin chung E10 đã có code, chờ review và kiểm thử nghiệp vụ browser/backend; E11–E22 chưa triển khai.** E10 không gửi variants; sửa metadata biến thể cũ vẫn phụ thuộc backend. Contract được đối chiếu source; E9 đã kiểm tra GET public 200/admin chưa đăng nhập 401 trên backend dev, chưa xác nhận POST tạo thật. Xem bàn giao cuối tài liệu.
+> **Trạng thái — 22/11/2026: E1–E9, phần sửa thông tin chung E10 và E11 đã có code, chờ review và kiểm thử nghiệp vụ browser/backend; E12–E22 chưa triển khai.** E10 không gửi variants; sửa metadata biến thể cũ vẫn phụ thuộc backend. Contract được đối chiếu source; E9 đã kiểm tra GET public 200/admin chưa đăng nhập 401 trên backend dev, chưa xác nhận POST tạo thật. Xem bàn giao cuối tài liệu.
 > **Cách học bắt buộc: khi bắt đầu mỗi nhiệm vụ, sinh mã hướng dẫn theo từng bước và từng file để người dùng tự học, tự gõ code; cuối nhiệm vụ có nội dung commit.** Không tự triển khai source khi người dùng chỉ yêu cầu hướng dẫn.
 
 ## 1. Mục tiêu và điểm bắt đầu
@@ -200,7 +200,7 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 | E8 | Danh sách sản phẩm admin | E2, E6–E7 | Đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend |
 | E9 | Tạo sản phẩm, thông số, biến thể | E8 | Đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend có đăng nhập |
 | E10 | Sửa thông tin sản phẩm an toàn với tồn kho | E9; contract riêng cho sửa variant cũ | Đã code thông tin chung, kiểm tra tự động đạt; chờ browser/backend; variant cũ còn phụ thuộc backend |
-| E11 | Quản lý ảnh sản phẩm | E10 | Chưa bắt đầu |
+| E11 | Quản lý ảnh sản phẩm | E10 | Đã code; kiểm tra tự động đạt, chờ browser/backend có đăng nhập |
 | E12 | Trạng thái sản phẩm, ngừng bán variant | E10 | Chưa bắt đầu |
 | E13 | Danh sách tồn kho và bộ lọc | E8 | Chưa bắt đầu |
 | E14 | Điều chỉnh kho và lịch sử | E13 | Chưa bắt đầu |
@@ -569,6 +569,8 @@ Kiểm thử nghiệp vụ thật còn cần làm: chạy frontend/backend, đă
 
 **Kiểm tra/hoàn thành:** thêm nhiều file, ảnh lỗi, xóa ảnh primary, xóa ảnh đã bị xóa ở tab khác, chọn primary rồi reload, ảnh thiếu fallback. Bài tập: chỉ ra dữ liệu nào thuộc local preview và dữ liệu nào phải lấy lại từ backend.
 
+**Hướng dẫn code đã triển khai:** [E11 — flow, từng file, cú pháp và bài tập](docs/e11-product-images-guide.md). Đọc lần lượt DTO → schema/action/FormData → API → session/mutation/cache → component/handler → page → kiểm tra. Xem bàn giao E11 cuối tài liệu để phân biệt kiểm tra tự động và nghiệm thu tích hợp.
+
 **Commit cuối nhiệm vụ:** `feat(admin-products): manage product images and primary selection`
 
 ### E12 — Đổi trạng thái sản phẩm và ngừng bán biến thể
@@ -911,3 +913,15 @@ Bước tiếp theo:
 - Kiểm tra: `npm run typecheck`, `npm run lint`, `npm run build`, `git diff --check` đạt. `node --test scripts/verify-admin-product-edit.cjs scripts/verify-admin-product-create.cjs` **28/28 đạt** (E10 12 + E9 16); `npm run verify:catalog` **13/13 đạt**. HTTP loopback giả lập đã xác nhận stock 3 → tab khác đổi 29 → PUT metadata không có variants → stock giữ 29; đây không phải bằng chứng tích hợp backend/JPA thật. Kiểm tra thêm GET/PUT JSON/text và lỗi field, ID lớn, typed specification, cache/abort/đổi phiên, submit đồng thời, offline không replay, SSR các trạng thái trang và handler giữ dirty/PUT thành công GET lỗi. Harness handler mô phỏng hook, chưa phải tương tác DOM/browser. Lần chạy trong sandbox bị chặn loopback; chạy lại với quyền cho HTTP test cục bộ đạt. Build còn cảnh báo chunk storefront/HeroScene trên 500 kB có sẵn.
 - Còn cần: kiểm thử browser và GET/PUT có đăng nhập trên backend thật; thử A/M/S/CUSTOMER, metadata và kho đồng thời, brand null, relation bị xóa, dữ liệu null/INACTIVE, network/403/404, mobile/bàn phím, rời trang/đổi tài khoản khi request chậm. Sửa giá/attributes/SKU của variant cũ vẫn **chưa triển khai** vì cần API backend định danh variant ổn định và tách metadata khỏi tồn; không giải quyết bằng readonly stock/refetch snapshot.
 - Trạng thái: **đã code phần thông tin chung, kiểm tra tự động đạt; chờ review và kiểm thử nghiệp vụ browser/backend**. Phần metadata variant cũ còn phụ thuộc backend, không đánh dấu E10 đầy đủ hoặc Phase 5 hoàn thành. Commit đề xuất: `feat(admin-products): edit product metadata without overwriting inventory`.
+
+### Bàn giao E11 — Quản lý ảnh sản phẩm — 22/11/2026
+
+- Đã thêm khu ảnh trên `/admin/products/:id/edit` cho ADMIN/MANAGER/STAFF: xem ảnh server, chọn nhiều file và preview, bỏ file local, upload, xác nhận xóa từng ảnh và chọn primary. Dùng đúng field `isPrimary`, fallback URL thiếu/lỗi, hỗ trợ images null. Không thêm reorder hoặc sửa ảnh variant. Giữ thay đổi có sẵn trong `src/features/admin/orders/queries.ts`; không sửa backend, thêm dependency, chạy gen:api, commit hoặc push.
+- Đối chiếu source `AdminProductController`, `ProductServiceImpl`, `ProductImageDetailResponse`, `ProductMapper`, `FileValidator` và giới hạn multipart. POST `/{id}/images` multipart lặp key images; DELETE `/{id}/images/{imageId}`; PATCH `/{id}/images/{imageId}/primary`, dưới `/api/admin/products`; response text. ID luôn string, validate Long trước dispatch. Backend giới hạn 5 MiB/file, 30 MB/request; FE giới hạn tổng file dưới 29 MiB để chừa multipart, dùng lại schema extension/MIME/size; chữ ký nội dung do backend kiểm tra.
+- File mới: `products/productImages.ts`, `products/imageQueries.ts`, `products/components/ProductImageManager.tsx`, `scripts/verify-admin-product-images.cjs`, `docs/e11-product-images-guide.md`. Mở rộng `products/api.ts`, `products/pages/EditProductPage.tsx`, thêm mock component ảnh trong test trang E10, cập nhật kế hoạch. Hướng dẫn có thứ tự đọc, flow, từng file/hàm, ví dụ API, giải thích TypeScript/React/JSX, bài tập và checklist.
+- Mutation khóa chung các hành động ảnh cùng sản phẩm trong QueryClient; ref chặn click lặp trước render. `retry: false`, `networkMode: "always"`, `gcTime: 0`; snapshot phiên kiểm tra trước/sau request và trước side effect. Response muộn sau đổi tài khoản không ghi cache/UI. Cancel GET cũ, invalidate products admin đúng user/role và public products/cart/wishlist; không optimistic, không đoán imageId/primary mới. GET detail chạy riêng sau ghi thành công; lỗi GET giữ thông báo đã lưu và chỉ cho thử GET lại. Timeout/mất mạng/408/5xx/404 yêu cầu GET kiểm tra trước thao tác tiếp, file local còn nguyên nếu POST chưa rõ kết quả; người dùng cần bỏ file đã có trên server trước upload tiếp. 403 khóa ghi. Preview object URL thu hồi khi đổi file/unmount; không persist File/token/URL trong query key.
+- Form metadata E10 nằm riêng và giữ dirty draft khi detail refetch. Xóa primary để server quyết định ảnh còn lại; upload khi đã có ảnh nhưng không có primary hiện chưa bảo đảm service tự chọn primary, UI không tự sửa cờ. Khóa frontend không bảo vệ ghi đồng thời giữa hai tab; chưa xác minh lifecycle file storage/rollback upload lỗi. Không khẳng định frontend giải quyết những giới hạn backend này.
+- Kiểm tra: typecheck, lint, build và `git diff --check` đạt; E9/E10/E11 **37/37** đạt (16 + 12 + 9). E11 kiểm tra schema/FormData/API method/path/token/Long ID, khóa mutation/cache thật, đổi phiên/offline, SSR và handler thực qua hook harness: double click, xác nhận xóa, timeout/404, POST thành công GET lỗi, GET lại không replay POST, chọn nhiều lần và xóa local sau upload. Lần đầu test hồi quy HTTP bị sandbox chặn loopback; chạy lại với quyền HTTP cục bộ đạt. Test trang E10 cần mock component ảnh mới và đã cập nhật. Không coi harness/SSR/API giả lập là browser hoặc backend thật. Build vẫn có cảnh báo chunk storefront/HeroScene trên 500 kB đã có từ trước.
+- Chưa thử POST/DELETE/PATCH có đăng nhập trên backend thật hoặc tương tác browser. Checklist: A/M/S/CUSTOMER, ảnh thật/giả nội dung/tổng request lớn, xóa primary/cuối cùng/ảnh đã mất ở tab khác, primary rồi reload/catalog/cart/wishlist, ảnh hỏng/mobile/bàn phím, giữ draft, 403/404/network, request chậm rồi logout/đổi phiên/rời trang. Trạng thái: **đã code và kiểm tra tự động, chờ review và kiểm thử tích hợp có đăng nhập**.
+- Commit đề xuất: `feat(admin-products): manage product images and primary selection`.
+- Hồi quy catalog: `npm run verify:catalog` **13/13** đạt.

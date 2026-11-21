@@ -6,6 +6,24 @@ import { ApiError } from "@/shared/api/errors";
 import { buildUpdateProductRequest, type EditProductFormValues } from "./editProduct";
 import { buildCreateProductFormData } from "./buildCreateProductRequest";
 import type { ProductFormValues } from "./schemas";
+import { buildProductImagesFormData, type ProductImageAction } from "./productImages";
+
+export async function mutateAdminProductImages(id: string, action: ProductImageAction, authToken: string): Promise<string> {
+  if (!isPositiveLongId(id)) throw new ApiError(400, "Mã sản phẩm không hợp lệ.");
+  const url = `/api/admin/products/${id}/images`;
+  const config = { meta: { authToken, noPublicRetry: true } };
+  if (action.kind === "upload") {
+    const { data } = await api.post<string>(url, buildProductImagesFormData(action.files), config);
+    return data;
+  }
+  if (!isPositiveLongId(action.imageId)) throw new ApiError(400, "Mã ảnh không hợp lệ.");
+  if (action.kind === "delete") {
+    const { data } = await api.delete<string>(`${url}/${action.imageId}`, config);
+    return data;
+  }
+  const { data } = await api.patch<string>(`${url}/${action.imageId}/primary`, undefined, config);
+  return data;
+}
 
 export async function getAdminProductDetail(id: string, signal: AbortSignal, authToken: string) {
   if (!isPositiveLongId(id)) throw new ApiError(400, "Mã sản phẩm không hợp lệ.");

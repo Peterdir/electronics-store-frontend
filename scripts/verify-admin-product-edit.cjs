@@ -357,6 +357,7 @@ test("Page thật: loading, GET lỗi/403/404, ID sai; lỗi refetch vẫn giữ
       useAdminProductDetail: () => query,
     },
     "@/features/admin/products/components/EditProductForm": { EditProductForm: () => React.createElement("p", null, "Bản nháp còn nguyên") },
+    "@/features/admin/products/components/ProductImageManager": { ProductImageManager: () => React.createElement("p", null, "Khu ảnh E11") },
   });
   const { EditProductPage } = pageLoad("@/features/admin/products/pages/EditProductPage");
   const { ApiError } = pageLoad("@/shared/api/errors");

@@ -5,6 +5,7 @@ import { ApiError } from "@/shared/api/errors";
 import { isPositiveLongId } from "@/shared/types/common";
 import { AdminPageHeader } from "../../components/AdminPageHeader";
 import { EditProductForm } from "../components/EditProductForm";
+import { ProductImageManager } from "../components/ProductImageManager";
 import { ProductStatusBadge } from "../components/ProductStatusBadge";
 import { SavedProductVariants } from "../components/SavedProductVariants";
 import { isCurrentProductSession, useAdminProductDetail, useProductSession } from "../queries";
@@ -48,6 +49,7 @@ export function EditProductPage() {
           </div>
           <EditProductForm key={`${session.userId}:${session.role}:${productId}`} product={product} session={session} unavailable={unavailable} reload={reload} />
           <SavedProductVariants product={product} />
+          <ProductImageManager key={`images:${session.userId}:${session.role}:${productId}`} product={product} session={session} unavailable={unavailable} reload={reload} />
         </div>
       )}
     </section>
