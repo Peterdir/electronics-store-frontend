@@ -24,4 +24,9 @@ export const adminNavigation: readonly AdminNavigationItem[] = [
         label: "Danh mục",
         permission: "category.manage",
     },
+    {
+        to: "/admin/brands",
+        label: "Thương hiệu",
+        permission: "brand.manage",
+    },
 ];

@@ -2,7 +2,7 @@
 
 > Ngày lập: **13/11/2026**. Đối chiếu frontend tại HEAD `87eaa75`; working tree sạch trước khi lập kế hoạch.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase4.md](phase4.md), source frontend và source backend tham chiếu tại `../ecommerce-backend`.
-> **Trạng thái — 20/11/2026: E1–E6 đã có code, chờ review và kiểm thử browser/backend; E7–E22 chưa triển khai.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy. Xem bàn giao cuối tài liệu.
+> **Trạng thái — 20/11/2026: E1–E7 đã có code, chờ review và kiểm thử browser/backend; E8–E22 chưa triển khai.** Các contract dưới đây được đọc từ source, chưa được xác nhận bằng API/backend đang chạy. Xem bàn giao cuối tài liệu.
 > **Cách học bắt buộc: khi bắt đầu mỗi nhiệm vụ, sinh mã hướng dẫn theo từng bước và từng file để người dùng tự học, tự gõ code; cuối nhiệm vụ có nội dung commit.** Không tự triển khai source khi người dùng chỉ yêu cầu hướng dẫn.
 
 ## 1. Mục tiêu và điểm bắt đầu
@@ -196,7 +196,7 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 | E4 | Chuyển trạng thái xử lý/giao hàng | E3 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
 | E5 | Hủy đơn có lý do | E3 | Đã code, kiểm tra tự động đạt; chờ browser/backend |
 | E6 | Danh mục và upload ảnh | E1 | Đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend |
-| E7 | Thương hiệu và logo | E6 để dùng lại upload/form | Chưa bắt đầu |
+| E7 | Thương hiệu và logo | E6 để dùng lại upload/form | Đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend |
 | E8 | Danh sách sản phẩm admin | E2, E6–E7 | Chưa bắt đầu |
 | E9 | Tạo sản phẩm, thông số, biến thể | E8 | Chưa bắt đầu |
 | E10 | Sửa thông tin sản phẩm an toàn với tồn kho | E9; contract riêng cho sửa variant cũ | Chưa bắt đầu |
@@ -305,6 +305,8 @@ Thứ tự mặc định E1 → E22. Có thể chuyển sang module độc lập
 **Commit cuối nhiệm vụ:** `feat(admin-categories): manage categories with image uploads`
 
 ### E7 — Quản lý thương hiệu và logo
+
+**Code và hướng dẫn — 20/11/2026:** đã triển khai trực tiếp theo yêu cầu người dùng. Thứ tự đọc: `brands/types.ts` → `schemas.ts` → `api.ts` → `queries.ts` → `filters.ts` → `shared/components/ImageDropzone.tsx` → `brands/components/{BrandFormDialog,DeleteBrandDialog}.tsx` → `brands/pages/AdminBrandsPage.tsx` → router/menu/redirect. Luồng dữ liệu, vai trò từng file và cú pháp chính được giải thích trong chat. Kết quả kiểm tra, giới hạn và nội dung commit ở bàn giao E7 cuối tài liệu.
 
 **Kết quả:** `/admin/brands` cho A/M CRUD thương hiệu và xem logo đúng sau reload.
 
@@ -637,3 +639,20 @@ Bước tiếp theo:
 - Backend thật chưa xác nhận: `.env.development` và `application.properties` dùng **8081**; GET `http://localhost:8081/api/categories` bị từ chối kết nối tại thời điểm kiểm tra. Cần chạy backend rồi thử A/M tạo/sửa/xóa, trùng tên, dữ liệu INACTIVE, giữ/thay ảnh, file giả định dạng/quá dung lượng, xóa danh mục trống/còn sản phẩm, Network multipart/204, timeout/đổi phiên và dữ liệu catalog sau lưu. Kiểm tra trực tiếp quyền backend bằng STAFF vẫn cần thực hiện.
 - Trạng thái: **đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend**. Người dùng yêu cầu lưu commit E6 với nội dung `feat(admin-categories): manage categories with image uploads`; chưa push. Commit không thay thế kiểm thử tích hợp còn thiếu.
 - Bước tiếp theo: đọc flow E6 trong chat, chạy checklist tích hợp trên backend/browser; tiếp tục E7 khi người dùng yêu cầu.
+
+### Bàn giao E7 — Thương hiệu và logo — 20/11/2026
+
+- Đã triển khai `/admin/brands` lazy-load cho ADMIN/MANAGER; thêm menu `brand.manage` và giữ deep link hợp lệ sau đăng nhập. Dùng lại `DataTable`, `FilterBar`, `Pagination`, Base UI Dialog, React Hook Form/Zod và `ImageDropzone` của E6. Giữ các thay đổi E6 có sẵn; không sửa backend, thêm dependency hay chạy `gen:api`.
+- Đối chiếu lại source `AdminBrandController`, `BrandController`, `BrandRequest/Response`, `BrandServiceImpl`, `BrandRepository`, `BrandMapper` và `FileValidator`: GET `/api/brands` không truyền categoryId trả mọi trạng thái; nhánh có categoryId chỉ trả thương hiệu ACTIVE gắn sản phẩm ACTIVE nên không dùng cho quản trị. DTO admin riêng có `logo`, `totalProducts`, timestamp và ID string.
+- Danh sách lọc tên/trạng thái trước khi phân trang client trên toàn bộ mảng; giữ keyword/status/page/size trong URL, chuẩn hóa giá trị sai và đưa trang vượt phạm vi về trang hợp lệ sau mutation. Không gửi page/size giả tới API.
+- Schema tạo bắt buộc File logo; schema sửa cho phép bỏ logo. Form dùng schema theo chế độ và kiểm tra lại schema tạo trước mutation. API parse lại payload trước tạo FormData. POST/PUT `/api/admin/brands[/{id}]` dùng đúng `name`, `status`, `logo?`; không đặt Content-Type thủ công, không gửi URL hay file rỗng thay logo. PUT bỏ part logo giữ logo đang lưu. Không có thao tác xóa riêng logo.
+- `ImageDropzone` chỉ thêm prop `required` mặc định false, nhãn/aria-required phù hợp chế độ tạo; form/Zod quyết định validation để người dùng có thể kéo thả file mà không phụ thuộc FileList của input. E6 tiếp tục có ảnh tùy chọn. Dùng lại JPEG/PNG/WebP, MIME/đuôi, file không rỗng và tối đa 5 MiB; preview chỉ cho file hợp lệ, cleanup object URL của E6 giữ nguyên. Backend kiểm tra thêm chữ ký file.
+- Form giữ input khi lỗi, map field errors `name/status/logo` và thông báo chung từ server. Xóa có xác nhận, hiển thị số sản phẩm từ lần tải gần nhất; backend quyết định xóa khi còn sản phẩm, DELETE 204 không đọc JSON. 403 chặn gửi tiếp trong dialog và hướng dẫn cập nhật phiên.
+- Query/cache chứa userId/role, không chứa token/File/object URL. Chụp phiên mở dialog, kiểm tra quyền/phiên trước dispatch, sau await và trước invalidate/toast/đóng dialog. ID không chuyển Number. Mutation `retry: false`, `networkMode: "always"`, `gcTime: 0`; khóa gửi lặp bằng ref và khóa mutation thương hiệu theo user/role trong QueryClient hiện tại. Không phải khóa giữa nhiều tab hay kiểm soát đồng thời tại server.
+- Sau lưu/xóa: cancel GET cũ rồi invalidate brands admin/public (mọi categoryId), admin products và catalog products/detail/compare/mốc giá. GET lỗi sau lưu không biến thành lỗi mutation; hiển thị dữ liệu có thể cũ và chỉ yêu cầu tải lại. Timeout/5xx/response sai ID được coi là kết quả chưa chắc chắn, refetch để đối chiếu và khóa gửi lại trong dialog; không tự replay mutation khi reconnect.
+- File tạo: `src/features/admin/brands/{types,schemas,api,queries,filters}.ts`, `brands/components/{BrandFormDialog,DeleteBrandDialog}.tsx`, `brands/pages/AdminBrandsPage.tsx`. File sửa trong E7: `src/app/router.tsx`, `src/features/admin/navigation.ts`, `src/shared/auth/redirect.ts`, `src/shared/components/ImageDropzone.tsx`, `phase5.md`.
+- Kiểm tra: `npm run typecheck`, `npm run lint`, `npm run build`, `git diff --check` đạt; `npm run verify:catalog` 13/13 đạt. Script Node tạm E7 18/18 đạt, chạy schema/FormData/API thật với HTTP/session giả lập, QueryClient/MutationObserver/QueryObserver thật và SSR bộ chọn ảnh: logo bắt buộc/tùy chọn, file lỗi, multipart và 204, INACTIVE/lọc trước phân trang/URL, quyền/cache đúng phiên/ID lớn, đổi phiên và abort GET, hai mutation đồng thời, lưu thành công nhưng GET lỗi, offline/timeout không replay, lỗi field/trùng tên giả lập, response sai ID, redirect và nhãn required. Script tạm đã xóa, không thêm bộ test hay npm script lâu dài.
+- Build tách chunk AdminBrandsPage khoảng 15,60 kB; cảnh báo chunk storefront/HeroScene trên 500 kB vẫn còn. Chưa kiểm thử browser tương tác thực: dialog/focus/Escape/mobile, kéo thả/chọn/bỏ/thay logo và cleanup object URL cần xác nhận trực tiếp.
+- Backend thật: `.env.development` trỏ localhost:8081; kiểm tra TCP cổng 8081 không kết nối được tại thời điểm thực hiện. Chưa xác nhận CRUD/upload/storage và quyền backend đang chạy. Checklist: A/M tạo thiếu/có logo, tên trùng, file giả định dạng/quá dung lượng, sửa không thay/thay logo rồi reload, INACTIVE, xóa thương hiệu trống/còn sản phẩm; kiểm tra Network đúng key logo và DELETE 204, STAFF gọi trực tiếp phải 403, catalog sau mutation, timeout và đổi tài khoản khi đang lưu.
+- Trạng thái: đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend. Chưa commit/push. Nội dung commit đề xuất: `feat(admin-brands): manage brands and logo uploads`.
+- Bước tiếp theo: đọc flow E7 trong chat, chạy checklist browser/backend; E8 chưa triển khai.

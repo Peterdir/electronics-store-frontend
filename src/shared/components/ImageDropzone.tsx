@@ -20,10 +20,11 @@ interface ImageDropzoneProps extends Pick<ComponentProps<"input">, "ref" | "onBl
   onChange: (file: File | undefined) => void;
   error?: string;
   disabled?: boolean;
+  required?: boolean;
 }
 
 export function ImageDropzone({
-  id, file, existingImageUrl, label = "Ảnh", onChange, error, disabled, ref, onBlur,
+  id, file, existingImageUrl, label = "Ảnh", onChange, error, disabled, required = false, ref, onBlur,
 }: ImageDropzoneProps) {
   function selectFiles(files: File[]) {
     if (disabled || files.length === 0) return;
@@ -33,7 +34,7 @@ export function ImageDropzone({
   const canPreview = file && imageUploadSchema.safeParse(file).success;
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="block text-sm font-medium">{label} (tùy chọn)</label>
+      <label htmlFor={id} className="block text-sm font-medium">{label} {required ? "* (bắt buộc)" : "(tùy chọn)"}</label>
       <p id={`${id}-help`} className="text-sm text-muted-foreground">
         Chọn hoặc kéo thả một ảnh JPG, JPEG, PNG, WebP; tối đa 5 MiB.
         {existingImageUrl && " Không chọn ảnh mới sẽ giữ ảnh hiện tại."}
@@ -55,6 +56,7 @@ export function ImageDropzone({
           type="file"
           accept={imageUploadAccept}
           disabled={disabled}
+          aria-required={required}
           onBlur={onBlur}
           aria-invalid={Boolean(error)}
           aria-describedby={`${id}-help${error ? ` ${id}-error` : ""}`}
