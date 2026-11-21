@@ -1,9 +1,9 @@
 import { useId } from "react";
-import { useFormContext, type FieldPath } from "react-hook-form";
+import { useFormContext, type FieldPath, type FieldValues } from "react-hook-form";
 import type { ProductFormValues } from "../schemas";
 
-interface ProductFieldProps {
-  name: FieldPath<ProductFormValues>;
+interface ProductFieldProps<T extends FieldValues> {
+  name: FieldPath<T>;
   label: string;
   required?: boolean;
   kind?: "text" | "textarea" | "select";
@@ -12,9 +12,9 @@ interface ProductFieldProps {
   disabled?: boolean;
 }
 
-export function ProductField({ name, label, required, kind = "text", inputMode, options, disabled }: ProductFieldProps) {
+export function ProductField<T extends FieldValues = ProductFormValues>({ name, label, required, kind = "text", inputMode, options, disabled }: ProductFieldProps<T>) {
   const id = useId();
-  const { register, getFieldState, formState } = useFormContext<ProductFormValues>();
+  const { register, getFieldState, formState } = useFormContext<T>();
   const { error } = getFieldState(name, formState);
   const props = {
     ...register(name), id, required, disabled,

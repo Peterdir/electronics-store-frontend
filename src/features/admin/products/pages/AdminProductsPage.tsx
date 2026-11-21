@@ -35,7 +35,7 @@ const columns: readonly DataTableColumn<AdminProductListResponse, AdminProductSo
       <div className="flex max-w-80 gap-3">
         <ProductThumbnail key={product.primaryImageUrl} src={product.primaryImageUrl} />
         <div className="min-w-0 wrap-anywhere">
-          <p className="font-semibold">{product.name}</p>
+          <Link to={`/admin/products/${product.id}/edit`} className="font-semibold text-primary underline underline-offset-4" aria-label={`Sửa sản phẩm ${product.name}`}>{product.name}</Link>
           <p className="mt-1 text-xs text-muted-foreground">#{product.id}</p>
         </div>
       </div>

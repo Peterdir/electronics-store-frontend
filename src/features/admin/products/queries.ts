@@ -6,9 +6,11 @@ import { isExpired } from "@/shared/auth/jwt";
 import { hasPermission } from "@/shared/auth/permissions";
 import { useSession } from "@/shared/auth/session.store";
 import type { Role } from "@/shared/types/enums";
+import { isPositiveLongId } from "@/shared/types/common";
 import { getAdminBrands } from "../brands/api";
 import { getAdminCategories } from "../categories/api";
-import { createAdminProduct, getAdminProducts } from "./api";
+import { createAdminProduct, getAdminProductDetail, getAdminProducts, updateAdminProduct } from "./api";
+import type { EditProductFormValues } from "./editProduct";
 import type { ProductFormValues } from "./schemas";
 import type { GetAdminProductsParams } from "./types";
 
@@ -34,9 +36,21 @@ export function isCurrentProductSession(session: ProductSession | null): session
   );
 }
 
-export function isProductCreateUncertain(error: unknown): boolean {
+async function runForSession<T>(
+  session: ProductSession | null,
+  action: (token: string) => Promise<T>,
+): Promise<T> {
+  if (!isCurrentProductSession(session)) throw new ApiError(401, "Phiên quản trị đã thay đổi. Vui lòng đăng nhập lại.");
+  const result = await action(session.token);
+  if (!isCurrentProductSession(session)) throw new ApiError(401, "Phiên quản trị đã thay đổi. Vui lòng đăng nhập lại.");
+  return result;
+}
+
+export function isProductWriteUncertain(error: unknown): boolean {
   return error instanceof ApiError && (error.status === 0 || error.status === 408 || error.status >= 500);
 }
+
+export const isProductCreateUncertain = isProductWriteUncertain;
 
 export function useCreateAdminProduct() {
   const session = useProductSession();
@@ -49,11 +63,10 @@ export function useCreateAdminProduct() {
     networkMode: "always",
     gcTime: 0,
     mutationFn: async ({ values, session: snapshot }: { values: ProductFormValues; session: ProductSession }) => {
-      if (!isCurrentProductSession(snapshot)) throw new ApiError(401, "Phiên quản trị đã thay đổi. Vui lòng đăng nhập lại.");
-      if (queryClient.isMutating({ mutationKey }) > 1) throw new ApiError(409, "Một sản phẩm đang được tạo. Vui lòng chờ.");
-      const result = await createAdminProduct(values, snapshot.token);
-      if (!isCurrentProductSession(snapshot)) throw new ApiError(401, "Phiên quản trị đã thay đổi.");
-      return result;
+      return runForSession(snapshot, async (token) => {
+        if (queryClient.isMutating({ mutationKey }) > 1) throw new ApiError(409, "Một sản phẩm đang được tạo. Vui lòng chờ.");
+        return createAdminProduct(values, token);
+      });
     },
     onSuccess: async (_result, { session: snapshot }) => {
       if (!isCurrentProductSession(snapshot)) return;
@@ -77,12 +90,12 @@ async function readForSession<T>(
   signal: AbortSignal,
   read: (signal: AbortSignal, token: string) => Promise<T>,
 ): Promise<T> {
-  if (!isCurrentProductSession(session)) throw new ApiError(401, "Phiên quản trị đã thay đổi. Vui lòng tải lại trang.");
-  signal.throwIfAborted();
-  const data = await read(signal, session.token);
-  signal.throwIfAborted();
-  if (!isCurrentProductSession(session)) throw new ApiError(401, "Phiên quản trị đã thay đổi. Vui lòng tải lại trang.");
-  return data;
+  return runForSession(session, async (token) => {
+    signal.throwIfAborted();
+    const data = await read(signal, token);
+    signal.throwIfAborted();
+    return data;
+  });
 }
 
 export function useAdminProducts(params: GetAdminProductsParams, enabled = true) {
@@ -94,6 +107,48 @@ export function useAdminProducts(params: GetAdminProductsParams, enabled = true)
     queryFn: ({ signal }) => readForSession(session, signal, (requestSignal, token) =>
       getAdminProducts(params, requestSignal, token)),
   });
+}
+
+export function useAdminProductDetail(id: string | undefined) {
+  const session = useProductSession();
+  return useQuery({
+    queryKey: [...qk.admin, session?.userId, session?.role, "products", "detail", id],
+    enabled: isPositiveLongId(id) && isCurrentProductSession(session),
+    retry: false,
+    queryFn: ({ signal }) => readForSession(session, signal, (requestSignal, token) => {
+      if (!isPositiveLongId(id)) throw new ApiError(400, "Mã sản phẩm không hợp lệ.");
+      return getAdminProductDetail(id, requestSignal, token);
+    }),
+  });
+}
+
+export function useUpdateAdminProduct(id: string) {
+  const session = useProductSession();
+  const queryClient = useQueryClient();
+  const mutationKey = [...qk.admin, session?.userId, session?.role, "products", "update", id];
+  const pendingCount = useIsMutating({ mutationKey });
+  const mutation = useMutation({
+    mutationKey,
+    retry: false,
+    networkMode: "always",
+    gcTime: 0,
+    mutationFn: async ({ values, session: snapshot }: { values: EditProductFormValues; session: ProductSession }) => {
+      return runForSession(snapshot, async (token) => {
+        if (queryClient.isMutating({ mutationKey }) > 1) throw new ApiError(409, "Sản phẩm này đang được lưu. Vui lòng chờ.");
+        return updateAdminProduct(id, values, token);
+      });
+    },
+    onSuccess: async (_result, { session: snapshot }) => {
+      if (!isCurrentProductSession(snapshot)) return;
+      const prefix = [...qk.admin, snapshot.userId, snapshot.role];
+      const keys = [[...prefix, "products"], [...prefix, "inventory"], qk.products, qk.cart, qk.wishlist];
+      await Promise.all(keys.map((queryKey) => queryClient.cancelQueries({ queryKey })));
+      if (!isCurrentProductSession(snapshot)) return;
+      for (const queryKey of keys) void queryClient.invalidateQueries({ queryKey, refetchType: "none" }).catch(() => undefined);
+      toast.success("Đã lưu thông tin sản phẩm.", { duration: 2000 });
+    },
+  });
+  return { ...mutation, isPending: mutation.isPending || pendingCount > 0 };
 }
 
 export function useAdminProductCategories() {

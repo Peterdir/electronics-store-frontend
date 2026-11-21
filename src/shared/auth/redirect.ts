@@ -31,6 +31,7 @@ export function getLoginDestination(
             
             const orderDetailMatch = /^\/account\/orders\/([^/]+)\/?$/.exec(url.pathname);
             const adminOrderDetailMatch = /^\/admin\/orders\/([^/]+)\/?$/.exec(url.pathname);
+            const adminProductEditMatch = /^\/admin\/products\/([^/]+)\/edit\/?$/.exec(url.pathname);
             const productDetailMatch = /^\/products\/([^/]+)\/?$/.exec(url.pathname);
             const allowed =
                 url.pathname === "/" ||
@@ -47,7 +48,7 @@ export function getLoginDestination(
                 isPositiveLongId(orderDetailMatch?.[1]) ||
                 (url.pathname === "/admin/categories" && hasPermission("category.manage", role)) ||
                 (url.pathname === "/admin/brands" && hasPermission("brand.manage", role)) ||
-                ((url.pathname === "/admin/products" || url.pathname === "/admin/products/new") && hasPermission("product.write", role)) ||
+                ((url.pathname === "/admin/products" || url.pathname === "/admin/products/new" || isPositiveLongId(adminProductEditMatch?.[1])) && hasPermission("product.write", role)) ||
                 (
                     (url.pathname === "/admin" || url.pathname === "/admin/orders" ||
                         isPositiveLongId(adminOrderDetailMatch?.[1])) &&

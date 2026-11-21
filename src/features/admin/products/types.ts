@@ -48,3 +48,33 @@ export interface CreateAdminProductRequest {
   specification: Record<string, string>;
   variants: AdminProductVariantRequest[];
 }
+
+export interface AdminProductImageResponse {
+  id: ID;
+  imageUrl: string;
+  displayOrder: number;
+  isPrimary: boolean | null;
+}
+
+export interface AdminProductVariantResponse {
+  id: ID;
+  sku: string;
+  price: Money;
+  stock: number;
+  imageUrl: string | null;
+  images: AdminProductImageResponse[] | null;
+  attributes: Record<string, unknown> | null;
+  status: ProductStatus;
+}
+
+export interface AdminProductDetailResponse extends Omit<AdminProductListResponse, "primaryImageUrl" | "variantCount"> {
+  description: string | null;
+  specification: Record<string, unknown> | null;
+  images: AdminProductImageResponse[] | null;
+  variants: AdminProductVariantResponse[] | null;
+}
+
+export interface UpdateAdminProductRequest extends Omit<CreateAdminProductRequest, "variants" | "specification"> {
+  specification: Record<string, unknown>;
+  variants?: never;
+}

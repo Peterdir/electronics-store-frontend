@@ -1,8 +1,27 @@
 import { api } from "@/shared/api/client";
 import { normalizePage, type BackendPage } from "@/shared/api/pagination";
-import type { AdminProductListResponse, GetAdminProductsParams } from "./types";
+import type { AdminProductDetailResponse, AdminProductListResponse, GetAdminProductsParams } from "./types";
+import { isPositiveLongId } from "@/shared/types/common";
+import { ApiError } from "@/shared/api/errors";
+import { buildUpdateProductRequest, type EditProductFormValues } from "./editProduct";
 import { buildCreateProductFormData } from "./buildCreateProductRequest";
 import type { ProductFormValues } from "./schemas";
+
+export async function getAdminProductDetail(id: string, signal: AbortSignal, authToken: string) {
+  if (!isPositiveLongId(id)) throw new ApiError(400, "Mã sản phẩm không hợp lệ.");
+  const { data } = await api.get<AdminProductDetailResponse>(`/api/admin/products/${id}`, {
+    signal, meta: { authToken, noPublicRetry: true },
+  });
+  return data;
+}
+
+export async function updateAdminProduct(id: string, values: EditProductFormValues, authToken: string): Promise<string> {
+  if (!isPositiveLongId(id)) throw new ApiError(400, "Mã sản phẩm không hợp lệ.");
+  const { data } = await api.put<string>(`/api/admin/products/${id}`, buildUpdateProductRequest(values), {
+    meta: { authToken, noPublicRetry: true },
+  });
+  return data;
+}
 
 export async function createAdminProduct(values: ProductFormValues, authToken: string): Promise<string> {
   const { data } = await api.post<string>("/api/admin/products", buildCreateProductFormData(values), {

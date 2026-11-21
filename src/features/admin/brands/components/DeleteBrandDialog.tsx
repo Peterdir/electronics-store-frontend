@@ -27,6 +27,7 @@ export function DeleteBrandDialog({ brand, session, onClose }: {
       await mutation.mutateAsync({ kind: "delete", id: brand.id, session });
       if (isCurrentBrandSession(session)) onClose();
     } catch {
+      // Mutation giữ lỗi để hiển thị trong dialog; không đóng khi xóa thất bại.
     } finally {
       submitting.current = false;
     }
