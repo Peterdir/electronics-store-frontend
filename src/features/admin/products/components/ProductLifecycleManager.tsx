@@ -86,7 +86,10 @@ export function ProductLifecycleManager({ product, session, unavailable, reload,
       if (!active()) return;
       const check = isProductWriteUncertain(cause) || (cause instanceof ApiError && (cause.status === 404 || cause.status === 400));
       setNeedsRefresh(check);
-      setError(check ? "Dữ liệu có thể đã thay đổi hoặc chưa xác nhận được kết quả. Tải lại để kiểm tra trước khi thao tác tiếp." : cause instanceof Error ? cause.message : "Không lưu được trạng thái.");
+      const reason = cause instanceof ApiError && cause.status > 0
+        ? `HTTP ${cause.status}: ${cause.message}`
+        : cause instanceof Error ? cause.message : "Không lưu được trạng thái.";
+      setError(check ? `${reason} Tải lại dữ liệu để kiểm tra trước khi thao tác tiếp.` : reason);
     } finally {
       running.current = false;
     }

@@ -257,6 +257,7 @@ test('Handler: variant giữ ID, timeout/404/400 buộc GET; 403 khóa ghi; đ�
     tree = f.render();
     assert.equal(f.find(tree, 'ProductStatusAction').props.disabled, true);
     const updatedRow = f.find(tree, 'SavedProductVariants').props.renderAction(f.props.product.variants[0]);
+    if (code > 0) assert.match(renderToStaticMarkup(updatedRow), new RegExp(`HTTP ${code}: failed`));
     assert.equal(Boolean(f.button(updatedRow, 'Tải lại để kiểm tra')), code !== 403);
     assert.equal(f.calls, 1);
   }
