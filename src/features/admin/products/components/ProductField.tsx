@@ -10,14 +10,16 @@ interface ProductFieldProps<T extends FieldValues> {
   inputMode?: "decimal" | "numeric";
   options?: { value: string; label: string }[];
   disabled?: boolean;
+  placeholder?: string;
+  rows?: number;
 }
 
-export function ProductField<T extends FieldValues = ProductFormValues>({ name, label, required, kind = "text", inputMode, options, disabled }: ProductFieldProps<T>) {
+export function ProductField<T extends FieldValues = ProductFormValues>({ name, label, required, kind = "text", inputMode, options, disabled, placeholder, rows = 5 }: ProductFieldProps<T>) {
   const id = useId();
   const { register, getFieldState, formState } = useFormContext<T>();
   const { error } = getFieldState(name, formState);
   const props = {
-    ...register(name), id, required, disabled,
+    ...register(name), id, required, disabled, placeholder,
     "aria-invalid": Boolean(error),
     "aria-describedby": error ? `${id}-error` : undefined,
     className: "w-full min-w-0 rounded-lg border border-input bg-background p-3 text-sm focus-visible:outline-2 focus-visible:outline-ring",
@@ -25,7 +27,7 @@ export function ProductField<T extends FieldValues = ProductFormValues>({ name, 
   return (
     <div className="min-w-0 space-y-2">
       <label htmlFor={id} className="block text-sm font-medium">{label}{required ? " *" : ""}</label>
-      {kind === "textarea" ? <textarea {...props} rows={5} /> : kind === "select" ? (
+      {kind === "textarea" ? <textarea {...props} rows={rows} /> : kind === "select" ? (
         <select {...props}>{options?.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
       ) : <input {...props} type="text" inputMode={inputMode} />}
       {error?.message && <p id={`${id}-error`} role="alert" className="text-sm text-destructive">{error.message}</p>}

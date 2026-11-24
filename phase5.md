@@ -976,3 +976,11 @@ Bước tiếp theo:
 - Chưa kiểm thử API mới có đăng nhập trên backend đang chạy hoặc tranh chấp giữa nhiều tab; cần khởi động lại backend rồi thử A/M/S, ngừng bán → bán lại → reload → cart/catalog/đơn cũ. Variant INACTIVE/HIDDEN do cascade cũ vẫn giữ nguyên, dùng Bán lại từng biến thể khi cần; không chạy migration tự bật hàng loạt. Backend chưa bổ sung version/lock cho hai admin ghi đồng thời. Trạng thái: đã code, kiểm tra tự động và preview bố cục; chờ tích hợp có đăng nhập.
 - Commit frontend đề xuất: `feat(admin-products): reactivate variants and refine variant cards`.
 - Commit backend đề xuất: `feat(products): manage variant status independently from product visibility`.
+
+### Điều chỉnh form thông số kỹ thuật — 24/11/2026
+
+- Theo yêu cầu đơn giản hóa giao diện, bỏ lựa chọn Văn bản/JSON ở EditSpecificationEditor; chỉ giữ tên và giá trị văn bản. Thay thế hướng dẫn chọn format text/json trước đây của E10. Form tạo mới vẫn dùng chuỗi như cũ.
+- editProduct.ts giữ snapshot nội bộ cho giá trị cũ không phải string: giữ nguyên kiểu nếu tên và nội dung không đổi; dòng mới, đổi tên hoặc đổi giá trị được gửi dạng string, không tự parse nội dung người dùng thành JSON. Snapshot không được gửi lên API. Xóa dòng vẫn xóa thông số, sắp xếp dòng không làm đổi kiểu dữ liệu cũ. Không sửa backend hoặc di chuyển dữ liệu database.
+- Đã cập nhật kiểm tra E10: 12/12 đạt, gồm round trip số/boolean/null/mảng/object, giá trị văn bản không phải JSON, chỉnh sửa/đổi tên/xóa và thứ tự dòng; UI không còn select kiểu giá trị. Chưa kiểm thử tương tác form với backend có đăng nhập.
+- Commit đề xuất: `refactor(admin-products): simplify specification inputs to text`.
+- Giao diện thông số được đồng bộ qua SpecificationEditorLayout giữa trang tạo, trang sửa và thuộc tính biến thể: tiêu đề/icon/số lượng, trạng thái rỗng, dòng có số thứ tự, tên–giá trị căn hàng, nút xóa biểu tượng có nhãn và nút thêm viền nét đứt. Responsive xếp dọc trên mobile; ô giá trị trang sửa giữ textarea một dòng có thể mở rộng. ProductField thêm placeholder/rows tùy chọn, mặc định trường khác giữ nguyên. Hồi quy tạo/sửa 28/28 đạt.

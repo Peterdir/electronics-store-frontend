@@ -5,14 +5,10 @@ import type { AdminProductDetailResponse, UpdateAdminProductRequest } from "./ty
 const specificationRowSchema = z.object({
   key: z.string().trim().min(1, "Nhập tên thông số."),
   value: z.string(),
-  format: z.enum(["text", "json"]),
-}).superRefine((row, context) => {
-  if (row.format !== "json") return;
-  try {
-    JSON.parse(row.value);
-  } catch {
-    context.addIssue({ code: "custom", path: ["value"], message: "Giá trị JSON không hợp lệ." });
-  }
+  // Internal snapshot for legacy non-string values, never an editable field.
+  original: z.object({ key: z.string(), value: z.string().refine((value) => {
+    try { JSON.parse(value); return true; } catch { return false; }
+  }) }).optional(),
 });
 
 export const editProductSchema = createProductSchema.pick({
@@ -39,7 +35,7 @@ export function toEditProductValues(product: AdminProductDetailResponse): EditPr
     specification: Object.entries(product.specification ?? {}).map(([key, value]) => ({
       key,
       value: typeof value === "string" ? value : JSON.stringify(value),
-      format: typeof value === "string" ? "text" : "json",
+      ...(typeof value === "string" ? {} : { original: { key, value: JSON.stringify(value) } }),
     })),
   };
 }
@@ -52,8 +48,8 @@ export function buildUpdateProductRequest(values: EditProductFormValues): Update
     brandId: parsed.brandId || null,
     basePrice: Number(parsed.basePrice),
     description: parsed.description,
-    specification: Object.fromEntries(parsed.specification.map(({ key, value, format }) => [
-      key, format === "json" ? JSON.parse(value) : value,
+    specification: Object.fromEntries(parsed.specification.map(({ key, value, original }) => [
+      key, original && key === original.key && value === original.value ? JSON.parse(original.value) : value,
     ])),
   };
 }

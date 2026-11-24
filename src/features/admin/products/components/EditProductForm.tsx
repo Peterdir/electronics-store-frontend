@@ -110,7 +110,6 @@ export function EditProductForm({ product, session, unavailable, reload }: EditP
         <fieldset disabled={locked} className="min-w-0 space-y-6">
           <fieldset className="min-w-0 space-y-4 rounded-xl border border-border bg-card p-4 sm:p-6">
             <legend className="px-2 text-lg font-semibold">Thông tin chung</legend>
-            <p className="text-sm text-muted-foreground">* Bắt buộc. Giá cơ bản là thông tin chung của sản phẩm; giá bán từng biến thể được giữ nguyên.</p>
             <ProductField<EditProductFormValues> name="name" label="Tên sản phẩm" required />
             <div className="grid gap-4 sm:grid-cols-2">
               <ProductField<EditProductFormValues> name="categoryId" label="Danh mục" kind="select" options={categoryOptions} required />

@@ -58,15 +58,19 @@ test("Detail -> defaults -> PUT giữ ID Long, brand null và kiểu dữ liệu
   assert.equal(editProductSchema.safeParse(values).success, true);
 });
 
-test("Schema sửa không đòi biến thể; chặn ID/tiền/key trùng/JSON hỏng, cho phép xóa hết specification", () => {
+test("Schema sửa dùng văn bản, giữ kiểu dữ liệu cũ chưa sửa và cho phép xóa hết specification", () => {
   const values = toEditProductValues(productFixture());
   for (const patch of [{ name: " " }, { categoryId: "0" }, { categoryId: "9223372036854775808" }, { brandId: "bad" }, { basePrice: "-1" }, { basePrice: "Infinity" }]) {
     assert.equal(editProductSchema.safeParse({ ...values, ...patch }).success, false);
   }
   assert.equal(editProductSchema.safeParse({ ...values, specification: [{ key: "RAM", value: "8", format: "text" }, { key: " RAM ", value: "16", format: "text" }] }).success, false);
-  const invalid = editProductSchema.safeParse({ ...values, specification: [{ key: "RAM", value: "{broken", format: "json" }] });
-  assert.equal(invalid.success, false);
-  assert.equal(invalid.error.issues[0].path.join("."), "specification.0.value");
+  const text = buildUpdateProductRequest({ ...values, specification: [{ key: "RAM", value: "16 GB" }, { key: "description", value: "{not json" }] });
+  assert.deepEqual(text.specification, { RAM: "16 GB", description: "{not json" });
+  const cores = values.specification.find(row => row.key === "cores");
+  assert.equal(buildUpdateProductRequest({ ...values, specification: [{ ...cores, value: "16" }] }).specification.cores, "16");
+  assert.equal(buildUpdateProductRequest({ ...values, specification: [{ ...cores, key: "CPU" }] }).specification.CPU, "8");
+  assert.equal(buildUpdateProductRequest({ ...values, specification: [{ key: "cores", value: "8" }] }).specification.cores, "8");
+  assert.deepEqual(buildUpdateProductRequest({ ...values, specification: [...values.specification].reverse() }).specification, productFixture().specification);
   assert.deepEqual(buildUpdateProductRequest({ ...values, specification: [] }).specification, {});
   const proto = buildUpdateProductRequest({ ...values, specification: [{ key: "__proto__", value: "safe", format: "text" }] });
   assert.equal(Object.hasOwn(proto.specification, "__proto__"), true);
@@ -244,7 +248,7 @@ test("SSR: form sửa không có input biến thể/stock/ảnh; giữ relation 
     React.createElement(EditProductForm, { product, session: {}, unavailable: false, reload: async () => product })));
   assert.match(markup, /chưa có trong lựa chọn/);
   assert.match(markup, /Nhãn cũ/);
-  assert.match(markup, /JSON/);
+  assert.doesNotMatch(markup, /Kiểu giá trị|>JSON<|name="specification\.\d+\.format"/);
   assert.doesNotMatch(markup, /name="variants|name=".*stock|type="file"/);
   const variants = renderToStaticMarkup(React.createElement(SavedProductVariants, { product }));
   assert.match(variants, /SKU-DEN/);

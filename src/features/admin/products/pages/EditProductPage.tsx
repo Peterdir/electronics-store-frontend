@@ -29,7 +29,7 @@ export function EditProductPage() {
   return (
     <section className="min-w-0 space-y-6">
       <Link to="/admin/products" className="inline-block text-sm text-primary underline underline-offset-4">Về danh sách sản phẩm</Link>
-      <AdminPageHeader title="Sửa sản phẩm" description="Cập nhật thông tin chung và thông số kỹ thuật, giữ nguyên biến thể và tồn kho." />
+      <AdminPageHeader title="Sửa sản phẩm" />
       {!productId ? <p role="alert">Mã sản phẩm không hợp lệ.</p> : !product ? (
         query.isError ? (
           <div role="alert" className="space-y-3">

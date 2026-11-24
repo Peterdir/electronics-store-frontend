@@ -101,7 +101,6 @@ export function ProductImageManager({ product, session, unavailable, reload }: P
   return (
     <section aria-labelledby={`${inputId}-title`} aria-busy={busy} className="space-y-4 rounded-xl border border-border bg-card p-4 sm:p-6">
       <h2 id={`${inputId}-title`} className="text-lg font-semibold">Ảnh sản phẩm</h2>
-      <p className="text-sm text-muted-foreground">Ảnh đã lưu được lấy từ máy chủ. Chọn ảnh đại diện bằng nút bên dưới mỗi ảnh.</p>
       {!(product.images?.length) && <p>Chưa có ảnh sản phẩm.</p>}
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {(product.images ?? []).map((image) => (
