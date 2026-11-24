@@ -6,8 +6,7 @@ import { isPositiveLongId } from "@/shared/types/common";
 import { AdminPageHeader } from "../../components/AdminPageHeader";
 import { EditProductForm } from "../components/EditProductForm";
 import { ProductImageManager } from "../components/ProductImageManager";
-import { ProductStatusBadge } from "../components/ProductStatusBadge";
-import { SavedProductVariants } from "../components/SavedProductVariants";
+import { ProductLifecycleManager } from "../components/ProductLifecycleManager";
 import { isCurrentProductSession, useAdminProductDetail, useProductSession } from "../queries";
 
 export function EditProductPage() {
@@ -41,14 +40,20 @@ export function EditProductPage() {
       ) : (
         <div className="space-y-6" aria-busy={query.isFetching}>
           {query.isError && <p role="alert">Không cập nhật được dữ liệu: {query.error.message} Bản nháp được giữ lại; dữ liệu xem có thể chưa mới nhất.</p>}
-          <div className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card p-4">
-            <span className="text-sm wrap-anywhere">Sản phẩm #{product.id}</span>
-            <ProductStatusBadge status={product.status} />
-            <span className="text-sm text-muted-foreground">Cập nhật: {formatDateTime(product.updatedAt)}</span>
-            <Button variant="outline" disabled={query.isFetching} onClick={() => void query.refetch()}>{query.isFetching ? "Đang tải…" : "Tải lại dữ liệu nền"}</Button>
-          </div>
-          <EditProductForm key={`${session.userId}:${session.role}:${productId}`} product={product} session={session} unavailable={unavailable} reload={reload} />
-          <SavedProductVariants product={product} />
+          <ProductLifecycleManager key={`lifecycle:${session.userId}:${session.role}:${productId}`} product={product} session={session} unavailable={unavailable} reload={reload}>
+            {({ statusControl, variants }) => (
+              <>
+                <div className="flex flex-wrap items-start gap-3 rounded-xl border border-border bg-card p-4">
+                  <span className="inline-flex min-h-9 items-center text-sm wrap-anywhere">Sản phẩm #{product.id}</span>
+                  <div className="min-w-0 basis-full sm:basis-auto sm:flex-1">{statusControl}</div>
+                  <span className="inline-flex min-h-9 items-center text-sm text-muted-foreground">Cập nhật: {formatDateTime(product.updatedAt)}</span>
+                  <Button size="lg" variant="outline" disabled={query.isFetching} onClick={() => void query.refetch()}>{query.isFetching ? "Đang tải…" : "Tải lại dữ liệu nền"}</Button>
+                </div>
+                <EditProductForm key={`${session.userId}:${session.role}:${productId}`} product={product} session={session} unavailable={unavailable} reload={reload} />
+                {variants}
+              </>
+            )}
+          </ProductLifecycleManager>
           <ProductImageManager key={`images:${session.userId}:${session.role}:${productId}`} product={product} session={session} unavailable={unavailable} reload={reload} />
         </div>
       )}

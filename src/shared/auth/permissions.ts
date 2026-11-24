@@ -12,6 +12,8 @@ export const PERMISSIONS = {
     "brand.manage": [Role.ADMIN, Role.MANAGER],
     "product.write": [Role.ADMIN, Role.MANAGER, Role.STAFF],
     "product.changeStatus": [Role.ADMIN, Role.MANAGER],
+    "product.deactivateVariant": [Role.ADMIN, Role.MANAGER],
+    "product.reactivateVariant": [Role.ADMIN, Role.MANAGER],
     "inventory.manage": [Role.ADMIN, Role.MANAGER, Role.STAFF],
     "order.view": [Role.ADMIN, Role.MANAGER, Role.STAFF],
     "order.updateStatus": [Role.ADMIN, Role.MANAGER, Role.STAFF],

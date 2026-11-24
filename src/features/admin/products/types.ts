@@ -1,6 +1,11 @@
 import type { ID, ISODateTime, Money } from "@/shared/types/common";
 import type { ProductStatus } from "@/shared/types/enums";
 
+export type ProductLifecycleAction =
+  | { kind: "status"; status: ProductStatus }
+  | { kind: "deactivate"; variantId: ID }
+  | { kind: "reactivate"; variantId: ID };
+
 export interface AdminProductListResponse {
   id: ID;
   name: string;

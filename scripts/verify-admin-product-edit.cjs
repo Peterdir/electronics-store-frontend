@@ -358,6 +358,7 @@ test("Page thật: loading, GET lỗi/403/404, ID sai; lỗi refetch vẫn giữ
     },
     "@/features/admin/products/components/EditProductForm": { EditProductForm: () => React.createElement("p", null, "Bản nháp còn nguyên") },
     "@/features/admin/products/components/ProductImageManager": { ProductImageManager: () => React.createElement("p", null, "Khu ảnh E11") },
+    "@/features/admin/products/components/ProductLifecycleManager": { ProductLifecycleManager: ({ children }) => children({ statusControl: React.createElement("span", null, "Trạng thái E12"), variants: null }) },
   });
   const { EditProductPage } = pageLoad("@/features/admin/products/pages/EditProductPage");
   const { ApiError } = pageLoad("@/shared/api/errors");

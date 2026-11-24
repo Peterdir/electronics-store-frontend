@@ -18,12 +18,13 @@ const appearances = {
   },
 } satisfies Record<ProductStatus, { icon: typeof CircleCheck; className: string }>;
 
-export function ProductStatusBadge({ status }: { status: ProductStatus }) {
-  const { icon: Icon, className } = appearances[status];
+export function ProductStatusBadge({ status, className }: { status: ProductStatus; className?: string }) {
+  const { icon: Icon, className: appearanceClassName } = appearances[status];
 
   return (
     <span className={cn(
       "inline-flex min-h-7 w-max min-w-28 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs leading-4 font-semibold ring-1 ring-inset",
+      appearanceClassName,
       className,
     )}>
       <Icon aria-hidden="true" className="size-3.5 shrink-0" strokeWidth={1.75} />

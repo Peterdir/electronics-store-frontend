@@ -2,7 +2,7 @@
 
 > Ngày lập: **13/11/2026**. Đối chiếu frontend tại HEAD `87eaa75`; working tree sạch trước khi lập kế hoạch.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase4.md](phase4.md), source frontend và source backend tham chiếu tại `../ecommerce-backend`.
-> **Trạng thái — 22/11/2026: E1–E9, phần sửa thông tin chung E10 và E11 đã có code, chờ review và kiểm thử nghiệp vụ browser/backend; E12–E22 chưa triển khai.** E10 không gửi variants; sửa metadata biến thể cũ vẫn phụ thuộc backend. Contract được đối chiếu source; E9 đã kiểm tra GET public 200/admin chưa đăng nhập 401 trên backend dev, chưa xác nhận POST tạo thật. Xem bàn giao cuối tài liệu.
+> **Trạng thái — 24/11/2026: E1–E9, phần sửa thông tin chung E10 và E11–E12b đã có code, chờ review và kiểm thử nghiệp vụ tích hợp có đăng nhập; E13–E22 chưa triển khai.** E10 không gửi variants; sửa metadata biến thể cũ vẫn phụ thuộc backend. E12b đã bổ sung bán lại biến thể và cải thiện thẻ; backend đổi trạng thái sản phẩm không còn ghi đè trạng thái biến thể. Contract được đối chiếu source; E9 đã kiểm tra GET public 200/admin chưa đăng nhập 401 trên backend dev, chưa xác nhận POST tạo thật. Xem bàn giao cuối tài liệu.
 > **Cách học bắt buộc: khi bắt đầu mỗi nhiệm vụ, sinh mã hướng dẫn theo từng bước và từng file để người dùng tự học, tự gõ code; cuối nhiệm vụ có nội dung commit.** Không tự triển khai source khi người dùng chỉ yêu cầu hướng dẫn.
 
 ## 1. Mục tiêu và điểm bắt đầu
@@ -16,6 +16,8 @@ Sau Phase 5, ADMIN/MANAGER/STAFF sử dụng các màn hình đúng quyền đ�
 - Không tách một mốc E0 chỉ để khảo sát. Đọc contract, chuẩn bị tài khoản/dữ liệu và kiểm tra Network ngay tại nhiệm vụ sử dụng, theo cách làm đã chốt ở Phase 4.
 
 Ngoài phạm vi: triển khai production, tự động hoàn tiền VNPay, tạo API backend còn thiếu, chính sách B11, phần B12 còn hoãn, guest order tracking, gửi email xác nhận đơn, cài lại toàn bộ hệ thống test/CI đã hoãn. Chỉ ghi yêu cầu phối hợp backend khi gặp giới hạn; không tự sửa repository backend trong lúc hướng dẫn frontend.
+
+Ngoại lệ được yêu cầu triển khai trực tiếp ngày 24/11/2026: E12b bổ sung API bán lại biến thể và tách trạng thái sản phẩm/biến thể trong backend, cùng giao diện tương ứng. Ngoại lệ này không mở rộng sang các API backend còn thiếu của mốc khác.
 
 ## 2. Quy ước hướng dẫn tự học và commit
 
@@ -112,7 +114,7 @@ src/features/admin/
 | Sửa product | PUT JSON; variant được khớp bằng **SKU**, không có variant ID trong request. SKU mới tạo variant; bỏ variant khỏi payload không xóa nó | SKU đã lưu không cho đổi tùy tiện. Xóa/ngừng bán dùng endpoint riêng E12 |
 | Tồn kho khi sửa product | Gửi variant đã có sẽ `setQuantity(stock)` từ payload, chưa thấy lịch sử điều chỉnh ở nhánh này | E10 sửa thông tin chung bằng cách **bỏ trường variants**. Chặn riêng sửa giá/thuộc tính variant đã có cho đến khi backend có contract không ghi đè kho; không coi readonly stock/refetch trước lưu là giải quyết race |
 | Ảnh sản phẩm | Có thêm/xóa/chọn primary; chưa có endpoint lưu thứ tự ảnh đã upload | E11 không hứa lưu drag-and-drop reorder. Kiểm tra field `isPrimary` thật, không đổi mọi field bắt đầu bằng `is` thành tên khác |
-| Ngừng bán variant | DELETE `/products/{id}/variants/{variantId}` hiện đặt status INACTIVE | Dùng nhãn “Ngừng bán biến thể”, không mô tả là xóa cứng hoặc hứa khôi phục khi chưa có API |
+| Ngừng bán/bán lại variant — E12b 24/11/2026 | DELETE `/products/{id}/variants/{variantId}` đặt INACTIVE; PATCH cùng đường dẫn thêm `/status?status=ACTIVE` bán lại, chỉ A/M | Giữ ID/giá/tồn; cập nhật product.updatedAt khi trạng thái thực sự đổi. Status sản phẩm độc lập, không bật lại mọi variant khi sản phẩm ACTIVE |
 | Trạng thái đơn | Đọc lại 20/11/2026: `/status` vẫn nhận CANCELLED và cho S gọi. `/cancel` riêng chỉ A/M; service hiện đã chặn SHIPPED, DELIVERED, CANCELLED và RETURN_*, chỉ còn PENDING/PROCESSING trong enum hiện tại | E4 chỉ expose luồng xử lý/giao hàng; E5 hủy riêng từ PENDING/PROCESSING. Còn gap quyền S qua `/status`; cần kiểm thử server và hai request đồng thời/hoàn tồn lặp, không kết luận ẩn nút đã sửa lỗ hổng |
 | Trả hàng | Đọc lại 20/11/2026: tạo request đã đặt RETURN_REQUESTED; create/process dùng trạng thái hiệu lực theo yêu cầu trả hàng, ưu tiên PENDING → APPROVED → REJECTED. Dữ liệu cũ có thể còn orderStatus khác trạng thái hiệu lực | Đồng bộ response và lọc orders admin theo trạng thái hiệu lực. E15 vẫn xử lý qua return API, không qua dropdown status đơn; không suy ra hoàn tiền từ APPROVED |
 | Hoàn tiền/lịch sử kho khi trả | Chưa thấy process return cập nhật paymentStatus, gọi cổng hoàn tiền hoặc ghi InventoryHistory | Không hiển thị “Đã hoàn tiền” từ APPROVED. Refetch dữ liệu, ghi phần backend cần bổ sung |
@@ -201,7 +203,8 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 | E9 | Tạo sản phẩm, thông số, biến thể | E8 | Đã code, kiểm tra tự động đạt; chờ review và kiểm thử browser/backend có đăng nhập |
 | E10 | Sửa thông tin sản phẩm an toàn với tồn kho | E9; contract riêng cho sửa variant cũ | Đã code thông tin chung, kiểm tra tự động đạt; chờ browser/backend; variant cũ còn phụ thuộc backend |
 | E11 | Quản lý ảnh sản phẩm | E10 | Đã code; kiểm tra tự động đạt, chờ browser/backend có đăng nhập |
-| E12 | Trạng thái sản phẩm, ngừng bán variant | E10 | Chưa bắt đầu |
+| E12 | Trạng thái sản phẩm, ngừng bán variant | E10 | Đã code, kiểm tra tự động đạt; chờ review và tích hợp có đăng nhập |
+| E12b | Bán lại biến thể, tách trạng thái sản phẩm/biến thể và cải thiện thẻ | E12 | Đã code frontend/backend, kiểm tra tự động và preview responsive; chờ tích hợp có đăng nhập |
 | E13 | Danh sách tồn kho và bộ lọc | E8 | Chưa bắt đầu |
 | E14 | Điều chỉnh kho và lịch sử | E13 | Chưa bắt đầu |
 | E15 | Xem và xử lý yêu cầu trả hàng | E3–E4, E14; D12 hoặc dữ liệu return dev | Chưa bắt đầu |
@@ -575,15 +578,39 @@ Kiểm thử nghiệp vụ thật còn cần làm: chạy frontend/backend, đă
 
 ### E12 — Đổi trạng thái sản phẩm và ngừng bán biến thể
 
+**Triển khai — 22/11/2026:** đã thêm hai hành động trên trang edit, xác nhận và khóa chung theo sản phẩm/phiên. Đã kiểm tra tự động; chưa thử mutation có đăng nhập trên backend thật. Chi tiết ở bàn giao cuối tài liệu.
+
 **Kết quả:** A/M đổi ACTIVE/INACTIVE/HIDDEN của sản phẩm và ngừng bán variant; S chỉ có phần xem/sửa được backend cho phép.
 
 **Kiến thức và mã hướng dẫn:** quyền cấp hành động, thao tác cần xác nhận, soft delete và ảnh hưởng liên feature. Thêm `products/components/{ProductStatusAction,DeactivateVariantAction}.tsx`, permission và mutations tương ứng.
 
-**Các bước tự code:** PATCH `/api/admin/products/{id}/status?status=...`; DELETE `/api/admin/products/{id}/variants/{variantId}`. Hiển thị trạng thái trả về sau refetch, giữ ID và giải thích ngừng bán variant không xóa snapshot đơn cũ. Không thêm nút xóa cứng toàn sản phẩm/khôi phục variant nếu chưa có API. Làm mới public list/detail/compare và dữ liệu tồn liên quan.
+**Các bước tự code:** PATCH `/api/admin/products/{id}/status?status=...`; DELETE `/api/admin/products/{id}/variants/{variantId}`. Hiển thị trạng thái trả về sau refetch, giữ ID và giải thích ngừng bán variant không xóa snapshot đơn cũ. Không thêm nút xóa cứng toàn sản phẩm. Phần bán lại variant đã được bổ sung bằng API riêng tại E12b. Làm mới public list/detail/compare và dữ liệu tồn liên quan.
+
+**Contract cập nhật E12b — 24/11/2026:** `changeProductStatus` chỉ đổi product.status và updatedAt, giữ trạng thái riêng của mọi variant. DELETE variant chỉ set INACTIVE và giữ ID. PATCH variant status riêng nhận ACTIVE/INACTIVE, trả text và kiểm tra A/M. Frontend kiểm tra quyền lúc render và ngay trước dispatch, không thay kiểm tra backend. Hành vi cascade được ghi trong bàn giao E12 ngày 22/11 là hành vi cũ, đã thay thế ở E12b.
 
 **Kiểm tra/hoàn thành:** S không gọi được hành động hạn chế, sản phẩm ẩn khỏi luồng public theo backend, variant đang ở giỏ/đơn cũ có fallback hợp lệ, request đồng thời và 404. Bài tập: giải thích vì sao không thể xóa variant chỉ bằng cách bỏ dòng khỏi form E10.
 
 **Commit cuối nhiệm vụ:** `feat(admin-products): control product visibility and deactivate variants`
+
+### E12b — Bán lại biến thể và cải thiện thẻ biến thể
+
+**Yêu cầu trực tiếp — 24/11/2026:** bổ sung bán lại biến thể và làm thẻ chuyên nghiệp, dễ đọc; phạm vi lần này gồm API backend cần thiết và frontend. Không tạo lại file guide E12.
+
+**Kết quả:** ADMIN/MANAGER ngừng bán hoặc bán lại tại thẻ trên `/admin/products/:id/edit`; STAFF chỉ xem. Biến thể INACTIVE hoặc HIDDEN cũ có nút Bán lại; ACTIVE có nút Ngừng bán. Xác nhận riêng ở đúng thẻ, refetch detail sau ghi, giữ ID/SKU/giá/thuộc tính/tồn kho và snapshot đơn cũ. Bật lại sản phẩm không tự khôi phục mọi biến thể. Variant ACTIVE của product không ACTIVE vẫn chưa được mua; UI giải thích điều này.
+
+**Contract:** PATCH `/api/admin/products/{id}/variants/{variantId}/status?status=ACTIVE`, không body, trả text. Backend nhận ACTIVE/INACTIVE, HIDDEN/null bị từ chối; kiểm tra variant thuộc product, role A/M, no-op cùng status không đổi updatedAt. DELETE cũ giữ tương thích và gọi chung logic INACTIVE. Chỉ trạng thái đổi mới cập nhật product.updatedAt; không chỉnh inventory timestamp/quantity hoặc tạo variant mới.
+
+**File frontend:** `products/types.ts`, `api.ts`, `lifecycleQueries.ts`, `components/{ProductLifecycleManager,ReactivateVariantAction,DeactivateVariantAction,SavedProductVariants,ProductStatusAction}.tsx`, `shared/auth/permissions.ts`; mở rộng `scripts/verify-admin-product-lifecycle.cjs`. Thẻ hiển thị thumbnail/fallback, SKU, badge trạng thái, giá và tồn hai cột, thuộc tính dạng nhãn, ID phụ và nút hành động cuối thẻ; grid responsive và các thẻ cùng hàng có chiều cao đồng đều. Số biến thể bật bán khác điều kiện mua thực tế khi parent bị ẩn hoặc tồn bằng 0.
+
+**File backend:** `AdminProductController`, `ProductService`, `ProductServiceImpl`, điều chỉnh assertion cũ ở `ProductServiceImplTest`, thêm `ProductVariantStatusServiceTest`. Giữ thay đổi có sẵn của người dùng ở `modules/order/dto/response/OrderItemResponse.java` và frontend `admin/orders/queries.ts`.
+
+**Quy tắc kiểm tra:** quyền A/M/S/CUSTOMER, product/variant sai hoặc thuộc product khác, no-op, HIDDEN cũ, parent ẩn/ngừng bán, stock 0, hai thao tác đồng thời, timeout/403/404, GET lỗi sau ghi thành công, đổi phiên trước/sau request. Không optimistic hay tự retry; cùng khóa lifecycle và cache products/inventory/dashboard/catalog/cart/wishlist. Chưa có khóa/version giữa các tab/tài khoản; dữ liệu HIDDEN/INACTIVE do cascade cũ được giữ nguyên, có thể dùng Bán lại theo từng variant, không chạy migration tự bật hàng loạt.
+
+**Trạng thái:** đã triển khai, kiểm tra tự động và preview thẻ sáng/tối/mobile với dữ liệu mẫu; chưa kiểm thử mutation có đăng nhập trên backend đang chạy. Cần khởi động lại backend để sử dụng API và hành vi status mới. Kết quả chi tiết ở bàn giao cuối tài liệu.
+
+**Commit frontend đề xuất:** `feat(admin-products): reactivate variants and refine variant cards`
+
+**Commit backend đề xuất:** `feat(products): manage variant status independently from product visibility`
 
 ### E13 — Danh sách tồn kho và bộ lọc
 
@@ -925,3 +952,27 @@ Bước tiếp theo:
 - Chưa thử POST/DELETE/PATCH có đăng nhập trên backend thật hoặc tương tác browser. Checklist: A/M/S/CUSTOMER, ảnh thật/giả nội dung/tổng request lớn, xóa primary/cuối cùng/ảnh đã mất ở tab khác, primary rồi reload/catalog/cart/wishlist, ảnh hỏng/mobile/bàn phím, giữ draft, 403/404/network, request chậm rồi logout/đổi phiên/rời trang. Trạng thái: **đã code và kiểm tra tự động, chờ review và kiểm thử tích hợp có đăng nhập**.
 - Commit đề xuất: `feat(admin-products): manage product images and primary selection`.
 - Hồi quy catalog: `npm run verify:catalog` **13/13** đạt.
+
+### Bàn giao E12 — Trạng thái sản phẩm và ngừng bán biến thể — 22/11/2026
+
+- Cập nhật giao diện 24/11/2026: bỏ khối trạng thái riêng, bấm trực tiếp badge có mũi tên trong thanh thông tin đầu trang để mở/đóng danh sách trạng thái bên dưới badge; chọn trạng thái mới là gửi PATCH ngay, không có nút Cập nhật hay xác nhận đổi trạng thái. Chọn trạng thái hiện tại không gửi lại request. Popover dùng Base UI có sẵn, hỗ trợ đóng khi bấm ngoài/Escape và quản lý focus. Badge/dropdown/nút cùng chiều cao, có hover/focus và hỗ trợ bàn phím; STAFF vẫn chỉ xem badge. Danh sách ghi rõ trạng thái áp dụng cho tất cả biến thể. Xác nhận ngừng bán và phản hồi nằm ngay tại biến thể đang chọn. Giữ khóa mutation/phiên/cache; hồi quy E10 12/12 và E12 8/8 đạt ở bước thu gọn bố cục. Không tạo lại file hướng dẫn E12.
+- Đã thêm ProductStatusAction và DeactivateVariantAction tại `/admin/products/:id/edit`, điều phối bằng ProductLifecycleManager. ADMIN/MANAGER chọn ACTIVE/INACTIVE/HIDDEN để lưu ngay; ngừng bán từng variant vẫn có xác nhận riêng; STAFF chỉ xem phần trạng thái/biến thể. Quyền product.deactivateVariant tách riêng; mutation kiểm tra quyền trước dispatch. Vùng xác nhận nhận focus khi chọn thao tác, thông báo status/alert và nút disabled khi bận.
+- Contract đối chiếu AdminProductController/ProductServiceImpl: PATCH `/{id}/status?status=...`, DELETE `/{id}/variants/{variantId}`, response text, hai endpoint có PreAuthorize A/M. Đổi status áp dụng cả product và mọi variant, chuyển ACTIVE có thể bật lại variant INACTIVE; UI cảnh báo rõ. DELETE chỉ set INACTIVE, giữ ID. Không thêm xóa cứng hay nút khôi phục variant. Không sửa backend.
+- Thêm ProductLifecycleAction trong types.ts (discriminated union), API và lifecycleQueries.ts; mở rộng SavedProductVariants bằng renderAction tùy chọn và tích hợp vào EditProductPage. Tái sử dụng GET detail, session snapshot, Long ID string, error/client và badge. Giữ nguyên thay đổi có sẵn trong admin/orders/queries.ts; không thêm dependency/gen:api/commit/push.
+- Khóa chung status và deactivate variant theo product/user/role trong QueryClient, ref chặn double click trước render. Không optimistic, retry false, networkMode always, gcTime 0; kiểm tra phiên trước/sau request và trước cache/UI. Cancel GET cũ rồi invalidate products admin đúng phiên, inventory/dashboard, public products (gồm detail/compare), cart/wishlist. GET detail riêng sau khi báo ghi thành công; GET lỗi giữ thông báo đã lưu và chỉ GET lại, không replay mutation. Timeout/408/5xx/400/404 yêu cầu GET đối chiếu; 403 khóa ghi để cập nhật phiên. Khóa frontend không bảo vệ giữa nhiều tab/tài khoản.
+- Cart đã đăng nhập dùng cờ không khả dụng từ backend; OrderItems hiển thị snapshot, SKU/ảnh có fallback. Guest cart vẫn là snapshot cục bộ, không tự đồng bộ trạng thái bán qua invalidate cache; checkout/backend phải kiểm tra lại. Cần thử cart/order thật trước khi nghiệm thu E12.
+- Kiểm tra: typecheck/lint/build, git diff --check đạt. E9–E12 45/45 (16 + 12 + 9 + 8), catalog 13/13, checkout 24/24 đạt. Hai HTTP loopback test E9/E10 ban đầu bị sandbox chặn kết nối; chạy lại với quyền HTTP local đạt. E12 dùng API/Query/handler harness và SSR, không phải browser E2E hoặc request đăng nhập backend thật. Build vẫn cảnh báo chunk storefront/HeroScene trên 500 kB có trước.
+- Còn cần: browser/backend với A/M/S/CUSTOMER, STAFF gọi trực tiếp endpoint nhận 403, status cascade và reload/public, variant ở cart/đơn cũ, hai tab đổi đồng thời, 400/403/404/network, ghi thành công GET lỗi, request chậm rồi logout/đổi phiên/rời trang, giữ dirty draft E10, mobile/bàn phím/focus. Trạng thái: đã code và kiểm tra tự động, chờ review và tích hợp có đăng nhập; không đánh dấu toàn Phase 5 hoàn thành.
+- Commit đề xuất: `feat(admin-products): control product visibility and deactivate variants`.
+
+### Bàn giao E12b — Bán lại và thẻ biến thể — 24/11/2026
+
+- Đã bổ sung Bán lại cho biến thể INACTIVE/HIDDEN cũ trên trang edit, chỉ ADMIN/MANAGER; ACTIVE có nút Ngừng bán. Mỗi hành động có xác nhận tại thẻ, ref chặn click lặp và khóa chung lifecycle, snapshot phiên trước/sau request. GET detail sau ghi; lỗi đọc không tự phát lại PATCH/DELETE; timeout/404 yêu cầu đọc lại. Giữ lựa chọn đổi trạng thái sản phẩm một lần bấm và không hiển thị thông báo đã lưu ở badge.
+- Backend thêm PATCH `/api/admin/products/{id}/variants/{variantId}/status?status=ACTIVE`, method security A/M, response text; service nhận ACTIVE/INACTIVE, validate thuộc product, giữ nguyên ID/SKU/giá/attributes/kho. No-op không đổi timestamp; status thực sự đổi mới cập nhật product.updatedAt. DELETE cũ dùng chung logic INACTIVE. ProductServiceImpl.changeProductStatus không còn ghi đè status các variant; cart/checkout vẫn kiểm tra cả parent và variant. Bán lại variant không bật parent; UI nêu rõ khi parent ẩn/ngừng bán.
+- Thẻ mới có ảnh riêng/ảnh sản phẩm dự phòng/icon khi ảnh thiếu hoặc hỏng, SKU dễ đọc, badge trạng thái, ô giá/tồn riêng, thuộc tính dạng nhãn, ID phụ và nút hành động. Header có số lượng variant bật bán và tổng tồn. Số đếm bật bán không có nghĩa toàn bộ variant mua được khi tồn 0/parent không ACTIVE. Không thêm sửa giá/SKU/stock metadata vào E10.
+- Frontend mở rộng types/api/lifecycleQueries/permissions, thêm ReactivateVariantAction, cập nhật manager/thẻ/nút ngừng bán và dòng mô tả trong popover product status. Backend sửa controller/interface/service, cập nhật assertion cascade cũ trong ProductServiceImplTest và thêm ProductVariantStatusServiceTest. Không thêm thư viện, gen:api, guide E12, commit/push; giữ thay đổi ngoài nhiệm vụ trong hai repository.
+- Kiểm tra: typecheck/lint/build và git diff --check đạt. E9–E12b 47/47 (16 + 12 + 9 + 10), catalog 13/13. Backend JDK21/Maven wrapper: product 35 + variant status 8 = 43/43, cart 30 + order 26 = 56/56; tổng 99/99. Maven còn cảnh báo Mockito dynamic agent và JaCoCo execution data cũ không khớp; unit tests đạt, không dùng coverage đó để kết luận độ bao phủ. Build frontend vẫn có cảnh báo chunk lớn đã có trước.
+- Đã xem preview SSR của component thật với dữ liệu mẫu trên browser ở giao diện sáng/tối và iframe rộng 390px, có SKU dài/ảnh thiếu/tồn 0; đây là kiểm tra bố cục, không phải thao tác API có đăng nhập. Server/script preview tạm đã dừng và xóa. Unit test kiểm tra giữ nguyên giá/kho/ID, status độc lập, timestamp/no-op, variant thuộc sản phẩm khác, legacy HIDDEN, permission FE, cache/đổi phiên, click lặp và GET lỗi.
+- Chưa kiểm thử API mới có đăng nhập trên backend đang chạy hoặc tranh chấp giữa nhiều tab; cần khởi động lại backend rồi thử A/M/S, ngừng bán → bán lại → reload → cart/catalog/đơn cũ. Variant INACTIVE/HIDDEN do cascade cũ vẫn giữ nguyên, dùng Bán lại từng biến thể khi cần; không chạy migration tự bật hàng loạt. Backend chưa bổ sung version/lock cho hai admin ghi đồng thời. Trạng thái: đã code, kiểm tra tự động và preview bố cục; chờ tích hợp có đăng nhập.
+- Commit frontend đề xuất: `feat(admin-products): reactivate variants and refine variant cards`.
+- Commit backend đề xuất: `feat(products): manage variant status independently from product visibility`.
