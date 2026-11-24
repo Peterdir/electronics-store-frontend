@@ -2,7 +2,7 @@
 
 > Ngày lập: **13/11/2026**. Đối chiếu frontend tại HEAD `87eaa75`; working tree sạch trước khi lập kế hoạch.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase4.md](phase4.md), source frontend và source backend tham chiếu tại `../ecommerce-backend`.
-> **Trạng thái — 24/11/2026: E1–E9, phần sửa thông tin chung E10 và E11–E12b đã có code, chờ review và kiểm thử nghiệp vụ tích hợp có đăng nhập; E13–E22 chưa triển khai.** E10 không gửi variants; sửa metadata biến thể cũ vẫn phụ thuộc backend. E12b đã bổ sung bán lại biến thể và cải thiện thẻ; backend đổi trạng thái sản phẩm không còn ghi đè trạng thái biến thể. Contract được đối chiếu source; E9 đã kiểm tra GET public 200/admin chưa đăng nhập 401 trên backend dev, chưa xác nhận POST tạo thật. Xem bàn giao cuối tài liệu.
+> **Trạng thái — 24/11/2026: E1–E9, phần sửa thông tin chung E10 và E11–E13 đã có code, chờ review và kiểm thử nghiệp vụ tích hợp có đăng nhập; E14–E22 chưa triển khai.** E10 không gửi variants; sửa metadata biến thể cũ vẫn phụ thuộc backend. E12b đã bổ sung bán lại biến thể và cải thiện thẻ; backend đổi trạng thái sản phẩm không còn ghi đè trạng thái biến thể. E13 lọc SKU/tên phía client vì backend keyword hiện chỉ tìm tên. Contract được đối chiếu source; E9 đã kiểm tra GET public 200/admin chưa đăng nhập 401 trên backend dev, chưa xác nhận POST tạo thật. Xem bàn giao cuối tài liệu.
 > **Cách học bắt buộc: khi bắt đầu mỗi nhiệm vụ, sinh mã hướng dẫn theo từng bước và từng file để người dùng tự học, tự gõ code; cuối nhiệm vụ có nội dung commit.** Không tự triển khai source khi người dùng chỉ yêu cầu hướng dẫn.
 
 ## 1. Mục tiêu và điểm bắt đầu
@@ -205,7 +205,7 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 | E11 | Quản lý ảnh sản phẩm | E10 | Đã code; kiểm tra tự động đạt, chờ browser/backend có đăng nhập |
 | E12 | Trạng thái sản phẩm, ngừng bán variant | E10 | Đã code, kiểm tra tự động đạt; chờ review và tích hợp có đăng nhập |
 | E12b | Bán lại biến thể, tách trạng thái sản phẩm/biến thể và cải thiện thẻ | E12 | Đã code frontend/backend, kiểm tra tự động và preview responsive; chờ tích hợp có đăng nhập |
-| E13 | Danh sách tồn kho và bộ lọc | E8 | Chưa bắt đầu |
+| E13 | Danh sách tồn kho và bộ lọc | E8 | Đã code; chờ review và tích hợp đăng nhập |
 | E14 | Điều chỉnh kho và lịch sử | E13 | Chưa bắt đầu |
 | E15 | Xem và xử lý yêu cầu trả hàng | E3–E4, E14; D12 hoặc dữ liệu return dev | Chưa bắt đầu |
 | E16 | Kiểm duyệt và trả lời đánh giá | E2; D9 hoặc dữ liệu review dev | Chưa bắt đầu |
@@ -620,6 +620,8 @@ Kiểm thử nghiệp vụ thật còn cần làm: chạy frontend/backend, đă
 
 **Các bước tự code:** GET `/api/admin/inventory` với `keyword, status, minQuantity, maxQuantity`, nhận mảng. Giữ bộ lọc ở URL; validate số nguyên không âm và min ≤ max. Sort/page trong client trên toàn bộ response; status dùng enum IN_STOCK/LOW_STOCK/OUT_OF_STOCK. Phân biệt `inventoryId`, `variantId`, `productId`. Chưa thêm virtualization nếu chưa đo được vấn đề hiệu năng thực tế.
 
+**Đối chiếu triển khai 24/11/2026:** repository backend chỉ tìm keyword trong tên sản phẩm. E13 gửi status/minQuantity/maxQuantity, bỏ keyword khỏi HTTP và lọc OR SKU/tên trên toàn bộ mảng trả về trước sort/page để không mất dòng khớp SKU. Không sửa backend.
+
 **Kiểm tra/hoàn thành:** tồn 0, ngưỡng status từ server, min/max sai, keyword SKU, mảng rỗng/lớn, reload URL và không gửi API page/size giả. Bài tập: xác định ID nào phải truyền khi điều chỉnh kho.
 
 **Commit cuối nhiệm vụ:** `feat(admin-inventory): list stock levels with filters`
@@ -984,3 +986,14 @@ Bước tiếp theo:
 - Đã cập nhật kiểm tra E10: 12/12 đạt, gồm round trip số/boolean/null/mảng/object, giá trị văn bản không phải JSON, chỉnh sửa/đổi tên/xóa và thứ tự dòng; UI không còn select kiểu giá trị. Chưa kiểm thử tương tác form với backend có đăng nhập.
 - Commit đề xuất: `refactor(admin-products): simplify specification inputs to text`.
 - Giao diện thông số được đồng bộ qua SpecificationEditorLayout giữa trang tạo, trang sửa và thuộc tính biến thể: tiêu đề/icon/số lượng, trạng thái rỗng, dòng có số thứ tự, tên–giá trị căn hàng, nút xóa biểu tượng có nhãn và nút thêm viền nét đứt. Responsive xếp dọc trên mobile; ô giá trị trang sửa giữ textarea một dòng có thể mở rộng. ProductField thêm placeholder/rows tùy chọn, mặc định trường khác giữ nguyên. Hồi quy tạo/sửa 28/28 đạt.
+
+### Bàn giao E13 — Danh sách tồn kho và bộ lọc — 24/11/2026
+
+- Đã thêm `/admin/inventory` lazy-load, menu Tồn kho và whitelist redirect giữ query sau login cho A/M/S. Hiển thị sản phẩm/link sửa, SKU, inventoryId/variantId/productId riêng biệt, số tồn, status server và ngày cập nhật. E14 adjust/history chưa triển khai. Không sửa backend, thêm dependency, gen:api, commit/push; giữ nguyên thay đổi có sẵn trong `admin/orders/queries.ts`.
+- Đối chiếu source AdminInventoryController, InventoryResponse, InventoryServiceImpl, InventoryRepository và InventoryMapper. GET trả mảng, nhận keyword/status/minQuantity/maxQuantity; phát hiện keyword chỉ tìm tên tại repository. Frontend chủ động không gửi keyword, lọc OR SKU/tên trên toàn bộ mảng server đã lọc status/kho trước sort và slice. Không gửi page/size/sort giả. Status IN_STOCK/LOW_STOCK/OUT_OF_STOCK lấy từ response, không tính lại ngưỡng tại UI và không đồng nhất với trạng thái bán.
+- Bộ lọc/sort/page/size ở URL; whitelist và chuẩn hóa URL; min/max giữ chuỗi sai để báo lỗi, chặn GET tự động cho số âm/lẻ/exponent/unsafe và min > max; nhận 0. Sort/page client, không sửa mảng cache, null cuối, kẹp trang vượt phạm vi, đổi filter/sort/size về trang 1. Loading/empty/error/retry và cảnh báo refetch lỗi với data cũ; fallback quan hệ/SKU/quantity/ngày null. Không virtualization khi chưa đo dữ liệu thật.
+- Query key theo user/role và filter server, không token; chỉ enabled khi phiên còn hạn và có inventory.manage. Snapshot kiểm tra trước/sau await, AbortSignal truyền xuống Axios, không placeholder giữa phiên. Dùng lại cache/session lifecycle hiện có. Tìm keyword/sort/page dùng mảng cache, không thêm GET vì các giá trị đó thay đổi.
+- File mới inventory/{types,filters,api,queries}.ts và inventory/pages/InventoryPage.tsx. Các file tích hợp: router.tsx, navigation.ts, redirect.ts; cập nhật kế hoạch. Đã xóa test và guide riêng E13 theo yêu cầu người dùng.
+- Kiểm tra typecheck/lint/build và git diff --check đạt; hồi quy E12b **10/10** và catalog **13/13** đạt. Test E13 từng chạy **9/9** đạt trước khi được xóa theo yêu cầu; không còn script test E13 trong repository. Chưa kiểm thử browser E2E hoặc backend đăng nhập thật. Build vẫn cảnh báo chunk storefront/HeroScene trên 500 kB có sẵn.
+- Còn cần: browser/backend có đăng nhập A/M/S/CUSTOMER, SKU/tên thật, status ngưỡng 0/1/10/11, filter/status/kho và reload/back/forward, network/403/500, request chậm rồi logout, mobile/bàn phím/theme. Quantity JSON number hiện chưa bảo đảm chính xác cho lượng vượt MAX_SAFE_INTEGER; cần contract chuỗi nếu nghiệp vụ sử dụng lượng đó. Trạng thái: **đã code và kiểm tra tự động, chờ review và kiểm thử tích hợp có đăng nhập**.
+- Commit đề xuất: `feat(admin-inventory): list stock levels with filters`.

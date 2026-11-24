@@ -5,7 +5,20 @@ export interface DataTableColumn<T, TSort extends string> {
   header: string;
   cell: (row: T) => ReactNode;
   sortBy?: TSort;
+  align?: "left" | "center" | "right";
 }
+
+const alignmentClasses = {
+  left: "text-left",
+  center: "text-center",
+  right: "text-right",
+};
+
+const contentAlignmentClasses = {
+  left: "justify-start",
+  center: "justify-center",
+  right: "justify-end",
+};
 
 interface DataTableProps<T, TSort extends string> {
   caption: string;
@@ -24,7 +37,7 @@ export function DataTable<T, TSort extends string>({
 }: DataTableProps<T, TSort>) {
   return (
     <div className="overflow-x-auto rounded-xl border border-border">
-      <table className="w-full min-w-230 text-left text-sm">
+      <table className="w-full min-w-230 text-center text-sm">
         <caption className="sr-only">{caption}</caption>
         <thead className="bg-muted/60">
           <tr>
@@ -32,7 +45,7 @@ export function DataTable<T, TSort extends string>({
               <th
                 key={column.id}
                 scope="col"
-                className="px-4 py-3 font-semibold"
+                className={`px-4 py-3 font-semibold ${alignmentClasses[column.align ?? "center"]}`}
                 aria-sort={column.sortBy && onSort
                   ? column.sortBy === sortBy
                     ? direction === "asc" ? "ascending" : "descending"
@@ -58,9 +71,13 @@ export function DataTable<T, TSort extends string>({
           {rows.length === 0 ? (
             <tr><td colSpan={columns.length} className="px-4 py-10 text-center text-muted-foreground">{emptyMessage}</td></tr>
           ) : rows.map((row) => (
-            <tr key={rowKey(row)} className="align-top hover:bg-muted/30">
+            <tr key={rowKey(row)} className="align-middle hover:bg-muted/30">
               {columns.map((column) => (
-                <td key={column.id} className="px-4 py-4">{column.cell(row)}</td>
+                <td key={column.id} className={`px-4 py-4 ${alignmentClasses[column.align ?? "center"]}`}>
+                  <div className={`flex items-center ${contentAlignmentClasses[column.align ?? "center"]}`}>
+                    {column.cell(row)}
+                  </div>
+                </td>
               ))}
             </tr>
           ))}

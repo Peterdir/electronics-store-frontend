@@ -9,6 +9,11 @@ export interface AdminNavigationItem {
 
 export const adminNavigation: readonly AdminNavigationItem[] = [
     {
+        to: "/admin/inventory",
+        label: "Tồn kho",
+        permission: "inventory.manage",
+    },
+    {
         to: "/admin",
         label: "Trang quản trị",
         permission: "admin.access",

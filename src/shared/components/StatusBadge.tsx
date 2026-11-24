@@ -1,5 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CompactStatusBadge } from "./CompactStatusBadge";
 
 const statusColors = {
   neutral: "border-border bg-muted text-foreground",
@@ -20,6 +21,7 @@ interface StatusBadgeProps {
   icon: LucideIcon;
   effect?: StatusEffect;
   prominent?: boolean;
+  compact?: boolean;
 }
 
 export function StatusBadge({
@@ -29,7 +31,9 @@ export function StatusBadge({
   icon: Icon,
   effect,
   prominent = false,
+  compact = false,
 }: StatusBadgeProps) {
+  if (compact) return <CompactStatusBadge caption={caption} label={label} tone={tone} icon={Icon} />;
   const inProgress = tone === "active" || tone === "pending";
 
   return (
