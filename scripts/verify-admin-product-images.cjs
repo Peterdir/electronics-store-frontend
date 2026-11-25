@@ -182,7 +182,7 @@ function managerFixture() {
 const settle = () => new Promise(setImmediate);
 const button = (f, tree, label) => f.nodes(tree).find(node => node.props?.children === label);
 
-test('Handler: double click chỉ một mutation; lưu thành công GET lỗi khóa ghi, GET lại mở khóa', async () => {
+test('Handler: double click chỉ một mutation; GET lỗi khóa ghi và hướng dẫn F5; GET tự động thành công mở khóa', async () => {
   const f = managerFixture();
   let tree = f.render();
   const primary = button(f, tree, 'Chọn đại diện');
@@ -194,16 +194,23 @@ test('Handler: double click chỉ một mutation; lưu thành công GET lỗi kh
   assert.equal(f.reads, 1);
   assert.ok(f.nodes(tree).some(node => node.props?.children === 'Đã chọn ảnh đại diện.'));
   assert.equal(button(f, tree, 'Chọn đại diện').props.disabled, true);
-  f.setReadFailure(false);
-  button(f, tree, 'Tải lại ảnh để kiểm tra').props.onClick();
+  assert.equal(button(f, tree, 'Tải lại ảnh để kiểm tra'), undefined);
+  assert.match(renderToStaticMarkup(tree), /Nhấn F5/);
+  button(f, tree, 'Chọn đại diện').props.onClick();
   await settle();
-  tree = f.render();
   assert.equal(f.calls, 1);
-  assert.equal(f.reads, 2);
-  assert.equal(button(f, tree, 'Chọn đại diện').props.disabled, false);
+  assert.equal(f.reads, 1);
+
+  const success = managerFixture();
+  success.setReadFailure(false);
+  button(success, success.render(), 'Chọn đại diện').props.onClick();
+  await settle();
+  assert.equal(success.calls, 1);
+  assert.equal(success.reads, 1);
+  assert.equal(button(success, success.render(), 'Chọn đại diện').props.disabled, false);
 });
 
-test('Handler: timeout/404 yêu cầu GET; xóa phải xác nhận mới gửi DELETE', async () => {
+test('Handler: timeout/404 hướng dẫn F5 và khóa ghi; xóa phải xác nhận mới gửi DELETE', async () => {
   for (const status of [0, 404]) {
     const f = managerFixture();
     let tree = f.render();
@@ -216,13 +223,14 @@ test('Handler: timeout/404 yêu cầu GET; xóa phải xác nhận mới gửi D
     tree = f.render();
     assert.equal(f.calls, 1);
     assert.equal(button(f, tree, 'Chọn đại diện').props.disabled, true);
-    assert.ok(button(f, tree, 'Tải lại ảnh để kiểm tra'));
-    f.setReadFailure(false);
-    button(f, tree, 'Tải lại ảnh để kiểm tra').props.onClick();
+    assert.equal(button(f, tree, 'Tải lại ảnh để kiểm tra'), undefined);
+    assert.match(renderToStaticMarkup(tree), /Nhấn F5/);
+    button(f, tree, 'Chọn đại diện').props.onClick();
     await settle();
     tree = f.render();
     assert.equal(f.calls, 1);
-    assert.equal(button(f, tree, 'Chọn đại diện').props.disabled, false);
+    assert.equal(button(f, tree, 'Chọn đại diện').props.disabled, true);
+    assert.equal(f.reads, 0);
   }
 });
 

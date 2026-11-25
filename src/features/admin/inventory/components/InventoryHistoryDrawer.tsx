@@ -42,25 +42,18 @@ export function InventoryHistoryDrawer({ item, session, onClose }: {
               {stockQuery.isFetching
                 ? "Đang tải tồn hiện tại…"
                 : stockQuery.isError
-                  ? "Không tải được tồn hiện tại. Hãy đóng lịch sử và tải lại danh sách kho."
+                  ? "Không tải được tồn hiện tại. Đóng lịch sử và nhấn F5 để tải lại trang."
                   : latestStock
                     ? `Tồn hiện tại: ${latestStock.quantity?.toLocaleString("vi-VN") ?? "Không xác định"}`
                     : "Không tìm thấy bản ghi kho trong danh sách mới nhất."}
             </p>
-
-            <Button
-              variant="outline"
-              disabled={query.isFetching}
-              onClick={() => void query.refetch()}
-            >
-              Tải lại lịch sử
-            </Button>
 
             {query.isFetching && <p role="status">Đang tải lịch sử…</p>}
             {query.isError && (
               <p role="alert">
                 {query.error.message}
                 {query.data ? " Lịch sử dưới đây có thể chưa mới nhất." : ""}
+                {" Nhấn F5 để tải lại trang."}
               </p>
             )}
             {query.data?.length === 0 && <p>Chưa có lịch sử điều chỉnh.</p>}

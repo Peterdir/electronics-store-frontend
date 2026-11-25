@@ -328,14 +328,19 @@ test("Handler form thật: refetch không reset dirty, clean được reset; PUT
   assert.equal(tree.props.children.props.children[0].props.disabled, true);
   await fixture.submit();
   assert.equal(fixture.calls(), 1);
-  fixture.allowRead();
   const children = tree.props.children.props.children;
   const retry = children.find((child) => child && child.props?.children === "Tải lại để kiểm tra kết quả");
-  retry.props.onClick();
-  await new Promise(setImmediate);
+  assert.equal(retry, undefined);
+  assert.ok(children.some((child) => child?.props?.role === "status" && String(child.props.children).includes("Nhấn F5")));
   assert.equal(fixture.calls(), 1);
-  assert.equal(fixture.reads(), 2);
-  assert.equal(fixture.resets.at(-1).description, "Giá trị server");
+  assert.equal(fixture.reads(), 1);
+
+  const success = formFixture();
+  success.allowRead();
+  await success.submit();
+  assert.equal(success.calls(), 1);
+  assert.equal(success.reads(), 1);
+  assert.equal(success.resets.at(-1).description, "Giá trị server");
 });
 
 test("Deep link edit giữ ID/query/hash cho A/M/S, từ chối CUSTOMER và ID sai", () => {

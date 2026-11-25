@@ -180,13 +180,13 @@ export function AdminProductsPage() {
       {categories.isError && (
         <div role="alert" className="space-y-2 text-sm">
           <p>Không cập nhật được lựa chọn danh mục: {categories.error.message} Bộ lọc hiện tại vẫn được giữ.</p>
-          <Button variant="outline" disabled={categories.isFetching} onClick={() => void categories.refetch()}>Tải lại danh mục</Button>
+          <p>Nhấn F5 để tải lại trang.</p>
         </div>
       )}
       {brands.isError && (
         <div role="alert" className="space-y-2 text-sm">
           <p>Không cập nhật được lựa chọn thương hiệu: {brands.error.message} Bộ lọc hiện tại vẫn được giữ.</p>
-          <Button variant="outline" disabled={brands.isFetching} onClick={() => void brands.refetch()}>Tải lại thương hiệu</Button>
+          <p>Nhấn F5 để tải lại trang.</p>
         </div>
       )}
 
@@ -195,7 +195,7 @@ export function AdminProductsPage() {
           <div role="alert" className="space-y-3">
             <p>{query.error?.message || "Không tải được danh sách sản phẩm."}</p>
             <div className="flex gap-2">
-              <Button variant="outline" disabled={query.isFetching} onClick={() => void query.refetch()}>Thử lại</Button>
+              <p>Nhấn F5 để tải lại trang.</p>
               {filters.page > 1 && <Button variant="outline" onClick={() => changePage(1)}>Về trang đầu</Button>}
             </div>
           </div>
@@ -204,7 +204,7 @@ export function AdminProductsPage() {
             {query.isError && (
               <div role="alert" className="space-y-2">
                 <p>Không cập nhật được danh sách: {query.error.message} Dữ liệu dưới đây có thể chưa mới nhất.</p>
-                <Button variant="outline" disabled={query.isFetching} onClick={() => void query.refetch()}>Thử lại</Button>
+                <p>Nhấn F5 để tải lại trang.</p>
               </div>
             )}
             <p role="status" className="text-sm text-muted-foreground">{query.isFetching ? "Đang cập nhật… " : ""}Tìm thấy {data.totalItems} sản phẩm.</p>

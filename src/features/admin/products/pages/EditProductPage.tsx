@@ -1,5 +1,4 @@
 import { Link, useParams } from "react-router";
-import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/format";
 import { ApiError } from "@/shared/api/errors";
 import { isPositiveLongId } from "@/shared/types/common";
@@ -34,12 +33,12 @@ export function EditProductPage() {
         query.isError ? (
           <div role="alert" className="space-y-3">
             <p>{status === 404 ? "Không tìm thấy sản phẩm." : status === 403 ? "Bạn không có quyền xem sản phẩm này." : query.error.message}</p>
-            <Button variant="outline" disabled={query.isFetching} onClick={() => void query.refetch()}>Thử tải lại</Button>
+            <p>Nhấn F5 để tải lại trang.</p>
           </div>
         ) : <p role="status">{query.fetchStatus === "paused" ? "Đang chờ kết nối mạng…" : "Đang tải sản phẩm…"}</p>
       ) : (
         <div className="space-y-6" aria-busy={query.isFetching}>
-          {query.isError && <p role="alert">Không cập nhật được dữ liệu: {query.error.message} Bản nháp được giữ lại; dữ liệu xem có thể chưa mới nhất.</p>}
+          {query.isError && <p role="alert">Không cập nhật được dữ liệu: {query.error.message} Dữ liệu xem có thể chưa mới nhất. Nhấn F5 để tải lại trang; thay đổi chưa lưu sẽ bị xóa.</p>}
           <ProductLifecycleManager key={`lifecycle:${session.userId}:${session.role}:${productId}`} product={product} session={session} unavailable={unavailable} reload={reload}>
             {({ statusControl, variants }) => (
               <>
@@ -47,7 +46,6 @@ export function EditProductPage() {
                   <span className="inline-flex min-h-9 items-center text-sm wrap-anywhere">Sản phẩm #{product.id}</span>
                   <div className="min-w-0 basis-full sm:basis-auto sm:flex-1">{statusControl}</div>
                   <span className="inline-flex min-h-9 items-center text-sm text-muted-foreground">Cập nhật: {formatDateTime(product.updatedAt)}</span>
-                  <Button size="lg" variant="outline" disabled={query.isFetching} onClick={() => void query.refetch()}>{query.isFetching ? "Đang tải…" : "Tải lại dữ liệu nền"}</Button>
                 </div>
                 <EditProductForm key={`${session.userId}:${session.role}:${productId}`} product={product} session={session} unavailable={unavailable} reload={reload} />
                 {variants}

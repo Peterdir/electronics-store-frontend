@@ -145,7 +145,7 @@ export function AdminCancelOrderDialog({ order, disabled }: Props) {
               {requestFailed && (
                 <div role="alert" className="space-y-1 text-sm text-destructive">
                   <p>{errors.root?.server?.message}</p>
-                  <p>Hãy đóng hộp thoại và tải lại dữ liệu trước khi thử lại. Lý do đã nhập được giữ lại.</p>
+                  <p>Hãy đối chiếu kết quả trên máy chủ trước khi thao tác mới. Đóng hộp thoại và nhấn F5 để tải lại trang; lý do chưa lưu sẽ bị xóa.</p>
                 </div>
               )}
               <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">

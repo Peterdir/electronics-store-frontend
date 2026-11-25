@@ -85,8 +85,18 @@ export function ProductForm({ session }: { session: ProductSession }) {
             </div>
             {categories.isPending && <p role="status">Đang tải danh mục…</p>}
             {brands.isPending && <p role="status">Đang tải thương hiệu…</p>}
-            {categories.isError && <div role="alert" className="space-y-2 text-sm"><p>Không tải được danh mục: {categories.error.message}</p><Button type="button" variant="outline" disabled={categories.isFetching} onClick={() => void categories.refetch()}>Tải lại danh mục</Button></div>}
-            {brands.isError && <div role="alert" className="space-y-2 text-sm"><p>Không tải được thương hiệu: {brands.error.message} Bạn vẫn có thể tạo khi không chọn thương hiệu.</p><Button type="button" variant="outline" disabled={brands.isFetching} onClick={() => void brands.refetch()}>Tải lại thương hiệu</Button></div>}
+            {categories.isError && (
+              <div role="alert" className="space-y-2 text-sm">
+                <p>Không tải được danh mục: {categories.error.message}</p>
+                <p>Nhấn F5 để tải lại trang; dữ liệu đang nhập sẽ bị xóa.</p>
+              </div>
+            )}
+            {brands.isError && (
+              <div role="alert" className="space-y-2 text-sm">
+                <p>Không tải được thương hiệu: {brands.error.message} Bạn vẫn có thể tạo khi không chọn thương hiệu.</p>
+                <p>Nhấn F5 để tải lại trang; dữ liệu đang nhập sẽ bị xóa.</p>
+              </div>
+            )}
             {categories.isSuccess && categories.data.length === 0 && <p role="status">Chưa có danh mục. Cần tạo danh mục trước khi tạo sản phẩm.</p>}
             <ProductField name="basePrice" label="Giá cơ bản (VND)" inputMode="decimal" required />
             <ProductField name="description" label="Mô tả" kind="textarea" />

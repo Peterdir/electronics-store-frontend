@@ -1,5 +1,4 @@
 import { Link, useParams } from "react-router";
-import { Button } from "@/components/ui/button";
 import { OrderStatusBadges } from "@/features/orders/components/OrderStatusBadges";
 import { formatDateTime } from "@/lib/format";
 import { ApiError } from "@/shared/api/errors";
@@ -34,7 +33,7 @@ export function AdminOrderDetailPage() {
         query.isError ? (
           <div role="alert" className="space-y-3">
             <p>{query.error.message || "Không tải được chi tiết đơn hàng."}</p>
-            <Button variant="outline" disabled={query.isFetching} onClick={() => void query.refetch()}>Thử lại</Button>
+            <p>Nhấn F5 để tải lại trang.</p>
           </div>
         ) : (
           <p role="status">{query.fetchStatus === "paused" ? "Đang chờ kết nối mạng…" : "Đang tải chi tiết đơn hàng…"}</p>
@@ -42,14 +41,11 @@ export function AdminOrderDetailPage() {
       ) : (
         <div aria-busy={query.isFetching} className="space-y-6">
           {query.isError && (
-            <p role="alert">Không cập nhật được đơn hàng: {query.error.message} Dữ liệu dưới đây có thể chưa mới nhất.</p>
+            <p role="alert">Không cập nhật được đơn hàng: {query.error.message} Dữ liệu dưới đây có thể chưa mới nhất. Nhấn F5 để tải lại trang.</p>
           )}
           <section className="space-y-4 rounded-xl border border-border bg-card p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <h2 className="text-xl font-semibold wrap-anywhere">Đơn hàng #{order.id}</h2>
-              <Button variant="outline" disabled={query.isFetching} onClick={() => void query.refetch()}>
-                {query.isFetching ? "Đang cập nhật…" : "Tải lại dữ liệu"}
-              </Button>
             </div>
             <OrderStatusBadges orderStatus={order.orderStatus} paymentStatus={order.paymentStatus} />
             <UpdateOrderStatusDialog key={order.id} order={order} disabled={query.isFetching || query.isError} />

@@ -129,7 +129,6 @@ function BrandsContent({ session }: { session: BrandSession }) {
           </select>
         </label>
         <Button type="button" variant="outline" className="h-10" onClick={() => setSearchParams({})}>Xóa bộ lọc</Button>
-        <Button type="button" variant="outline" className="h-10" disabled={query.isFetching || writing} onClick={() => { void query.refetch(); }}>Tải lại</Button>
       </FilterBar>
       <div aria-busy={query.isFetching} className="space-y-4">
         {query.isPending && <p role="status">Đang tải thương hiệu…</p>}
@@ -137,8 +136,8 @@ function BrandsContent({ session }: { session: BrandSession }) {
           <div role="alert" className="space-y-1 rounded-xl border border-destructive/30 p-4 text-sm text-destructive">
             <p>{query.error.message}</p>
             <p>{forbidden ? "Máy chủ từ chối quyền. Vui lòng đăng nhập lại để cập nhật phiên." : query.data
-              ? "Dữ liệu đang hiển thị có thể đã cũ. Nếu vừa lưu thành công, chỉ tải lại danh sách; không cần lưu lần nữa."
-              : "Không tải được thương hiệu. Hãy thử Tải lại."}</p>
+              ? "Dữ liệu đang hiển thị có thể đã cũ. Nhấn F5 để tải lại trang; nếu vừa lưu thành công, không cần lưu lần nữa."
+              : "Không tải được thương hiệu. Nhấn F5 để tải lại trang."}</p>
           </div>
         )}
         {query.data && (

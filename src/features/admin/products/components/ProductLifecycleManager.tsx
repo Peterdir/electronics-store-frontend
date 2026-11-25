@@ -57,7 +57,7 @@ export function ProductLifecycleManager({ product, session, unavailable, reload,
     } catch (cause) {
       if (active()) {
         setNeedsRefresh(true);
-        setError(`Không tải lại được dữ liệu: ${cause instanceof Error ? cause.message : "Lỗi kết nối"}. Hãy thử GET lại.`);
+        setError(`Không tải lại được dữ liệu: ${cause instanceof Error ? cause.message : "Lỗi kết nối"}. Nhấn F5 để tải lại trang.`);
       }
     } finally {
       running.current = false;
@@ -89,7 +89,7 @@ export function ProductLifecycleManager({ product, session, unavailable, reload,
       const reason = cause instanceof ApiError && cause.status > 0
         ? `HTTP ${cause.status}: ${cause.message}`
         : cause instanceof Error ? cause.message : "Không lưu được trạng thái.";
-      setError(check ? `${reason} Tải lại dữ liệu để kiểm tra trước khi thao tác tiếp.` : reason);
+      setError(check ? `${reason} Hãy đối chiếu kết quả trên máy chủ trước khi thao tác mới. Nhấn F5 để tải lại trang.` : reason);
     } finally {
       running.current = false;
     }
@@ -105,7 +105,6 @@ export function ProductLifecycleManager({ product, session, unavailable, reload,
     {message && <p role="status" className="text-sm">{message}</p>}
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
     {forbidden && <p role="alert" className="text-sm">Máy chủ từ chối quyền. Vui lòng đăng nhập lại để cập nhật phiên.</p>}
-    {needsRefresh && <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => void refresh()}>Tải lại để kiểm tra</Button>}
   </>;
   const statusControl = <div className="space-y-2" aria-busy={busy}>
     {canStatus ? <ProductStatusAction key={product.status} status={product.status} disabled={locked} onSelect={(status) => void perform({ kind: "status", status })} /> : <ProductStatusBadge status={product.status} />}

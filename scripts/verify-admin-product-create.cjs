@@ -301,7 +301,7 @@ test("Offline/timeout không retry hay xếp hàng POST khi reconnect; phân lo�
   }
 });
 
-test("Render form thật: nhóm thông tin, biến thể và ảnh; lỗi danh mục/thương hiệu có nút GET riêng", () => {
+test("Render form thật: nhóm thông tin, biến thể và ảnh; lỗi danh mục/thương hiệu hướng dẫn F5", () => {
   const router = require("react-router");
   const uiLoad = createLoader({
     "@/features/admin/products/queries": {
@@ -314,7 +314,8 @@ test("Render form thật: nhóm thông tin, biến thể và ảnh; lỗi danh m
   const { ProductForm } = uiLoad("@/features/admin/products/components/ProductForm");
   const markup = renderToStaticMarkup(React.createElement(router.MemoryRouter, null,
     React.createElement(ProductForm, { session: { userId: "100", role: "STAFF", token: "fixture" } })));
-  for (const text of ["Thông tin chung", "Thông số kỹ thuật", "Biến thể 1", "Thuộc tính", "Ảnh sản phẩm", "Tải lại danh mục", "Tải lại thương hiệu", "Quay lại danh sách"]) assert.ok(markup.includes(text), text);
+  for (const text of ["Thông tin chung", "Thông số kỹ thuật", "Biến thể 1", "Thuộc tính", "Ảnh sản phẩm", "category unavailable", "brand unavailable", "Nhấn F5", "Quay lại danh sách"]) assert.ok(markup.includes(text), text);
+  assert.doesNotMatch(markup, /Tải lại danh mục|Tải lại thương hiệu/);
   assert.match(markup, /type="file"[^>]*multiple=""/);
   assert.match(markup, /name="variants\.0\.sku"/);
   assert.match(markup, /name="categoryId"[^>]*disabled=""/);

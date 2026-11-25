@@ -66,7 +66,7 @@ export function ProcessReturnDialog({
       if (didSave && mounted.current && isCurrentReturnsSession(snapshot)) setMessage("Đã lưu và tải lại dữ liệu liên quan.");
     } catch {
       if (mounted.current && isCurrentReturnsSession(snapshot)) {
-        setMessage(didSave ? "Đã lưu. Tải lại dữ liệu chưa thành công; đóng hộp thoại rồi dùng Tải lại danh sách, không gửi lại xử lý." : "Không thể tải lại dữ liệu để đối chiếu. Đóng hộp thoại rồi dùng Tải lại danh sách để kiểm tra kết quả trên máy chủ.");
+        setMessage(didSave ? "Đã lưu. Tải lại dữ liệu chưa thành công; đóng hộp thoại và nhấn F5 để tải lại trang, không gửi lại xử lý." : "Không thể tải lại dữ liệu để đối chiếu. Đóng hộp thoại và nhấn F5 để tải lại trang.");
       }
     } finally {
       sending.current = false;

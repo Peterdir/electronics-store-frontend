@@ -98,14 +98,7 @@ function ReturnRequestsContent({ snapshot }: { snapshot: ReturnsSession }) {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader
-        title="Yêu cầu trả hàng"
-        actions={
-          <Button variant="outline" disabled={query.isFetching} onClick={() => { void query.refetch(); }}>
-            Tải lại danh sách
-          </Button>
-        }
-      />
+      <AdminPageHeader title="Yêu cầu trả hàng" />
       <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4">
         <label className="space-y-2 text-sm">
           <span className="block font-medium">Trạng thái</span>
@@ -136,7 +129,7 @@ function ReturnRequestsContent({ snapshot }: { snapshot: ReturnsSession }) {
       {query.isPending && <p role="status">Đang tải yêu cầu trả hàng…</p>}
       {query.isError && (
         <p role="alert" className="text-sm text-destructive">
-          {query.error.message} {query.data ? "Đang hiển thị dữ liệu cũ. " : ""}Hãy tải lại danh sách.
+          {query.error.message} {query.data ? "Đang hiển thị dữ liệu cũ. " : ""}Nhấn F5 để tải lại trang.
         </p>
       )}
       {query.data && (

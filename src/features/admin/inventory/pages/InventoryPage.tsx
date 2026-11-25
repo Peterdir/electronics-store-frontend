@@ -258,9 +258,7 @@ export function InventoryPage() {
               {query.isError && (
                 <div role="alert" className="space-y-2">
                   <p>{query.error.message}{data ? " Dữ liệu dưới đây có thể chưa mới nhất." : ""}</p>
-                  <Button variant="outline" disabled={query.isFetching} onClick={() => void query.refetch()}>
-                    Thử lại
-                  </Button>
+                  <p>Nhấn F5 để tải lại trang.</p>
                 </div>
               )}
               {data && (

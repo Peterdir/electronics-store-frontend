@@ -170,7 +170,7 @@ test('UI: A/M có actions; STAFF chỉ xem; INACTIVE khóa nút ngừng bán, va
   assert.match(renderToStaticMarkup(React.createElement(SavedProductVariants, { product: { variants: null } })), /Chưa có biến thể/);
 });
 
-test('Bán lại INACTIVE/HIDDEN: đúng nút/quyền, xác nhận, gửi một PATCH, GET lỗi chỉ cho đọc lại', async () => {
+test('Bán lại INACTIVE/HIDDEN: đúng nút/quyền, xác nhận, gửi một PATCH, GET lỗi hướng dẫn F5', async () => {
   for (const status of ['INACTIVE', 'HIDDEN']) {
     const f = uiFixture();
     f.props.product.status = 'HIDDEN';
@@ -194,15 +194,15 @@ test('Bán lại INACTIVE/HIDDEN: đúng nút/quyền, xác nhận, gửi một 
     row = f.find(tree, 'SavedProductVariants').props.renderAction(variant);
     assert.equal(f.find(row, 'ReactivateVariantAction').props.disabled, true);
     assert.match(renderToStaticMarkup(row), /Đã bật bán lại biến thể/);
-    f.setReadFailure(false);
-    // GET is the authoritative source for the new status.
-    variant.status = 'ACTIVE';
-    f.button(row, 'Tải lại để kiểm tra').props.onClick();
+    assert.equal(f.button(row, 'Tải lại để kiểm tra'), undefined);
+    assert.match(renderToStaticMarkup(row), /Nhấn F5/);
+    f.find(row, 'ReactivateVariantAction').props.onSelect();
     await settle();
     row = f.find(f.render(), 'SavedProductVariants').props.renderAction(variant);
-    assert.ok(f.find(row, 'DeactivateVariantAction'));
+    f.button(row, 'Xác nhận thay đổi').props.onClick();
+    await settle();
     assert.equal(f.calls, 1);
-    assert.equal(f.reads, 2);
+    assert.equal(f.reads, 1);
   }
   const staff = uiFixture('STAFF');
   staff.props.product.variants[0].status = 'INACTIVE';
@@ -219,7 +219,7 @@ test('Thẻ biến thể giữ SKU/Long ID/giá/kho/thuộc tính; ảnh thiếu
   assert.match(renderToStaticMarkup(React.createElement(SavedProductVariants, { product })), /Chưa có thuộc tính/);
 });
 
-test('Handler: chọn status ghi ngay, không hiện thông báo đã lưu; chọn lặp chỉ một PATCH, GET lỗi chỉ GET lại', async () => {
+test('Handler: chọn status ghi ngay, chọn lặp một PATCH; GET lỗi hướng dẫn F5, tự GET thành công mở khóa', async () => {
   const f = uiFixture();
   f.setReadFailure(true);
   const select = f.find(f.render(), 'ProductStatusAction').props.onSelect;
@@ -235,15 +235,22 @@ test('Handler: chọn status ghi ngay, không hiện thông báo đã lưu; ch�
   assert.doesNotMatch(renderToStaticMarkup(tree), /Đã lưu trạng thái sản phẩm/);
   assert.match(renderToStaticMarkup(tree), /Không tải lại được dữ liệu/);
   assert.equal(f.find(tree, 'ProductStatusAction').props.disabled, true);
-  f.setReadFailure(false);
-  f.button(tree, 'Tải lại để kiểm tra').props.onClick();
+  assert.equal(f.button(tree, 'Tải lại để kiểm tra'), undefined);
+  assert.match(renderToStaticMarkup(tree), /Nhấn F5/);
+  f.find(tree, 'ProductStatusAction').props.onSelect('INACTIVE');
   await settle();
   assert.equal(f.calls, 1);
-  assert.equal(f.reads, 2);
-  assert.equal(f.find(f.render(), 'ProductStatusAction').props.disabled, false);
+  assert.equal(f.reads, 1);
+
+  const success = uiFixture();
+  success.find(success.render(), 'ProductStatusAction').props.onSelect('HIDDEN');
+  await settle();
+  assert.equal(success.calls, 1);
+  assert.equal(success.reads, 1);
+  assert.equal(success.find(success.render(), 'ProductStatusAction').props.disabled, false);
 });
 
-test('Handler: variant giữ ID, timeout/404/400 buộc GET; 403 khóa ghi; đổi phiên chặn confirm', async () => {
+test('Handler: variant giữ ID, timeout/404/400 hướng dẫn F5; 403 khóa ghi; đổi phiên chặn confirm', async () => {
   for (const code of [0, 404, 400, 403]) {
     const f = uiFixture();
     f.setWriteFailure(new f.ApiError(code, 'failed'));
@@ -258,7 +265,8 @@ test('Handler: variant giữ ID, timeout/404/400 buộc GET; 403 khóa ghi; đ�
     assert.equal(f.find(tree, 'ProductStatusAction').props.disabled, true);
     const updatedRow = f.find(tree, 'SavedProductVariants').props.renderAction(f.props.product.variants[0]);
     if (code > 0) assert.match(renderToStaticMarkup(updatedRow), new RegExp(`HTTP ${code}: failed`));
-    assert.equal(Boolean(f.button(updatedRow, 'Tải lại để kiểm tra')), code !== 403);
+    assert.equal(f.button(updatedRow, 'Tải lại để kiểm tra'), undefined);
+    if (code !== 403) assert.match(renderToStaticMarkup(updatedRow), /Nhấn F5/);
     assert.equal(f.calls, 1);
   }
   const f = uiFixture();

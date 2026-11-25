@@ -194,13 +194,13 @@ Kiểm tra nhanh: chọn hai lần, bỏ file giữa, chọn lại cùng file; p
 
 `try/catch/finally` chia nhánh thành công, lỗi và việc luôn cần chạy. `cause instanceof Error` thu hẹp kiểu lỗi để đọc `.message`; không giả định mọi thứ bị throw đều là Error.
 
-`refresh()` đặt trạng thái GET đang chạy, gọi `reload()` từ cha. Thành công: mở khóa `needsRefresh`, đóng xác nhận, xóa lỗi và `mutation.reset()`. Reset mutation chỉ xóa trạng thái lỗi/thành công của hook; không xóa query cache hay gửi request ghi. GET lỗi: giữ `needsRefresh = true` và hướng dẫn thử GET lại.
+`refresh()` đặt trạng thái GET đang chạy, gọi `reload()` từ cha. Thành công: mở khóa `needsRefresh`, đóng xác nhận, xóa lỗi và `mutation.reset()`. Reset mutation chỉ xóa trạng thái lỗi/thành công của hook; không xóa query cache hay gửi request ghi. GET lỗi: giữ `needsRefresh = true` và hướng dẫn nhấn F5 để tải lại trang.
 
-Điểm cần hiểu: mutation thành công rồi GET thất bại vẫn là **đã lưu**. Hàm `refresh` tự bắt lỗi GET, nên lỗi GET không chạy vào catch mutation rồi báo sai là upload thất bại. Nút **Tải lại ảnh để kiểm tra** chỉ gọi GET.
+Điểm cần hiểu: mutation thành công rồi GET thất bại vẫn là **đã lưu**. Hàm `refresh` tự bắt lỗi GET, nên lỗi GET không chạy vào catch mutation rồi báo sai là upload thất bại. Theo yêu cầu giao diện mới, không còn nút tải lại thủ công; người dùng nhấn F5 khi cần. F5 xóa file đang chọn và state cục bộ. Với request timeout, vẫn cần xác minh kết quả máy chủ trước thao tác ghi mới.
 
 Timeout có thể xảy ra sau khi server đã lưu. Vì vậy không tự retry POST. File local vẫn được giữ; sau GET người dùng phải bỏ file đã xuất hiện trên server trước khi tải tiếp để tránh trùng. 404 có thể là ảnh bị xóa ở tab khác hoặc product mất; GET detail giúp phân biệt. 403 khóa ghi và yêu cầu cập nhật phiên.
 
-Kiểm tra nhanh: chặn GET sau POST thành công; phải thấy **Đã thêm ảnh** cùng lỗi tải lại, không có POST thứ hai khi bấm kiểm tra. Bài tập: xóa ảnh primary xong, frontend có được tự chọn ảnh đầu tiên làm primary không?
+Kiểm tra nhanh: chặn GET sau POST thành công; phải thấy **Đã thêm ảnh** cùng lỗi tải lại và hướng dẫn F5, các nút ghi vẫn khóa, không có POST thứ hai. Khi tải lại trang, kiểm tra ảnh đã lưu trên máy chủ trước khi tải thêm. Bài tập: xóa ảnh primary xong, frontend có được tự chọn ảnh đầu tiên làm primary không?
 
 ## 11. JSX và phần gắn trang
 

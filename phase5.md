@@ -77,6 +77,8 @@ Ký hiệu: **A = ADMIN, M = MANAGER, S = STAFF**. CUSTOMER/guest không đượ
 
 Chỉ thêm menu/whitelist cho route đã hoạt động. E2 có trang orders thì có thể đưa S từ `/admin` tới `/admin/orders`; E19 có dashboard thì đưa A/M tới `/admin/dashboard`. Không điều hướng tới trang chưa được tạo. Giữ đích được yêu cầu nếu hợp lệ và đúng quyền; không lấy fallback ghi đè mọi deep link.
 
+**Quy ước giao diện cập nhật theo yêu cầu người dùng:** mục **Trang quản trị** đứng đầu sidebar. Các màn hình admin không có nút tải lại thủ công, kể cả nút Thử lại chỉ gọi GET; lỗi tải dữ liệu hướng dẫn nhấn F5. Vẫn giữ GET tự động sau mutation và khi query cần cập nhật. F5 xóa draft/file chọn/state cục bộ; với request timeout cần xác minh kết quả máy chủ trước thao tác ghi mới. Quy ước này thay thế các mô tả nút tải lại trong bàn giao cũ của E3/E6–E15.
+
 ### 3.2 Thư mục dự kiến
 
 ```text
@@ -512,7 +514,7 @@ Nhập form → handleSubmit → zodResolver(editProductSchema)
 
 5. **Trang điều phối — `src/features/admin/products/pages/EditProductPage.tsx`.** `useParams()` đọc `:id` trên URL; ID không hợp lệ không bật GET. Hooks luôn được gọi trước nhánh return. Trang render các trạng thái loading, chờ mạng, lỗi GET, 403, 404, rồi phần thông tin chung và biến thể. Khi refetch lỗi mà vẫn có data, trang giữ form và hiện cảnh báo dữ liệu xem có thể cũ; không thay toàn bộ form bằng màn lỗi. `reload()` gọi `query.refetch()` và tự throw nếu `result.isError`, vì refetch mặc định trả QueryObserverResult kể cả khi GET lỗi; không được lấy `result.data` cũ rồi coi là vừa tải thành công.
 
-   `key={userId + role + productId}` của form giúp React tạo form mới khi chuyển sản phẩm hoặc tài khoản/role; không dùng updatedAt làm key vì refetch có thể làm mất draft. `SavedProductVariants` nằm ngoài form để chỉ xem dữ liệu server mới. Nút **Tải lại dữ liệu nền** GET mà không tự ép bỏ bản nháp dirty. Kiểm tra nhanh: mở trực tiếp URL hợp lệ/sai, thử 404/403 và refetch lỗi. Bài tập: nếu dùng `key={product.updatedAt}`, chuyện gì xảy ra khi đang gõ và dữ liệu nền đổi?
+   `key={userId + role + productId}` của form giúp React tạo form mới khi chuyển sản phẩm hoặc tài khoản/role; không dùng updatedAt làm key vì refetch có thể làm mất draft. `SavedProductVariants` nằm ngoài form để chỉ xem dữ liệu server mới. GET tự động giữ draft dirty; theo phản hồi giao diện, không còn nút tải lại dữ liệu nền thủ công. Khi cần nhấn F5, thay đổi chưa lưu sẽ mất. Kiểm tra nhanh: mở trực tiếp URL hợp lệ/sai, thử 404/403 và refetch lỗi. Bài tập: nếu dùng `key={product.updatedAt}`, chuyện gì xảy ra khi đang gõ và dữ liệu nền đổi?
 
 6. **Form chính — `src/features/admin/products/components/EditProductForm.tsx`.** `useForm<EditProductFormValues>` quản lý giá trị/lỗi; `zodResolver(editProductSchema)` nối Zod vào React Hook Form; `defaultValues` lấy từ mapper. `FormProvider {...form}` cung cấp context cho field/editor con; cú pháp `{...form}` trải các property thành props, không phải payload gửi server. `useWatch` theo dõi category/brand để giữ option dự phòng nếu list lựa chọn chưa tải được hoặc relation đã mất. Query lựa chọn lỗi không reset ID đang chọn; INACTIVE có nhãn rõ.
 
@@ -1025,3 +1027,11 @@ Bước tiếp theo:
 - Cần thử A/M/S/CUSTOMER/guest, STAFF gọi trực tiếp PUT nhận 403; duyệt/từ chối và reload; filter/back/forward/phân trang; request được xử lý nơi khác; 400/403/404/500/timeout; logout khi request chậm; trả một phần/nhiều dòng cùng đơn, variant bị thiếu; tồn kho/order và lịch sử thực tế; mobile/theme/bàn phím/focus. Trạng thái: **đã code và kiểm tra tự động, chờ review và tích hợp có đăng nhập**, không nghiệm thu hoàn tiền/lịch sử kho bằng test frontend.
 - Bài tập: vì sao `APPROVED` của yêu cầu không đủ để kết luận đơn đã hoàn tiền? Vì sao sau PUT thành công nhưng GET lỗi, nút thử lại chỉ được GET? Thử đổi schema bỏ `.trim()` và giải thích chuỗi toàn dấu cách sẽ bị kiểm tra khác thế nào.
 - Commit đề xuất: `feat(admin-returns): review and process return requests`.
+
+#### Cập nhật giao diện quản trị sau E16 — 25/11/2026
+
+- Đưa Trang quản trị lên đầu navigation, giữ thứ tự tương đối của các mục còn lại và quyền đang có.
+- Bỏ nút tải lại ở danh mục, thương hiệu, đơn hàng/list/detail, sản phẩm/list/create/edit, ảnh/trạng thái/biến thể, tồn kho/lịch sử và trả hàng; E16 đã bỏ ở lần cập nhật trước. Các nút Thử lại chỉ gọi GET cũng được bỏ. Thông báo lỗi dùng F5, không tiếp tục nhắc nút đã xóa hoặc hứa giữ draft sau F5.
+- Giữ hàm reload/refetch dùng trong luồng tự động sau mutation; giữ phân biệt đã lưu/GET lỗi và khóa ghi khi kết quả chưa rõ. Không thêm cơ chế tự phát lại thao tác ghi.
+- Cập nhật các test create/edit/images/lifecycle theo UI mới: không có nút tải lại, thông báo F5, GET lỗi vẫn khóa ghi, GET tự động thành công vẫn cập nhật form/mở khóa. Tổng **79/79** test admin đã đạt: 77 case chạy trong sandbox; hai case Axios dùng server HTTP giả lập loopback được chạy lại ngoài sandbox và đều đạt. Không ghi dữ liệu lên backend thật. Build gồm typecheck đạt; build vẫn cảnh báo chunk storefront/HeroScene lớn đã có trước.
+- Cập nhật `docs/e11-product-images-guide.md` và quy ước ở mục 3.1 để tránh hướng dẫn nút đã bỏ. Commit đề xuất: `refactor(admin): remove manual reload controls and reorder navigation`. Chưa commit/push; chưa kiểm thử browser có đăng nhập.

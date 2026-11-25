@@ -64,7 +64,7 @@ export function ProductImageManager({ product, session, unavailable, reload }: P
     } catch (cause) {
       if (active()) {
         setNeedsRefresh(true);
-        setError(`Không tải lại được ảnh: ${cause instanceof Error ? cause.message : "Lỗi kết nối"}. Chỉ thử GET lại trước khi thao tác tiếp.`);
+        setError(`Không tải lại được ảnh: ${cause instanceof Error ? cause.message : "Lỗi kết nối"}. Nhấn F5 để tải lại trang trước khi thao tác tiếp; file chưa tải lên cần được chọn lại.`);
       }
     } finally {
       if (active()) setRefreshing(false);
@@ -90,8 +90,8 @@ export function ProductImageManager({ product, session, unavailable, reload }: P
       const missing = cause instanceof ApiError && cause.status === 404;
       setNeedsRefresh(uncertain || missing);
       setError(uncertain
-        ? "Chưa xác nhận được kết quả. Tải lại ảnh để kiểm tra; không tự gửi lại thao tác. File đang chọn được giữ, hãy bỏ file đã có trên server trước khi tải tiếp."
-        : missing ? "Sản phẩm hoặc ảnh không còn tồn tại. Tải lại dữ liệu để kiểm tra."
+        ? "Chưa xác nhận được kết quả. Hãy đối chiếu kết quả trên máy chủ trước khi thao tác mới. Nhấn F5 để tải lại trang; file chưa tải lên cần được chọn lại. Không tự gửi lại thao tác."
+        : missing ? "Sản phẩm hoặc ảnh không còn tồn tại. Nhấn F5 để tải lại trang."
           : cause instanceof Error ? cause.message : "Không xử lý được ảnh.");
     } finally {
       running.current = false;
@@ -140,7 +140,6 @@ export function ProductImageManager({ product, session, unavailable, reload }: P
       {message && <p role="status">{message}</p>}
       {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
       {forbidden && <p role="alert">Máy chủ từ chối quyền. Vui lòng đăng nhập lại để cập nhật phiên.</p>}
-      {needsRefresh && <Button type="button" variant="outline" disabled={busy} onClick={() => void refresh()}>Tải lại ảnh để kiểm tra</Button>}
     </section>
   );
 }

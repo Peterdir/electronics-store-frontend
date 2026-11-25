@@ -116,21 +116,30 @@ export function EditProductForm({ product, session, unavailable, reload }: EditP
               <ProductField<EditProductFormValues> name="brandId" label="Thương hiệu" kind="select" options={brandOptions} />
             </div>
             {(categories.isPending || brands.isPending) && <p role="status">Đang tải lựa chọn danh mục/thương hiệu…</p>}
-            {categories.isError && <div role="alert" className="space-y-2 text-sm"><p>Không tải được danh mục: {categories.error.message} Lựa chọn đang nhập được giữ lại.</p><Button type="button" variant="outline" disabled={categories.isFetching} onClick={() => void categories.refetch()}>Tải lại danh mục</Button></div>}
-            {brands.isError && <div role="alert" className="space-y-2 text-sm"><p>Không tải được thương hiệu: {brands.error.message} Lựa chọn đang nhập được giữ lại.</p><Button type="button" variant="outline" disabled={brands.isFetching} onClick={() => void brands.refetch()}>Tải lại thương hiệu</Button></div>}
+            {categories.isError && (
+              <div role="alert" className="space-y-2 text-sm">
+                <p>Không tải được danh mục: {categories.error.message}</p>
+                <p>Nhấn F5 để tải lại trang; thay đổi chưa lưu sẽ bị xóa.</p>
+              </div>
+            )}
+            {brands.isError && (
+              <div role="alert" className="space-y-2 text-sm">
+                <p>Không tải được thương hiệu: {brands.error.message}</p>
+                <p>Nhấn F5 để tải lại trang; thay đổi chưa lưu sẽ bị xóa.</p>
+              </div>
+            )}
             <ProductField<EditProductFormValues> name="basePrice" label="Giá cơ bản (VND)" inputMode="decimal" required />
             <ProductField<EditProductFormValues> name="description" label="Mô tả" kind="textarea" />
           </fieldset>
           <EditSpecificationEditor />
         </fieldset>
-        {isDirty && <p className="text-sm text-muted-foreground">Có thay đổi chưa lưu. Tải lại dữ liệu nền sẽ giữ bản nháp đang nhập.</p>}
+        {isDirty && <p className="text-sm text-muted-foreground">Có thay đổi chưa lưu.</p>}
         {errors.root?.server && <p role="alert" className="text-sm text-destructive">{errors.root.server.message}</p>}
         {forbidden && <p role="alert">Máy chủ từ chối quyền. Vui lòng đăng nhập lại để cập nhật phiên.</p>}
-        {missing && <p role="alert">Không tìm thấy sản phẩm hoặc danh mục/thương hiệu. Tải lại dữ liệu nền để kiểm tra; nếu sản phẩm vẫn còn, sửa lựa chọn danh mục/thương hiệu trước khi lưu lại.</p>}
-        {saved && <p role="status">Đã lưu thông tin sản phẩm. Cần tải lại dữ liệu để xác nhận giá trị hiện tại; không cần gửi PUT lần nữa.</p>}
-        {uncertain && <p role="alert">Chưa xác nhận được kết quả lưu. Hãy tải lại để kiểm tra trước khi tiếp tục. Hệ thống không tự gửi lại PUT; tải lại sẽ thay bản nháp bằng dữ liệu máy chủ.</p>}
+        {missing && <p role="alert">Không tìm thấy sản phẩm hoặc danh mục/thương hiệu. Nhấn F5 để tải lại trang; nếu sản phẩm vẫn còn, sửa lựa chọn danh mục/thương hiệu trước khi lưu lại.</p>}
+        {saved && <p role="status">Đã lưu thông tin sản phẩm. Nhấn F5 để tải lại trang và xem giá trị hiện tại; không cần gửi PUT lần nữa.</p>}
+        {uncertain && <p role="alert">Chưa xác nhận được kết quả lưu. Hãy đối chiếu kết quả trên máy chủ trước khi thao tác mới. Nhấn F5 để tải lại trang; thay đổi chưa lưu sẽ bị xóa. Hệ thống không tự gửi lại PUT.</p>}
         {refreshError && <p role="alert" className="text-sm text-destructive">Không tải lại được dữ liệu: {refreshError}</p>}
-        {(saved || uncertain) && <Button type="button" variant="outline" disabled={busy} onClick={() => void refreshSavedProduct()}>Tải lại để kiểm tra kết quả</Button>}
         <div className="flex flex-wrap items-center gap-4 border-t border-border pt-4">
           <Button type="submit" disabled={locked || !isDirty}>{busy ? "Đang xử lý…" : "Lưu thông tin sản phẩm"}</Button>
           {!busy && <Link to="/admin/products" className="text-sm underline underline-offset-4">Về danh sách sản phẩm</Link>}

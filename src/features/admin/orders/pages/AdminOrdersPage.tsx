@@ -197,7 +197,7 @@ export function AdminOrdersPage() {
           <div role="alert" className="space-y-3">
             <p>{query.error?.message || "Không tải được danh sách đơn hàng."}</p>
             <div className="flex gap-2">
-              <Button variant="outline" disabled={query.isFetching} onClick={() => void query.refetch()}>Thử lại</Button>
+              <p>Nhấn F5 để tải lại trang.</p>
               {filters.page > 1 && <Button variant="outline" onClick={() => changePage(1)}>Về trang đầu</Button>}
             </div>
           </div>
@@ -206,7 +206,7 @@ export function AdminOrdersPage() {
             {query.isError && (
               <div role="alert" className="space-y-2">
                 <p>Không cập nhật được danh sách: {query.error.message} Dữ liệu dưới đây có thể chưa mới nhất.</p>
-                <Button variant="outline" disabled={query.isFetching} onClick={() => void query.refetch()}>Thử lại</Button>
+                <p>Nhấn F5 để tải lại trang.</p>
               </div>
             )}
             <p role="status" className="text-sm text-muted-foreground">
