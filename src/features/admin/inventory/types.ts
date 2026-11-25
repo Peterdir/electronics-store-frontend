@@ -19,3 +19,19 @@ export interface InventoryParams {
   minQuantity?: number;
   maxQuantity?: number;
 }
+
+export interface AdjustStockRequest {
+  quantity: number;
+  action: "ADD" | "DEDUCT";
+  reason?: string;
+}
+
+export interface InventoryHistoryResponse {
+  id: ID;
+  action: "ADD" | "DEDUCT";
+  quantityChanged: number;
+  finalStock: number;
+  reason: string | null;
+  performedBy: string | null;
+  createdAt: string | null;
+}
