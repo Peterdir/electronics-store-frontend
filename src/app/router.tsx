@@ -153,6 +153,13 @@ export const router = createBrowserRouter([
         ErrorBoundary: RouteErrorBoundary,
         children: [
             {
+                path: "reviews",
+                lazy: async () => {
+                    const { AdminReviewsPage } = await import("@/features/admin/reviews/pages/AdminReviewsPage");
+                    return { Component: AdminReviewsPage };
+                },
+            },
+            {
                 path: "return-requests",
                 lazy: async () => {
                     const { ReturnRequestsPage } = await import("@/features/admin/returns/pages/ReturnRequestsPage");

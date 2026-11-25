@@ -50,6 +50,7 @@ export function getLoginDestination(
                 (url.pathname === "/admin/brands" && hasPermission("brand.manage", role)) ||
                 (url.pathname === "/admin/inventory" && hasPermission("inventory.manage", role)) ||
                 (url.pathname === "/admin/return-requests" && hasPermission("return.view", role)) ||
+                (url.pathname === "/admin/reviews" && hasPermission("review.view", role)) ||
                 ((url.pathname === "/admin/products" || url.pathname === "/admin/products/new" || isPositiveLongId(adminProductEditMatch?.[1])) && hasPermission("product.write", role)) ||
                 (
                     (url.pathname === "/admin" || url.pathname === "/admin/orders" ||

@@ -14,6 +14,11 @@ export const adminNavigation: readonly AdminNavigationItem[] = [
         permission: "return.view",
     },
     {
+        to: "/admin/reviews",
+        label: "Đánh giá",
+        permission: "review.view",
+    },
+    {
         to: "/admin/inventory",
         label: "Tồn kho",
         permission: "inventory.manage",
