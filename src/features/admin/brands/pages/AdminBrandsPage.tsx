@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { CircleCheck, Pause } from "lucide-react";
+import { CompactStatusBadge } from "@/shared/components/CompactStatusBadge";
 import { useSearchParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/shared/api/errors";
@@ -53,34 +55,50 @@ function BrandsContent({ session }: { session: BrandSession }) {
   const forbidden = query.error instanceof ApiError && query.error.status === 403;
   const columns: DataTableColumn<AdminBrandResponse, string>[] = [
     {
-      id: "logo", header: "Logo",
+      id: "logo",
+      header: "Logo",
       cell: (brand) => brand.logo
         ? <img src={brand.logo} alt="" loading="lazy" className="size-16 rounded-lg bg-muted object-contain" />
         : <span className="text-muted-foreground">Chưa có logo</span>,
     },
     {
-      id: "name", header: "Thương hiệu",
+      id: "name",
+      header: "Thương hiệu",
+      cell: (brand) => (<div className="max-w-64 wrap-anywhere">
+        <p className="font-semibold">{brand.name}</p>
+        <p className="mt-1 text-xs text-muted-foreground">#{brand.id}</p>
+      </div>),
+    },
+    {
+      id: "status",
+      header: "Trạng thái",
+      align: "center",
       cell: (brand) => (
-        <div className="max-w-64 wrap-anywhere">
-          <p className="font-semibold">{brand.name}</p>
-          <p className="mt-1 text-xs text-muted-foreground">#{brand.id}</p>
-        </div>
+        <CompactStatusBadge
+          caption="Trạng thái thương hiệu"
+          label={brand.status === "ACTIVE" ? "Hoạt động" : "Ngừng hoạt động"}
+          tone={brand.status === "ACTIVE" ? "success" : "pending"}
+          icon={brand.status === "ACTIVE" ? CircleCheck : Pause}
+        />
       ),
     },
     {
-      id: "status", header: "Trạng thái",
-      cell: (brand) => brand.status === "ACTIVE" ? "Hoạt động" : "Ngừng hoạt động",
+      id: "products",
+      header: "Sản phẩm",
+      cell: (brand) => brand.totalProducts,
     },
-    { id: "products", header: "Sản phẩm", cell: (brand) => brand.totalProducts },
-    { id: "updatedAt", header: "Cập nhật", cell: (brand) => formatDateTime(brand.updatedAt) },
     {
-      id: "actions", header: "Thao tác",
-      cell: (brand) => (
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" disabled={disabled} aria-label={`Sửa thương hiệu ${brand.name}`} onClick={() => setDialog({ kind: "form", brand, session })}>Sửa</Button>
-          <Button type="button" variant="destructive" disabled={disabled} aria-label={`Xóa thương hiệu ${brand.name}`} onClick={() => setDialog({ kind: "delete", brand, session })}>Xóa</Button>
-        </div>
-      ),
+      id: "updatedAt",
+      header: "Cập nhật",
+      cell: (brand) => formatDateTime(brand.updatedAt),
+    },
+    {
+      id: "actions",
+      header: "Thao tác",
+      cell: (brand) => (<div className="flex flex-wrap gap-2">
+        <Button type="button" variant="outline" disabled={disabled} aria-label={`Sửa thương hiệu ${brand.name}`} onClick={() => setDialog({ kind: "form", brand, session })}>Sửa</Button>
+        <Button type="button" variant="destructive" disabled={disabled} aria-label={`Xóa thương hiệu ${brand.name}`} onClick={() => setDialog({ kind: "delete", brand, session })}>Xóa</Button>
+      </div>),
     },
   ];
 

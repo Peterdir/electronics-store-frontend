@@ -76,7 +76,6 @@ export interface CancelAdminOrderVariables extends AdminOrderActionSession {
   payload: CancelAdminOrderValues;
 }
 
-// Hai hành động dùng chung khóa để không vừa chuyển trạng thái vừa hủy cùng một đơn.
 function useAdminOrderActionContext(orderId: string, action: "update-status" | "cancel") {
   const queryClient = useQueryClient();
   const userId = useSession((state) => state.user?.id);

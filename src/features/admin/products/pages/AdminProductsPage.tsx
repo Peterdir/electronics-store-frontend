@@ -30,30 +30,55 @@ function ProductThumbnail({ src }: { src: string | null }) {
 
 const columns: readonly DataTableColumn<AdminProductListResponse, AdminProductSortBy>[] = [
   {
-    id: "name", header: "Sản phẩm", sortBy: "name",
-    cell: (product) => (
-      <div className="flex max-w-80 gap-3">
-        <ProductThumbnail key={product.primaryImageUrl} src={product.primaryImageUrl} />
-        <div className="min-w-0 wrap-anywhere">
-          <Link to={`/admin/products/${product.id}/edit`} className="font-semibold text-primary underline underline-offset-4" aria-label={`Sửa sản phẩm ${product.name}`}>{product.name}</Link>
-          <p className="mt-1 text-xs text-muted-foreground">#{product.id}</p>
-        </div>
+    id: "name",
+    header: "Sản phẩm",
+    sortBy: "name",
+    cell: (product) => (<div className="flex max-w-80 gap-3">
+      <ProductThumbnail key={product.primaryImageUrl} src={product.primaryImageUrl} />
+      <div className="min-w-0 wrap-anywhere">
+        <Link to={`/admin/products/${product.id}/edit`} className="font-semibold text-primary underline underline-offset-4" aria-label={`Sửa sản phẩm ${product.name}`}>{product.name}</Link>
+        <p className="mt-1 text-xs text-muted-foreground">#{product.id}</p>
       </div>
-    ),
+    </div>),
   },
-  { id: "category", header: "Danh mục", cell: (product) => product.categoryName ?? "Chưa có danh mục" },
-  { id: "brand", header: "Thương hiệu", cell: (product) => product.brandName ?? "Chưa có thương hiệu" },
   {
-    id: "basePrice", header: "Giá cơ bản", sortBy: "basePrice",
+    id: "category",
+    header: "Danh mục",
+    cell: (product) => product.categoryName ?? "Chưa có danh mục",
+  },
+  {
+    id: "brand",
+    header: "Thương hiệu",
+    cell: (product) => product.brandName ?? "Chưa có thương hiệu",
+  },
+  {
+    id: "basePrice",
+    header: "Giá cơ bản",
+    sortBy: "basePrice",
     cell: (product) => <span className="whitespace-nowrap">{formatVND(product.basePrice)}</span>,
   },
   {
-    id: "status", header: "Trạng thái",
+    id: "status",
+    header: "Trạng thái",
+    align: "center",
     cell: (product) => <ProductStatusBadge status={product.status} />,
   },
-  { id: "totalStock", header: "Tổng tồn", cell: (product) => product.totalStock },
-  { id: "variantCount", header: "Số biến thể", cell: (product) => product.variantCount },
-  { id: "createdAt", header: "Ngày tạo", sortBy: "createdAt", cell: (product) => formatDateTime(product.createdAt) },
+  {
+    id: "totalStock",
+    header: "Tổng tồn",
+    cell: (product) => product.totalStock,
+  },
+  {
+    id: "variantCount",
+    header: "Số biến thể",
+    cell: (product) => product.variantCount,
+  },
+  {
+    id: "createdAt",
+    header: "Ngày tạo",
+    sortBy: "createdAt",
+    cell: (product) => formatDateTime(product.createdAt),
+  },
 ];
 
 const fieldClassName = "h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring";

@@ -43,28 +43,52 @@ interface OrderStatusBadgesProps {
   orderStatus: OrderStatus;
   paymentStatus: PaymentStatus;
   prominent?: boolean;
+  compact?: boolean;
+}
+
+export function OrderStatusBadge({ status, compact = false, prominent = false }: {
+  status: OrderStatus;
+  compact?: boolean;
+  prominent?: boolean;
+}) {
+  return (
+    <StatusBadge
+      caption="Đơn hàng"
+      compact={compact}
+      label={orderStatusLabels[status] ?? "Chưa rõ"}
+      tone={orderStatusTones[status] ?? "neutral"}
+      prominent={prominent}
+      {...(orderAppearance[status] ?? { icon: CircleHelp })}
+    />
+  );
+}
+
+export function PaymentStatusBadge({ status, compact = false, prominent = false }: {
+  status: PaymentStatus;
+  compact?: boolean;
+  prominent?: boolean;
+}) {
+  return (
+    <StatusBadge
+      caption="Thanh toán"
+      compact={compact}
+      label={paymentStatusLabels[status] ?? "Chưa rõ"}
+      prominent={prominent}
+      {...(paymentAppearance[status] ?? unknownAppearance)}
+    />
+  );
 }
 
 export function OrderStatusBadges({
   orderStatus,
   paymentStatus,
   prominent = false,
+  compact = false,
 }: OrderStatusBadgesProps) {
   return (
     <div className={prominent ? "grid gap-3 sm:grid-cols-2" : "flex min-w-0 flex-wrap gap-2"}>
-      <StatusBadge
-        caption="Đơn hàng"
-        label={orderStatusLabels[orderStatus] ?? "Chưa rõ"}
-        tone={orderStatusTones[orderStatus] ?? "neutral"}
-        prominent={prominent}
-        {...(orderAppearance[orderStatus] ?? { icon: CircleHelp })}
-      />
-      <StatusBadge
-        caption="Thanh toán"
-        label={paymentStatusLabels[paymentStatus] ?? "Chưa rõ"}
-        prominent={prominent}
-        {...(paymentAppearance[paymentStatus] ?? unknownAppearance)}
-      />
+      <OrderStatusBadge status={orderStatus} compact={compact} prominent={prominent} />
+      <PaymentStatusBadge status={paymentStatus} compact={compact} prominent={prominent} />
     </div>
   );
 }

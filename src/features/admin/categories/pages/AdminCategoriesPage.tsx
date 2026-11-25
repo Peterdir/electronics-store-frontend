@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { CircleCheck, Pause } from "lucide-react";
+import { CompactStatusBadge } from "@/shared/components/CompactStatusBadge";
 import { useSearchParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/shared/api/errors";
@@ -53,34 +55,50 @@ function CategoriesContent({ session }: { session: CategorySession }) {
   const forbidden = query.error instanceof ApiError && query.error.status === 403;
   const columns: DataTableColumn<AdminCategoryResponse, string>[] = [
     {
-      id: "image", header: "Ảnh",
+      id: "image",
+      header: "Ảnh",
       cell: (category) => category.imageUrl
         ? <img src={category.imageUrl} alt="" loading="lazy" className="size-16 rounded-lg bg-muted object-contain" />
         : <span className="text-muted-foreground">Chưa có ảnh</span>,
     },
     {
-      id: "name", header: "Danh mục",
+      id: "name",
+      header: "Danh mục",
+      cell: (category) => (<div className="max-w-64 wrap-anywhere">
+        <p className="font-semibold">{category.name}</p>
+        <p className="mt-1 text-xs text-muted-foreground">#{category.id}</p>
+      </div>),
+    },
+    {
+      id: "status",
+      header: "Trạng thái",
+      align: "center",
       cell: (category) => (
-        <div className="max-w-64 wrap-anywhere">
-          <p className="font-semibold">{category.name}</p>
-          <p className="mt-1 text-xs text-muted-foreground">#{category.id}</p>
-        </div>
+        <CompactStatusBadge
+          caption="Trạng thái danh mục"
+          label={category.status === "ACTIVE" ? "Hoạt động" : "Ngừng hoạt động"}
+          tone={category.status === "ACTIVE" ? "success" : "pending"}
+          icon={category.status === "ACTIVE" ? CircleCheck : Pause}
+        />
       ),
     },
     {
-      id: "status", header: "Trạng thái",
-      cell: (category) => category.status === "ACTIVE" ? "Hoạt động" : "Ngừng hoạt động",
+      id: "products",
+      header: "Sản phẩm",
+      cell: (category) => category.totalProducts,
     },
-    { id: "products", header: "Sản phẩm", cell: (category) => category.totalProducts },
-    { id: "updatedAt", header: "Cập nhật", cell: (category) => formatDateTime(category.updatedAt) },
     {
-      id: "actions", header: "Thao tác",
-      cell: (category) => (
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" variant="outline" disabled={disabled} aria-label={`Sửa danh mục ${category.name}`} onClick={() => setDialog({ kind: "form", category, session })}>Sửa</Button>
-          <Button type="button" variant="destructive" disabled={disabled} aria-label={`Xóa danh mục ${category.name}`} onClick={() => setDialog({ kind: "delete", category, session })}>Xóa</Button>
-        </div>
-      ),
+      id: "updatedAt",
+      header: "Cập nhật",
+      cell: (category) => formatDateTime(category.updatedAt),
+    },
+    {
+      id: "actions",
+      header: "Thao tác",
+      cell: (category) => (<div className="flex flex-wrap gap-2">
+        <Button type="button" variant="outline" disabled={disabled} aria-label={`Sửa danh mục ${category.name}`} onClick={() => setDialog({ kind: "form", category, session })}>Sửa</Button>
+        <Button type="button" variant="destructive" disabled={disabled} aria-label={`Xóa danh mục ${category.name}`} onClick={() => setDialog({ kind: "delete", category, session })}>Xóa</Button>
+      </div>),
     },
   ];
 

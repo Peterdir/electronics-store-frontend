@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import { Button } from "@/components/ui/button";
 import { useDebounce } from "@/hooks/useDebounce";
 import { formatDateTime, formatVND } from "@/lib/format";
-import { OrderStatusBadges } from "@/features/orders/components/OrderStatusBadges";
+import { OrderStatusBadge, PaymentStatusBadge } from "@/features/orders/components/OrderStatusBadges";
 import { orderStatusLabels, paymentStatusLabels } from "@/features/orders/orderStatus";
 import { Pagination } from "@/shared/components/Pagination";
 import { OrderStatus, PaymentStatus } from "@/shared/types/enums";
@@ -23,21 +23,17 @@ const columns: readonly DataTableColumn<OrderListAdminResponse, AdminOrderSortBy
   {
     id: "id",
     header: "Mã đơn",
-    cell: (order) => (
-      <Link to={`/admin/orders/${order.id}`} className="font-semibold text-primary underline underline-offset-4">
-        <span className="sr-only">Xem chi tiết đơn </span>#{order.id}
-      </Link>
-    ),
+    cell: (order) => (<Link to={`/admin/orders/${order.id}`} className="font-semibold text-primary underline underline-offset-4">
+      <span className="sr-only">Xem chi tiết đơn </span>#{order.id}
+    </Link>),
   },
   {
     id: "customer",
     header: "Khách hàng",
-    cell: (order) => (
-      <div className="max-w-64 wrap-anywhere">
-        <p className="font-medium">{order.customerName || "Chưa có tên"}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{order.customerEmail || "Không có email"}</p>
-      </div>
-    ),
+    cell: (order) => (<div className="max-w-64 wrap-anywhere">
+      <p className="font-medium">{order.customerName || "Chưa có tên"}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{order.customerEmail || "Không có email"}</p>
+    </div>),
   },
   {
     id: "totalPrice",
@@ -52,10 +48,19 @@ const columns: readonly DataTableColumn<OrderListAdminResponse, AdminOrderSortBy
     cell: (order) => formatDateTime(order.orderDate),
   },
   {
-    id: "statuses",
-    header: "Trạng thái",
+    id: "orderStatus",
+    header: "Trạng thái đơn hàng",
+    align: "center",
     cell: (order) => (
-      <OrderStatusBadges orderStatus={order.orderStatus} paymentStatus={order.paymentStatus} />
+      <OrderStatusBadge status={order.orderStatus} compact />
+    ),
+  },
+  {
+    id: "paymentStatus",
+    header: "Thanh toán",
+    align: "center",
+    cell: (order) => (
+      <PaymentStatusBadge status={order.paymentStatus} compact />
     ),
   },
 ];
