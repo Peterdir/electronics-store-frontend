@@ -32,7 +32,13 @@ interface DataTableProps<T, TSort extends string> {
 }
 
 export function DataTable<T, TSort extends string>({
-  caption, columns, rows, rowKey, sortBy, direction, onSort,
+  caption,
+  columns,
+  rows,
+  rowKey,
+  sortBy,
+  direction,
+  onSort,
   emptyMessage = "Không có dữ liệu.",
 }: DataTableProps<T, TSort>) {
   return (
