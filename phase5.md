@@ -2,7 +2,7 @@
 
 > Ngày lập: **13/11/2026**. Đối chiếu frontend tại HEAD `87eaa75`; working tree sạch trước khi lập kế hoạch.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase4.md](phase4.md), source frontend và source backend tham chiếu tại `../ecommerce-backend`.
-> **Trạng thái — 25/11/2026: E1–E9, phần sửa thông tin chung E10 và E11–E15 đã có code, chờ review và kiểm thử nghiệp vụ tích hợp có đăng nhập; E16–E22 chưa triển khai.** E10 không gửi variants; sửa metadata biến thể cũ vẫn phụ thuộc backend. E12b đã bổ sung bán lại biến thể và cải thiện thẻ; backend đổi trạng thái sản phẩm không còn ghi đè trạng thái biến thể. E13 lọc SKU/tên phía client vì backend keyword hiện chỉ tìm tên. E14 có ADD/DEDUCT, GET lịch sử và xử lý kết quả chưa xác định. E15 có list/drawer bằng chứng và xử lý A/M; chưa thử ghi có đăng nhập trên backend thật. Contract được đối chiếu source; E9 đã kiểm tra GET public 200/admin chưa đăng nhập 401 trên backend dev, chưa xác nhận POST tạo thật. Xem bàn giao cuối tài liệu.
+> **Trạng thái — 25/11/2026: E1–E9, phần sửa thông tin chung E10 và E11–E17 đã có code, chờ review và kiểm thử nghiệp vụ tích hợp có đăng nhập; E18–E22 chưa triển khai.** E10 không gửi variants; sửa metadata biến thể cũ vẫn phụ thuộc backend. E12b đã bổ sung bán lại biến thể và cải thiện thẻ; backend đổi trạng thái sản phẩm không còn ghi đè trạng thái biến thể. E13 lọc SKU/tên phía client vì backend keyword hiện chỉ tìm tên. E14 có ADD/DEDUCT, GET lịch sử và xử lý kết quả chưa xác định. E15 có list/drawer bằng chứng và xử lý A/M; E16 có lọc/phân trang đánh giá, trả lời A/M/S và ẩn/hiện A/M; E17 có danh sách, tạo/sửa/toggle coupon, giờ VN/UTC và 13/13 test mock; chưa thử ghi có đăng nhập trên backend thật. Contract được đối chiếu source; E9 đã kiểm tra GET public 200/admin chưa đăng nhập 401 trên backend dev, chưa xác nhận POST tạo thật. Xem bàn giao cuối tài liệu.
 > **Cách học bắt buộc: khi bắt đầu mỗi nhiệm vụ, sinh mã hướng dẫn theo từng bước và từng file để người dùng tự học, tự gõ code; cuối nhiệm vụ có nội dung commit.** Không tự triển khai source khi người dùng chỉ yêu cầu hướng dẫn.
 
 ## 1. Mục tiêu và điểm bắt đầu
@@ -210,7 +210,7 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 | E13 | Danh sách tồn kho và bộ lọc | E8 | Đã code; chờ review và tích hợp đăng nhập |
 | E14 | Điều chỉnh kho và lịch sử | E13 | Đã code; chờ review và tích hợp đăng nhập |
 | E15 | Xem và xử lý yêu cầu trả hàng | E3–E4, E14; D12 hoặc dữ liệu return dev | Đã code; 10/10 kiểm tra mock đạt, chờ review và tích hợp có đăng nhập |
-| E16 | Kiểm duyệt và trả lời đánh giá | E2; D9 hoặc dữ liệu review dev | Chưa bắt đầu |
+| E16 | Kiểm duyệt và trả lời đánh giá | E2; D9 hoặc dữ liệu review dev | Đã code; 14/14 kiểm tra mock đạt, chờ review và tích hợp có đăng nhập |
 | E17 | Coupon và khoảng hiệu lực | E1; checkout hiện có để hồi quy | Đã code; 13/13 test mock E17 và 24/24 checkout đạt; chờ browser/backend có đăng nhập và checkout tích hợp |
 | E18 | Danh sách/chi tiết và quản lý người dùng | E1 | Chưa bắt đầu |
 | E19 | Dashboard và bộ lọc thời gian | E4, E14; dữ liệu thống kê dev | Chưa bắt đầu |
@@ -656,6 +656,8 @@ Kiểm thử nghiệp vụ thật còn cần làm: chạy frontend/backend, đă
 
 ### E16 — Kiểm duyệt và trả lời đánh giá
 
+**Trạng thái — 25/11/2026:** đã triển khai theo yêu cầu trực tiếp; xem bàn giao và hướng dẫn đọc code cuối tài liệu. Chưa nghiệm thu browser/backend có đăng nhập.
+
 **Kết quả:** `/admin/reviews` lọc theo rating/tên sản phẩm, A/M ẩn/hiện, A/M/S trả lời review.
 
 **Kiến thức và mã hướng dẫn:** Pageable sort, mutation theo row, cập nhật sau thành công và optimistic có rollback nếu thực hiện. Sinh module `reviews/`, `AdminReviewsPage`, `ReviewReplyForm`, `ReviewVisibilityAction`.
@@ -1037,6 +1039,20 @@ Bước tiếp theo:
 - Bài tập: vì sao `APPROVED` của yêu cầu không đủ để kết luận đơn đã hoàn tiền? Vì sao sau PUT thành công nhưng GET lỗi, nút thử lại chỉ được GET? Thử đổi schema bỏ `.trim()` và giải thích chuỗi toàn dấu cách sẽ bị kiểm tra khác thế nào.
 - Commit đề xuất: `feat(admin-returns): review and process return requests`.
 
+### Bàn giao E16 — Kiểm duyệt và trả lời đánh giá — 25/11/2026
+
+- Theo phản hồi giao diện, đã bỏ nút **Tải lại danh sách** ở E16. Khi GET lỗi, thông báo hướng dẫn nhấn F5; GET tự làm mới sau mutation vẫn giữ nguyên. F5 xóa state cục bộ, gồm draft và khóa dòng; sau timeout vẫn cần xác minh kết quả trên máy chủ trước thao tác ghi mới.
+- Đã thêm lazy route `/admin/reviews`, menu Đánh giá và whitelist redirect giữ query/hash sau login. A/M/S xem và trả lời, chỉ A/M ẩn/hiện. Lọc tên sản phẩm và 1–5 sao bằng GET server; URL giữ productName/rating/page/size, chuẩn hóa page an toàn, size 10/20/50; đổi filter/size về trang 1, kẹp trang sau khi review bị xóa. Có loading/empty/error/retry và cảnh báo dữ liệu cũ khi refetch lỗi. Tên/nội dung dài được xuống dòng; bảng cuộn ngang khi màn hình nhỏ, dialog dùng Base UI quản lý focus và bàn phím.
+- Đối chiếu AdminReviewController, AdminReviewResponse, ReviewReplyRequest, ReviewServiceImpl, ReviewRepository. GET nhận rating/productName/Pageable, sort cố định `createdAt,desc`; PATCH toggle không có body; POST reply nhận `{ replyText }`; cả hai mutation trả `{ message }`, không phải review mới. Đã serialize DTO `.class` hiện có bằng Jackson 3.1.5 trong máy để xác nhận JSON `hidden` và ID string (không đoán từ tên field Java `isHidden`). Probe chạy độc lập, không sửa backend. Chưa đọc được OpenAPI runtime tại cổng 8081 (timeout); cổng 8080 trả 404 với `/v3/api-docs`. Đây chưa phải bằng chứng kiểm thử HTTP có đăng nhập.
+- Reply schema trim và chặn chuỗi trắng; không tự đặt maxLength vì DTO chỉ có @NotBlank. Trả lời mới ghi đè adminReply cũ, UI có giải thích. DTO admin tách customer. ID string được validate Long trước dispatch; Spring Page được normalize, URL page 1 chuyển API page 0. Không thêm dependency hoặc chạy gen:api.
+- Query key theo user/role/filter, token không nằm trong key. Snapshot phiên được kiểm tra trước/sau request và trước cập nhật UI/cache; GET có AbortSignal. Trang remount theo user/role/token để xóa draft/thông báo của phiên trước. Hai thao tác dùng chung mutation key theo review trong QueryClient; ref chặn double click trước render; retry false, networkMode always, gcTime 0, noPublicRetry. Không optimistic, không tự chạy mutation khi reconnect.
+- Sau ghi hoặc lỗi, hủy GET cũ và invalidate admin reviews/products cùng customer reviews/public products; refetch các query active. Đánh dấu đã lưu trước GET. GET lỗi vẫn nói đã lưu và chỉ hướng dẫn GET lại. Timeout/lỗi ghi không rõ kết quả khóa cả hai thao tác của dòng trong lần mở trang, giữ khóa qua đổi filter/page và đóng/mở dialog; GET thành công không tự mở khóa. 400 của reply giữ draft để sửa; 404 báo review không còn tồn tại, loại dòng khỏi UI để đóng form rồi làm mới. Sau khi đã xác minh kết quả máy chủ mới rời/vào lại trang để tạo thao tác mới; reload không chứng minh request timeout đã kết thúc.
+- Source toggle chưa tính lại averageRating; query tính trung bình hiện cũng không loại review ẩn. FE chỉ invalidate/refetch, không tự sửa điểm. Backend reply/toggle chưa có expected state/version hoặc idempotency key; khóa frontend không giải quyết ghi đồng thời giữa tab/người dùng. Không sửa backend trong E16.
+- File mới: `reviews/{types,filters,schemas,api,queries}.ts`, `reviews/components/{ReviewActionDialog,ReviewReplyForm,ReviewVisibilityAction}.tsx`, `reviews/pages/AdminReviewsPage.tsx`, `scripts/verify-admin-reviews.cjs`. File tích hợp: router.tsx, navigation.ts, redirect.ts, package.json và phase5.md.
+- Kiểm tra: build (gồm typecheck), lint và git diff --check đạt; E16 **14/14**, hồi quy customer reviews **7/7**, tổng **21/21** đạt. Bao gồm schema/filter/API/Long ID, phân quyền, session/cache, khóa ghi đồng thời, offline không replay, handler double click, đã lưu nhưng GET lỗi, 404 đóng form, 400 giữ draft, timeout toggle không mở khóa từ GET và redirect giữ query/hash. Test dùng mock HTTP/query và handler thật, chưa phải browser E2E/backend có đăng nhập. Build còn cảnh báo chunk storefront/HeroScene trên 500 kB đã có trước. Không commit hoặc push.
+- Cần thử có đăng nhập A/M/S/CUSTOMER/guest; STAFF gọi trực tiếp PATCH nhận 403; lọc/reload/back/forward/phân trang; ghi đè reply; review bị customer xóa lúc mở form; 400/403/404/500/timeout; request chậm rồi logout; hiển thị customer/catalog; mobile/theme/focus. Trạng thái: **đã code và kiểm tra tự động, chờ review và tích hợp có đăng nhập**.
+- Commit đề xuất: `feat(admin-reviews): moderate visibility and reply to reviews`.
+
 #### Cập nhật giao diện quản trị sau E16 — 25/11/2026
 
 - Đưa Trang quản trị lên đầu navigation, giữ thứ tự tương đối của các mục còn lại và quyền đang có.
@@ -1044,3 +1060,82 @@ Bước tiếp theo:
 - Giữ hàm reload/refetch dùng trong luồng tự động sau mutation; giữ phân biệt đã lưu/GET lỗi và khóa ghi khi kết quả chưa rõ. Không thêm cơ chế tự phát lại thao tác ghi.
 - Cập nhật các test create/edit/images/lifecycle theo UI mới: không có nút tải lại, thông báo F5, GET lỗi vẫn khóa ghi, GET tự động thành công vẫn cập nhật form/mở khóa. Tổng **79/79** test admin đã đạt: 77 case chạy trong sandbox; hai case Axios dùng server HTTP giả lập loopback được chạy lại ngoài sandbox và đều đạt. Không ghi dữ liệu lên backend thật. Build gồm typecheck đạt; build vẫn cảnh báo chunk storefront/HeroScene lớn đã có trước.
 - Cập nhật `docs/e11-product-images-guide.md` và quy ước ở mục 3.1 để tránh hướng dẫn nút đã bỏ. Commit đề xuất: `refactor(admin): remove manual reload controls and reorder navigation`. Chưa commit/push; chưa kiểm thử browser có đăng nhập.
+
+#### Hướng dẫn đọc code E16 theo từng bước, từng file
+
+**Bước 1 — Đọc `reviews/types.ts`: biết dữ liệu trước khi đọc giao diện.**
+
+`AdminReview` mô tả một dòng server trả về; `ReviewFilters` mô tả bộ lọc; `MessageResponse` mô tả kết quả ghi. `ReviewAction = "reply" | "toggle"` là union literal: biến chỉ được nhận một trong hai chuỗi đó. `string | null` nghĩa là dữ liệu có thể thiếu; `import type` chỉ nhập kiểu, bị loại khi build. `ID` là string để giữ chính xác Java Long lớn. Interface giúp TypeScript kiểm tra lúc phát triển, không tự kiểm tra JSON ở runtime.
+
+**Bước 2 — Đọc `reviews/filters.ts`: URL là trạng thái bộ lọc đã áp dụng.**
+
+`parseReviewFilters(search)` chuyển URLSearchParams thành object có kiểu; `serializeReviewFilters(filters)` làm chiều ngược lại. `as const` giữ kiểu literal của các giá trị cho phép. `.find(...) ?? null` tìm số sao hợp lệ, nếu không có thì dùng null. Regex kiểm tra chuỗi page trước khi chuyển Number; chỉ chuyển page/size, không chuyển ID. Có thể tự đổi URL `?rating=9&page=-1&size=999` để xem URL được chuẩn hóa về tất cả sao/trang 1/size 10.
+
+**Bước 3 — Đọc `reviews/schemas.ts`: kiểm tra input ở runtime.**
+
+```ts
+export const reviewReplySchema = z.object({
+  replyText: z.string().trim().min(1, "Vui lòng nhập nội dung trả lời."),
+});
+
+export type ReviewReplyRequest = z.infer<typeof reviewReplySchema>;
+```
+
+`z.object` khai báo hình dạng object; `.trim()` bỏ khoảng trắng hai đầu trước `.min(1)`. `typeof` lấy kiểu của schema, `z.infer` suy ra kiểu payload từ schema để tránh khai báo trùng. Trong form, `safeParse` trả `{ success, data/error }`, phù hợp hiển thị lỗi mà không throw. Ở API, `.parse` kiểm tra lại và throw nếu payload sai. Bài tập: bỏ trim rồi thử nhập toàn dấu cách, giải thích thay đổi.
+
+**Bước 4 — Đọc `reviews/api.ts`: chỉ quan tâm contract HTTP.**
+
+`getAdminReviews` gọi GET, truyền filter và signal, đổi page rồi normalizePage. `toggleAdminReview` gọi PATCH không body. `replyAdminReview` gọi POST với JSON đã validate. `api.get<BackendPage<AdminReview>>` là generic: nói với TypeScript kiểu của data, không tự validate JSON. `const { data } = await ...` vừa chờ Promise hoàn thành vừa destructure trường data từ Axios response. `filters.rating ?? undefined` bỏ filter nếu null, `productName || undefined` bỏ chuỗi rỗng. `meta.authToken` đi qua interceptor hiện có để gắn đúng token của snapshot; `noPublicRetry` ngăn fallback retry của client.
+
+**Bước 5 — Đọc `reviews/queries.ts`: quản lý phiên, request và cache.**
+
+Thứ tự đọc các hàm: `useReviewsSession` → `isCurrentReviewsSession` → `useAdminReviews` → `useAdminReviewAction`. Custom hook bắt đầu bằng `use`, tái sử dụng logic React. `useQuery` lấy danh sách; queryKey xác định cache riêng theo user/role/filter. `enabled` quyết định có được tự GET; queryFn vẫn kiểm tra lại phiên trước/sau await để chặn response muộn. `signal.throwIfAborted()` ngăn query đã hủy trả kết quả hợp lệ.
+
+Mutation hook nhận id/action/snapshot, kiểm tra quyền theo action và khóa theo dòng. `useIsMutating` cập nhật UI khi cùng dòng đang ghi; `client.isMutating` kiểm tra ngay lúc dispatch. Trong mutationFn, chính mutation đang chạy được tính là 1 nên `> 1` phát hiện thao tác thứ hai. Spread `...prefix` ghép từng phần của query key. `onSettled` chạy khi ghi thành công hoặc thất bại, hủy GET cũ rồi đánh dấu cache stale. `refetchType: "none"` giúp việc đánh dấu stale tách khỏi GET; `refreshRelated()` mới tải lại active queries. `Promise.all` chờ các tác vụ độc lập. Bài tập: giải thích vì sao không đưa token vào queryKey và vì sao không dùng retry cho toggle.
+
+**Bước 6 — Đọc `ReviewReplyForm.tsx` và `ReviewVisibilityAction.tsx`: hai tên nghiệp vụ rõ ràng.**
+
+Hai component bọc `ReviewActionDialog`, truyền lần lượt `action="reply"` và `action="toggle"`. `{...props}` trải các prop review/snapshot/callback vào component con. Các wrapper nhỏ giúp bảng thể hiện rõ hai chức năng trong khi vòng đời lỗi/làm mới chỉ viết một lần. Không có hook customer trong module admin.
+
+**Bước 7 — Đọc `ReviewActionDialog.tsx`: hiểu toàn bộ luồng ghi.**
+
+`ReviewActionProps` khai báo dữ liệu và callback cha truyền xuống. `ReviewActionProps & { action: ReviewAction }` là intersection: phải có cả prop chung và action. `useState` giữ open/draft/message/saved/busy để render. `useRef` giữ sending/mounted mà không gây render. sending được gán ngay nên chặn được lần click thứ hai trước khi React render trạng thái busy. `useEffect` cleanup đặt mounted=false khi unmount. `useId` nối label/textarea và mô tả lỗi đúng accessibility.
+
+Đọc hàm `submit` theo thứ tự: preventDefault → guard → safeParse → khóa gửi → mutateAsync → ghi nhận đã lưu hoặc phân loại lỗi → refreshRelated → mở khóa busy trong finally. `error instanceof ApiError` thu hẹp unknown thành lỗi API có status. `finally` vẫn chạy khi try/catch return, bảo đảm dọn busy và làm mới chỉ khi phiên còn đúng. didSave là biến cục bộ của lần submit; saved là state để khóa nút trên UI. Không đưa GET vào cùng nhánh bắt lỗi ghi rồi tự POST lại.
+
+JSX dùng `{isReply ? (...) : (...)}` để chọn textarea hoặc nội dung xác nhận. `value` cùng `onChange` tạo controlled textarea: React giữ draft. `onSubmit={(event) => { void submit(event); }}` gọi hàm async từ event handler; void biểu thị chủ động bỏ Promise trả về, còn lỗi được xử lý trong submit. Base UI Dialog dùng Root/Trigger/Portal/Backdrop/Popup/Title/Description/Close. Portal đặt dialog ngoài vùng bảng; onOpenChange dùng event.cancel để chặn đóng khi đang ghi. `render={<Button ... />}` cho Base UI dùng Button hiện có làm phần tử tương tác.
+
+**Bước 8 — Đọc `AdminReviewsPage.tsx`: nối các lớp trên thành trang.**
+
+Component ngoài lấy snapshot; `key` theo user/role/token buộc React tạo lại toàn bộ nội dung khi đổi phiên. `AdminReviewsContent` parse URL, gọi query, định nghĩa columns rồi render DataTable/Pagination/dialog. `DataTableColumn<AdminReview, never>[]` nghĩa là mỗi cell nhận AdminReview; `never` biểu thị trang không cung cấp lựa chọn sort cột tùy ý, vì sort API được cố định.
+
+blockedIds và missingIds là Set, dùng `.has(id)` để kiểm tra nhanh. Khi thêm ID phải tạo Set mới qua `setBlockedIds((current) => new Set([...current, review.id]))`; không sửa trực tiếp Set cũ vì React cần reference mới để nhận biết thay đổi. Callback onBlocked/onMissing/onNotice truyền từ cha xuống dialog; dialog báo kết quả ngược lên qua callback. missingIds chỉ loại dòng server đã báo 404, không giả lập mutation thành công.
+
+`ReviewFiltersForm` giữ draft tên/sao riêng; chỉ khi submit mới đổi URL và GET. `key={canonicalSearch}` đồng bộ form với URL khi Back/Forward. `.map` render options; `.filter` loại review đã xác nhận không còn; `review.adminReply && (...)` chỉ render khối trả lời khi có nội dung. `??` fallback với null/undefined, còn `||` fallback cả chuỗi rỗng. Nội dung review được render thành text thông thường qua JSX.
+
+**Bước 9 — Đọc các file tích hợp và script.**
+
+- `src/app/router.tsx`: route reviews dùng `lazy`/dynamic import để tách bundle, đi qua AdminRoute hiện có.
+- `src/features/admin/navigation.ts`: thêm menu có permission review.view; sidebar hiện có lọc theo role.
+- `src/shared/auth/redirect.ts`: thêm whitelist để đăng nhập xong quay lại đúng trang cùng query/hash.
+- `package.json`: thêm `npm run verify:admin-reviews`.
+- `scripts/verify-admin-reviews.cjs`: dùng node:test/assert, mock Axios và TanStack Query; có harness gọi submit handler thật với React state/ref giả lập. Kiểm tra behavior/contract, không thay thế test browser, focus hoặc backend authorization.
+- `phase5.md`: cập nhật tiến độ, contract, cách đọc và giới hạn kiểm thử.
+
+**Luồng đọc và luồng ghi cần tự lần lại:**
+
+```text
+Mở /admin/reviews hoặc submit bộ lọc
+  → URLSearchParams → parseReviewFilters
+  → useAdminReviews → getAdminReviews → backend GET
+  → normalizePage → query cache → DataTable/Pagination
+
+Bấm trả lời hoặc ẩn/hiện
+  → ReviewReplyForm / ReviewVisibilityAction
+  → ReviewActionDialog.submit → schema nếu trả lời
+  → useAdminReviewAction → API POST/PATCH → backend
+  → MessageResponse → báo đã lưu
+  → cancel GET cũ → invalidate → GET active → bảng cập nhật
+```
+
+**Tự kiểm tra:** chạy `npm run dev`, đăng nhập A/M rồi mở `/admin/reviews?rating=5&page=1&size=10`; xem Network có page=0 và sort=createdAt,desc. Nhập reply trắng phải không có POST. Lưu reply hợp lệ phải có một POST rồi GET. Với STAFF không có nút ẩn/hiện. Mô phỏng request timeout và xác nhận không có PATCH tự phát khi reconnect. Bài tập cuối: nếu toggle đầu tiên đã chạy nhưng response bị mất, toggle lần hai sẽ gây lỗi nghiệp vụ gì? Vì sao GET thấy trạng thái cũ chưa đủ để kết luận PATCH trước thất bại?
