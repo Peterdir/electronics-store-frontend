@@ -15,14 +15,19 @@ export const adminNavigation: readonly AdminNavigationItem[] = [
         end: true,
     },
     {
-        to: "/admin/return-requests",
-        label: "Yêu cầu trả hàng",
-        permission: "return.view",
+        to: "/admin/coupons",
+        label: "Mã giảm giá",
+        permission: "coupon.view",
     },
     {
         to: "/admin/reviews",
         label: "Đánh giá",
         permission: "review.view",
+    },
+    {
+        to: "/admin/return-requests",
+        label: "Yêu cầu trả hàng",
+        permission: "return.view",
     },
     {
         to: "/admin/inventory",

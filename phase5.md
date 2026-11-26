@@ -211,7 +211,7 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 | E14 | Điều chỉnh kho và lịch sử | E13 | Đã code; chờ review và tích hợp đăng nhập |
 | E15 | Xem và xử lý yêu cầu trả hàng | E3–E4, E14; D12 hoặc dữ liệu return dev | Đã code; 10/10 kiểm tra mock đạt, chờ review và tích hợp có đăng nhập |
 | E16 | Kiểm duyệt và trả lời đánh giá | E2; D9 hoặc dữ liệu review dev | Chưa bắt đầu |
-| E17 | Coupon và khoảng hiệu lực | E1; checkout hiện có để hồi quy | Chưa bắt đầu |
+| E17 | Coupon và khoảng hiệu lực | E1; checkout hiện có để hồi quy | Đã code; 13/13 test mock E17 và 24/24 checkout đạt; chờ browser/backend có đăng nhập và checkout tích hợp |
 | E18 | Danh sách/chi tiết và quản lý người dùng | E1 | Chưa bắt đầu |
 | E19 | Dashboard và bộ lọc thời gian | E4, E14; dữ liệu thống kê dev | Chưa bắt đầu |
 | E20 | Xem trước báo cáo doanh thu | E19 để dùng lại bộ lọc ngày | Chưa bắt đầu |
@@ -677,6 +677,15 @@ Kiểm thử nghiệp vụ thật còn cần làm: chạy frontend/backend, đă
 **Kiểm tra/hoàn thành:** code trùng 409, 100%/>100%, thời gian biên ngày VN, giới hạn lượt, S chỉ đọc, toggle timeout. Thử coupon tại checkout bằng quote/server hiện có; không sửa tổng đơn đã đặt. Bài tập: đổi một thời điểm GMT+7 sang payload UTC và giải thích ngày có thể khác.
 
 **Commit cuối nhiệm vụ:** `feat(admin-coupons): manage discounts and validity periods`
+
+**Bàn giao triển khai — 25/11/2026:**
+
+- Đã thêm module `src/features/admin/coupons/`: DTO, schema form/response, chuyển giờ Việt Nam ↔ Instant UTC, badge dẫn xuất, lọc/phân trang mảng theo URL, API/query, form/dialog và `CouponsPage`. Đã nối lazy route, sidebar và login redirect `/admin/coupons`. Không thêm dependency, không sửa backend, không thay đổi tổng đơn đã đặt.
+- Đọc lại AdminCouponController, CouponRequest/Response, CouponServiceImpl và CheckoutServiceImpl. GET trả mảng; POST/PUT trả DTO; PUT toggle trả text. Đã chạy serialize class CouponResponse compile với Java 21/Jackson 3.1.5 và xác nhận JSON `active` cùng ID chuỗi; chưa đối chiếu Network response từ server đang chạy.
+- Form dùng `0 < discountValue`, phần trăm ≤ 100, minOrderValue ≥ 0, usageLimit nguyên 1..2147483647, end ≥ start. Backend DTO mới chặn discountValue ≥ 0 và chưa chặn phần trăm >100: còn yêu cầu server validation. Hiển thị/input luôn giờ VN, payload UTC có Z; thời điểm không sửa giữ nguyên độ chính xác chuỗi server.
+- STAFF chỉ đọc; mutation kiểm tra quyền/phiên trước và sau request. Không retry/queue offline, chống double-click, giữ draft khi lỗi 400/409, khóa ghi trong lần mở trang khi timeout/5xx/kết quả không rõ. GET thành công sau timeout không tự mở khóa. Đã lưu nhưng GET lỗi được báo riêng; không phát lại mutation. Không có nút tải lại thủ công.
+- Kiểm tra: typecheck, ESLint phạm vi E17, build đạt; `verify:admin-coupons` 13/13 và `verify:checkout` 24/24 test mock đạt. Build còn cảnh báo chunk lớn hiện có. Chưa thử browser/focus/keyboard, ghi có đăng nhập, authorization server, race nhiều quản trị viên và áp coupon qua checkout thật. Source hiện không có endpoint quote riêng; couponCode đi cùng POST checkout, server trả discountAmount/totalPrice.
+- Giải thích từng file, flow và cú pháp TS/TSX được trình bày trực tiếp trong chat theo yêu cầu người dùng, không tạo file guide.md. Chưa tạo commit/push; dùng thông điệp đề xuất phía trên khi người dùng yêu cầu commit.
 
 ### E18 — Người dùng, khóa/mở tài khoản và đổi role
 
