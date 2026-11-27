@@ -2,7 +2,7 @@
 
 > Ngày lập: **13/11/2026**. Đối chiếu frontend tại HEAD `87eaa75`; working tree sạch trước khi lập kế hoạch.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase4.md](phase4.md), source frontend và source backend tham chiếu tại `../ecommerce-backend`.
-> **Trạng thái — 27/11/2026: E1–E9, phần sửa thông tin chung E10 và E11–E19 đã có code, chờ review và kiểm thử nghiệp vụ tích hợp có đăng nhập; E20–E22 chưa triển khai. E19 đã có dashboard, bộ lọc date-only, biểu đồ SVG/bảng số liệu và landing A/M; chưa đối soát dữ liệu có đăng nhập hoặc chốt timezone runtime JVM/MySQL.** E10 không gửi variants; sửa metadata biến thể cũ vẫn phụ thuộc backend. E12b đã bổ sung bán lại biến thể và cải thiện thẻ; backend đổi trạng thái sản phẩm không còn ghi đè trạng thái biến thể. E13 lọc SKU/tên phía client vì backend keyword hiện chỉ tìm tên. E14 có ADD/DEDUCT, GET lịch sử và xử lý kết quả chưa xác định. E15 có list/drawer bằng chứng và xử lý A/M; E16 có lọc/phân trang đánh giá, trả lời A/M/S và ẩn/hiện A/M; E17 có danh sách, tạo/sửa/toggle coupon, giờ VN/UTC và 13/13 test mock; chưa thử ghi có đăng nhập trên backend thật. Contract được đối chiếu source; E9 đã kiểm tra GET public 200/admin chưa đăng nhập 401 trên backend dev, chưa xác nhận POST tạo thật. Xem bàn giao cuối tài liệu.
+> **Trạng thái — 27/11/2026: E1–E9, phần sửa thông tin chung E10 và E11–E21 đã có code, chờ review và kiểm thử nghiệp vụ tích hợp có đăng nhập; E22 chưa triển khai. E20/E21 đã có preview và tải CSV có xác thực, test mock đạt; chưa đối soát/tải file bằng browser có đăng nhập. E19 đã có dashboard, bộ lọc date-only, biểu đồ SVG/bảng số liệu và landing A/M; chưa đối soát dữ liệu có đăng nhập hoặc chốt timezone runtime JVM/MySQL.** E10 không gửi variants; sửa metadata biến thể cũ vẫn phụ thuộc backend. E12b đã bổ sung bán lại biến thể và cải thiện thẻ; backend đổi trạng thái sản phẩm không còn ghi đè trạng thái biến thể. E13 lọc SKU/tên phía client vì backend keyword hiện chỉ tìm tên. E14 có ADD/DEDUCT, GET lịch sử và xử lý kết quả chưa xác định. E15 có list/drawer bằng chứng và xử lý A/M; E16 có lọc/phân trang đánh giá, trả lời A/M/S và ẩn/hiện A/M; E17 có danh sách, tạo/sửa/toggle coupon, giờ VN/UTC và 13/13 test mock; chưa thử ghi có đăng nhập trên backend thật. Contract được đối chiếu source; E9 đã kiểm tra GET public 200/admin chưa đăng nhập 401 trên backend dev, chưa xác nhận POST tạo thật. Xem bàn giao cuối tài liệu.
 > **Cách học bắt buộc: khi bắt đầu mỗi nhiệm vụ, sinh mã hướng dẫn theo từng bước và từng file để người dùng tự học, tự gõ code; cuối nhiệm vụ có nội dung commit.** Không tự triển khai source khi người dùng chỉ yêu cầu hướng dẫn.
 
 ## 1. Mục tiêu và điểm bắt đầu
@@ -214,8 +214,8 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 | E17 | Coupon và khoảng hiệu lực | E1; checkout hiện có để hồi quy | Đã code; 13/13 test mock E17 và 24/24 checkout đạt; chờ browser/backend có đăng nhập và checkout tích hợp |
 | E18 | Danh sách/chi tiết và quản lý người dùng | E1 | Đã code; 12/12 test mock đạt; chờ browser/backend có đăng nhập, kiểm tra JWT cũ và review |
 | E19 | Dashboard và bộ lọc thời gian | E4, E14; dữ liệu thống kê dev | Đã code; 10/10 test mock/render; chờ đối soát có đăng nhập và timezone runtime |
-| E20 | Xem trước báo cáo doanh thu | E19 để dùng lại bộ lọc ngày | Chưa bắt đầu |
-| E21 | Tải CSV có xác thực | E20 | Chưa bắt đầu |
+| E20 | Xem trước báo cáo doanh thu | E19 để dùng lại bộ lọc ngày | Đã code; test mock đạt; chờ tích hợp có đăng nhập |
+| E21 | Tải CSV có xác thực | E20 | Đã code; test mock đạt; chờ tải file/CORS runtime |
 | E22 | Hồi quy và bàn giao Phase 5 | E1–E21 trong phạm vi đã chốt | Chưa bắt đầu |
 
 Thứ tự mặc định E1 → E22. Có thể chuyển sang module độc lập khi một phần bị vướng backend, nhưng phải ghi mốc còn thiếu; không đánh dấu cả phase hoàn thành. Không cần hoàn thành dashboard để bắt đầu xử lý đơn.
@@ -733,6 +733,7 @@ Kiểm thử nghiệp vụ thật còn cần làm: chạy frontend/backend, đă
 
 ### E20 — Xem trước báo cáo doanh thu
 
+
 **Kết quả:** `/admin/reports` chọn khoảng ngày rồi bấm xem trước, bảng và tổng lấy từ API cùng một khoảng ngày đã gửi.
 
 **Kiến thức và mã hướng dẫn:** form draft so với submitted filters, query enabled, đối chiếu aggregate với dòng dữ liệu. Sinh `reports/{types,api,queries,schemas}.ts`, `reports/pages/ReportsPage.tsx`, `reports/components/RevenueReportTable.tsx`; dùng lại date filter khi phù hợp.
@@ -1157,3 +1158,18 @@ Bấm trả lời hoặc ẩn/hiện
 ```
 
 **Tự kiểm tra:** chạy `npm run dev`, đăng nhập A/M rồi mở `/admin/reviews?rating=5&page=1&size=10`; xem Network có page=0 và sort=createdAt,desc. Nhập reply trắng phải không có POST. Lưu reply hợp lệ phải có một POST rồi GET. Với STAFF không có nút ẩn/hiện. Mô phỏng request timeout và xác nhận không có PATCH tự phát khi reconnect. Bài tập cuối: nếu toggle đầu tiên đã chạy nhưng response bị mất, toggle lần hai sẽ gây lỗi nghiệp vụ gì? Vì sao GET thấy trạng thái cũ chưa đủ để kết luận PATCH trước thất bại?
+
+### Bàn giao E20–E21 — Xem trước doanh thu và tải CSV — 27/11/2026
+
+- Đã thêm lazy route `/admin/reports`, menu theo `report.view` và redirect whitelist A/M. STAFF/CUSTOMER không được vào trang; backend vẫn kiểm tra quyền cuối cùng.
+- Form giữ draft riêng với submittedRange; chỉ Xem trước hợp lệ mới kích hoạt GET. Preset chỉ thay draft. Dùng lại utility ngày E19, thêm Zod kiểm tra tương lai theo giờ VN. Giữ date-only; chênh lệch 365 ngày được phép trả 366 dòng inclusive.
+- Preview hiển thị khoảng đã gửi, tổng response và từng ngày, giữ 0/null/empty/error/loading, cảnh báo dữ liệu cũ khi refetch lỗi. Không tự cộng từ đơn đã phân trang hoặc thay aggregate bằng tổng FE. API từ chối response có khoảng ngày không khớp request.
+- Đã đọc controller/DTO/service/mapper/report query và công thức checkout: gross=subtotal, discount=discount_amount, shipping=shipping_fee, net=total_price; khi checkout total=max(0, subtotal+shipping-discount). Lấy đơn DELIVERED hoặc PAID ngoài CANCELLED/RETURNED; nhóm ngày tạo đơn. Mapper điền ngày trống và cộng tổng. Không suy ra lợi nhuận/hoàn tiền từ các số này.
+- Query key theo user/role/reports/preview/submittedRange, không chứa token; chặn phiên sai/hết hạn trước và sau GET, hỗ trợ AbortSignal, không retry lỗi. Remount nội dung khi đổi phiên để bỏ draft/thông báo. Dữ liệu khoảng cũ không làm placeholder cho khoảng mới.
+- CSV dùng Axios có auth snapshot, responseType blob, khoảng đã submit. Chỉ cho xuất sau preview và khi không fetch/lỗi. Ref chặn click lặp; không tự tải khi mount/reconnect. Abort khi đổi khoảng/unmount; kiểm tra lại phiên trước trigger download. Preview và export là hai lần tính độc lập trên backend, không hứa snapshot giống nhau nếu đơn đã thay đổi.
+- Helper download đọc filename*/filename, ưu tiên UTF-8, fallback tên theo khoảng ngày, loại đường dẫn/ký tự điều khiển và ký tự file không hợp lệ, bảo đảm đuôi CSV. Tạo/click/remove anchor rồi revoke object URL sau khi bắt đầu tải, cả khi click throw. Không persist/cache Blob hoặc object URL. Export lỗi 404 khi không có dữ liệu hiển thị thông báo, không giả thành file rỗng.
+- `normalizeError` dùng lại interceptor hiện có; bổ sung Blob text fallback giới hạn 500 ký tự, HTML/rỗng dùng thông báo theo status. JSON Blob vẫn parse như cũ. Không sửa toàn bộ client hoặc backend.
+- Source `SecurityConfig` hiện expose Content-Disposition/Authorization. Chưa xác nhận CORS/filename runtime trên browser khác origin. FE hôm nay theo Asia/Ho_Chi_Minh; service vẫn dùng systemDefault/LocalDate.now và SQL DATE_FORMAT, chưa chốt JVM/MySQL runtime.
+- Kiểm tra đạt: build gồm typecheck, lint, git diff --check; E20/E21 11/11 test mock/handler/render, hồi quy dashboard 10/10, tổng 21/21. Test bao gồm input ngày/365 boundary, params/auth/blob, filename UTF-8/path/encoding lỗi, Blob JSON/text/HTML/rỗng, object URL cleanup, query permission/session/abort, tổng response, redirect, draft-submit và export double click/session/unmount/error. Build vẫn cảnh báo chunk storefront/HeroScene lớn đã có trước. Chưa browser E2E hoặc đối soát backend có đăng nhập.
+- Cần thử tích hợp A/M/S/CUSTOMER/guest, direct STAFF GET bị từ chối, mobile/bàn phím, các lỗi HTTP/timeout, logout khi đang tải, CSV/tên file/header và đối chiếu số liệu trong dữ liệu dev ổn định; kiểm tra biên nửa đêm VN/JVM/MySQL. Trạng thái: đã code và kiểm tra tự động, chờ review/tích hợp. Không đánh dấu toàn Phase 5 hoàn tất.
+- Commit đề xuất cho phạm vi gộp: `feat(admin-reports): preview revenue reports and download authenticated CSV`. Không tạo commit/push.

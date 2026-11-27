@@ -15,6 +15,7 @@
     "verify:admin-coupons": "node --test scripts/verify-admin-coupons.cjs",
     "verify:admin-users": "node --test scripts/verify-admin-users.cjs",
     "verify:admin-dashboard": "node --test scripts/verify-admin-dashboard.cjs",
+    "verify:admin-reports": "node --test scripts/verify-admin-reports.cjs",
     "verify:wishlist": "node --test scripts/verify-wishlist.cjs",
     "verify:returns": "node --test scripts/verify-returns.cjs",
     "gen:api": "openapi-typescript http://localhost:8080/v3/api-docs -o src/shared/types/openapi.d.ts",

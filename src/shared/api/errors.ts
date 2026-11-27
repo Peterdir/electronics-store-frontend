@@ -52,10 +52,11 @@ export async function normalizeError(err: unknown): Promise<ApiError> {
     let data: unknown = err.response.data;
 
     if (data instanceof Blob) {
+        const text = await data.text();
         try {
-            data = JSON.parse(await data.text());
+            data = JSON.parse(text);
         } catch {
-            data = undefined;
+            data = text.trim().startsWith("<") ? undefined : text.trim().slice(0, 500) || undefined;
         }
     }
 

@@ -15,6 +15,11 @@ export const adminNavigation: readonly AdminNavigationItem[] = [
         end: true,
     },
     {
+        to: "/admin/reports",
+        label: "Báo cáo doanh thu",
+        permission: "report.view",
+    },
+    {
         to: "/admin/dashboard",
         label: "Dashboard",
         permission: "dashboard.view",

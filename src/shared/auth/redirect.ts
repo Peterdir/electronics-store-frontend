@@ -48,6 +48,7 @@ export function getLoginDestination(
                 isPositiveLongId(productDetailMatch?.[1]) ||
                 isPositiveLongId(orderDetailMatch?.[1]) ||
                 (url.pathname === "/admin/dashboard" && hasPermission("dashboard.view", role)) ||
+                (url.pathname === "/admin/reports" && hasPermission("report.view", role)) ||
                 (url.pathname === "/admin/categories" && hasPermission("category.manage", role)) ||
                 (url.pathname === "/admin/brands" && hasPermission("brand.manage", role)) ||
                 (url.pathname === "/admin/inventory" && hasPermission("inventory.manage", role)) ||
