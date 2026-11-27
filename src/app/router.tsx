@@ -159,6 +159,12 @@ export const router = createBrowserRouter([
                     return { Component: AdminUsersPage };
                 },
             },
+            {
+                path: "dashboard",
+                lazy: async () => {
+                    const { DashboardPage } = await import("@/features/admin/dashboard/pages/DashboardPage");
+                    return { Component: DashboardPage };
+                },
             },
             {
                 path: "users/:id",

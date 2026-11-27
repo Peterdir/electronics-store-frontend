@@ -10,7 +10,7 @@ export function getLoginDestination(
 ): string {
     const canAccessAdmin = hasPermission("admin.access", role)
 
-    const fallback = role === Role.STAFF ? "/admin/orders" : canAccessAdmin ? "/admin" : "/"
+    const fallback = role === Role.STAFF ? "/admin/orders" : canAccessAdmin ? "/admin/dashboard" : "/"
 
     for (const candidate of [redirect, from]) {
         if (
@@ -47,6 +47,7 @@ export function getLoginDestination(
                 url.pathname === "/products" ||
                 isPositiveLongId(productDetailMatch?.[1]) ||
                 isPositiveLongId(orderDetailMatch?.[1]) ||
+                (url.pathname === "/admin/dashboard" && hasPermission("dashboard.view", role)) ||
                 (url.pathname === "/admin/categories" && hasPermission("category.manage", role)) ||
                 (url.pathname === "/admin/brands" && hasPermission("brand.manage", role)) ||
                 (url.pathname === "/admin/inventory" && hasPermission("inventory.manage", role)) ||

@@ -2,7 +2,7 @@
 
 > Ngày lập: **13/11/2026**. Đối chiếu frontend tại HEAD `87eaa75`; working tree sạch trước khi lập kế hoạch.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase4.md](phase4.md), source frontend và source backend tham chiếu tại `../ecommerce-backend`.
-> **Trạng thái — 27/11/2026: E1–E9, phần sửa thông tin chung E10 và E11–E18 đã có code, chờ review và kiểm thử nghiệp vụ tích hợp có đăng nhập; E19–E22 chưa triển khai.** E10 không gửi variants; sửa metadata biến thể cũ vẫn phụ thuộc backend. E12b đã bổ sung bán lại biến thể và cải thiện thẻ; backend đổi trạng thái sản phẩm không còn ghi đè trạng thái biến thể. E13 lọc SKU/tên phía client vì backend keyword hiện chỉ tìm tên. E14 có ADD/DEDUCT, GET lịch sử và xử lý kết quả chưa xác định. E15 có list/drawer bằng chứng và xử lý A/M; E16 có lọc/phân trang đánh giá, trả lời A/M/S và ẩn/hiện A/M; E17 có danh sách, tạo/sửa/toggle coupon, giờ VN/UTC và 13/13 test mock; chưa thử ghi có đăng nhập trên backend thật. Contract được đối chiếu source; E9 đã kiểm tra GET public 200/admin chưa đăng nhập 401 trên backend dev, chưa xác nhận POST tạo thật. Xem bàn giao cuối tài liệu.
+> **Trạng thái — 27/11/2026: E1–E9, phần sửa thông tin chung E10 và E11–E19 đã có code, chờ review và kiểm thử nghiệp vụ tích hợp có đăng nhập; E20–E22 chưa triển khai. E19 đã có dashboard, bộ lọc date-only, biểu đồ SVG/bảng số liệu và landing A/M; chưa đối soát dữ liệu có đăng nhập hoặc chốt timezone runtime JVM/MySQL.** E10 không gửi variants; sửa metadata biến thể cũ vẫn phụ thuộc backend. E12b đã bổ sung bán lại biến thể và cải thiện thẻ; backend đổi trạng thái sản phẩm không còn ghi đè trạng thái biến thể. E13 lọc SKU/tên phía client vì backend keyword hiện chỉ tìm tên. E14 có ADD/DEDUCT, GET lịch sử và xử lý kết quả chưa xác định. E15 có list/drawer bằng chứng và xử lý A/M; E16 có lọc/phân trang đánh giá, trả lời A/M/S và ẩn/hiện A/M; E17 có danh sách, tạo/sửa/toggle coupon, giờ VN/UTC và 13/13 test mock; chưa thử ghi có đăng nhập trên backend thật. Contract được đối chiếu source; E9 đã kiểm tra GET public 200/admin chưa đăng nhập 401 trên backend dev, chưa xác nhận POST tạo thật. Xem bàn giao cuối tài liệu.
 > **Cách học bắt buộc: khi bắt đầu mỗi nhiệm vụ, sinh mã hướng dẫn theo từng bước và từng file để người dùng tự học, tự gõ code; cuối nhiệm vụ có nội dung commit.** Không tự triển khai source khi người dùng chỉ yêu cầu hướng dẫn.
 
 ## 1. Mục tiêu và điểm bắt đầu
@@ -213,7 +213,7 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 | E16 | Kiểm duyệt và trả lời đánh giá | E2; D9 hoặc dữ liệu review dev | Đã code; 14/14 kiểm tra mock đạt, chờ review và tích hợp có đăng nhập |
 | E17 | Coupon và khoảng hiệu lực | E1; checkout hiện có để hồi quy | Đã code; 13/13 test mock E17 và 24/24 checkout đạt; chờ browser/backend có đăng nhập và checkout tích hợp |
 | E18 | Danh sách/chi tiết và quản lý người dùng | E1 | Đã code; 12/12 test mock đạt; chờ browser/backend có đăng nhập, kiểm tra JWT cũ và review |
-| E19 | Dashboard và bộ lọc thời gian | E4, E14; dữ liệu thống kê dev | Chưa bắt đầu |
+| E19 | Dashboard và bộ lọc thời gian | E4, E14; dữ liệu thống kê dev | Đã code; 10/10 test mock/render; chờ đối soát có đăng nhập và timezone runtime |
 | E20 | Xem trước báo cáo doanh thu | E19 để dùng lại bộ lọc ngày | Chưa bắt đầu |
 | E21 | Tải CSV có xác thực | E20 | Chưa bắt đầu |
 | E22 | Hồi quy và bàn giao Phase 5 | E1–E21 trong phạm vi đã chốt | Chưa bắt đầu |
@@ -712,6 +712,14 @@ Kiểm thử nghiệp vụ thật còn cần làm: chạy frontend/backend, đă
 - Kiểm tra: `verify:admin-users` **12/12** đạt bằng mock HTTP, query/mutation và submit handler thật; build gồm typecheck, lint toàn repo và git diff --check đạt. Build còn cảnh báo chunk storefront/HeroScene lớn có từ trước. Chưa thử browser/focus/keyboard/mobile và request có đăng nhập trên backend thật. Cần thử A/M/S/CUSTOMER/guest, M gọi trực tiếp lên non-CUSTOMER, ID không tồn tại, 403/404/timeout và tài khoản đích đang mở phiên ở trình duyệt khác. Không commit/push; commit đề xuất như trên.
 
 ### E19 — Dashboard và thống kê theo khoảng ngày
+
+**Bàn giao 27/11/2026:** đã triển khai module `src/features/admin/dashboard/` và route lazy `/admin/dashboard` cho A/M; mặc định 30 ngày, preset 7/30 ngày/tháng này, khoảng tùy chọn trên URL, validation date-only thật và chênh lệch ≤ 365 ngày (tối đa 366 ngày lịch). Có 4 thẻ số server, 2 biểu đồ SVG riêng đơn vị VND/đơn, bảng chính xác theo ngày, phân bố trạng thái dạng text/thanh và top 5 tồn thấp với link SKU sang inventory. Null hiển thị —, 0 giữ 0; không tự cộng tổng/điền lại ngày. Không thêm thư viện hoặc nút GET thủ công. Query bảo vệ snapshot user/role/token trước/sau GET, hỗ trợ abort và key theo user/role/range, không chứa token. Landing A/M tới dashboard, STAFF tới orders, giữ deep link hợp lệ.
+
+**Contract đọc lại 27/11/2026:** controller chỉ A/M; doanh thu = SUM(totalPrice) với createdAt trong khoảng và `(DELIVERED OR (PAID AND status NOT IN (CANCELLED, RETURNED)))`. Số đơn tính mọi trạng thái theo createdAt; khách mới là role CUSTOMER theo ngày tạo, không lọc status user; phân bố dùng orderStatus lưu trên đơn, không suy ra trạng thái return hiệu lực. Tồn thấp là quantity ≤ 10 hiện tại, gồm hết hàng/variant ngừng bán; top tối đa 5, không theo khoảng ngày. JVM dùng systemDefault để lọc, MySQL DATE_FORMAT để nhóm; properties chưa chốt timezone. Chưa xác nhận JVM/JDBC/MySQL runtime, không hứa số liệu luôn theo giờ VN.
+
+**Kiểm chứng E19:** `verify:admin-dashboard` 10/10 test Node/mock/render tĩnh (ngày nhuận, một ngày, biên 365/vượt biên, preset qua tháng/năm, URL, HTTP date-only/auth/signal, quyền và đổi phiên/abort, redirect/deep link, chart rỗng/null/0, link SKU, page loading/403/refetch). Các test này không thay thế browser/backend thật. Chờ thử UI có đăng nhập, STAFF gọi API thật nhận 403, đối soát tập đơn biết trước và xác nhận timezone. Không đánh dấu nghiệm thu tích hợp. Commit E19 dùng thông điệp ở cuối nhiệm vụ; chưa push.
+
+**Kiểm tra tĩnh/hồi quy:** `npm run lint`, `npm run typecheck`, `npm run build` đạt; build có chunk riêng DashboardPage, còn cảnh báo chunk lớn của ứng dụng (index/HeroScene). `verify:admin-users` 12/12, `verify:profile` 7/7 đạt. E19 cập nhật duy nhất kỳ vọng fallback của test users từ `/admin` sang `/admin/dashboard`; không sửa nghiệp vụ E18. Không thêm dependency.
 
 **Kết quả:** A/M mở `/admin/dashboard`, đổi khoảng ngày để xem tổng quan, biểu đồ doanh thu/đơn, phân bố trạng thái và cảnh báo tồn.
 

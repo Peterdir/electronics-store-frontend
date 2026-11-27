@@ -262,6 +262,6 @@ test('redirect preserves list/detail query/hash only for ADMIN/MANAGER', () => {
       assert.equal(getLoginDestination('STAFF', target), '/admin/orders');
       assert.equal(getLoginDestination('CUSTOMER', target), '/');
     }
-    assert.equal(getLoginDestination('ADMIN', '/admin/users/0'), '/admin');
+    assert.equal(getLoginDestination('ADMIN', '/admin/users/0'), '/admin/dashboard');
   } finally { global.window = previous; }
 });

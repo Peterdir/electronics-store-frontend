@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
+import { Navigate } from "react-router";
 import { RequireRole } from "@/shared/auth/guards";
-import { PERMISSIONS } from "@/shared/auth/permissions";
+import { PERMISSIONS, useCan } from "@/shared/auth/permissions";
 
 const AdminLayout = lazy(() =>
     import("../layouts/AdminLayout").then((module) => ({
@@ -31,5 +32,10 @@ export function AdminRoute() {
 }
 
 export function AdminIndexRoute() {
+    const canViewDashboard = useCan("dashboard.view");
+    const canViewOrders = useCan("order.view");
+
+    if (canViewDashboard) return <Navigate to="/admin/dashboard" replace />;
+    if (canViewOrders) return <Navigate to="/admin/orders" replace />;
     return <AdminHomePage />;
 }
