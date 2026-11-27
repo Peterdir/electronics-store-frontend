@@ -1,15 +1,20 @@
 import { useEffect, useState, type SubmitEvent } from "react";
 import { useSearchParams } from "react-router";
 import { Button } from "@/components/ui/button";
+import { CircleCheck, EyeOff } from "lucide-react";
 import { formatDateTime } from "@/lib/format";
+import { CompactStatusBadge } from "@/shared/components/CompactStatusBadge";
 import { Pagination } from "@/shared/components/Pagination";
 import { AdminPageHeader } from "../../components/AdminPageHeader";
 import { DataTable, type DataTableColumn } from "../../components/DataTable";
+import { FilterBar } from "../../components/FilterBar";
 import { ReviewReplyForm } from "../components/ReviewReplyForm";
 import { ReviewVisibilityAction } from "../components/ReviewVisibilityAction";
 import { parseReviewFilters, REVIEW_PAGE_SIZES, REVIEW_RATINGS, serializeReviewFilters } from "../filters";
 import { useAdminReviews, useReviewsSession, type ReviewsSession } from "../queries";
 import type { AdminReview, ReviewFilters } from "../types";
+
+const fieldClassName = "h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring";
 
 export function AdminReviewsPage() {
   const snapshot = useReviewsSession();
@@ -57,8 +62,8 @@ function AdminReviewsContent({ snapshot }: { snapshot: ReviewsSession }) {
       header: "Sản phẩm / khách hàng",
       align: "left",
       cell: (review) => (
-        <div className="max-w-56 wrap-anywhere">
-          <p className="font-medium">{review.productName ?? "Không còn thông tin sản phẩm"}</p>
+        <div className="max-w-64 wrap-anywhere">
+          <p className="font-semibold">{review.productName ?? "Không còn thông tin sản phẩm"}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {review.customerName ?? "Khách hàng"} • #{review.id}
           </p>
@@ -68,17 +73,21 @@ function AdminReviewsContent({ snapshot }: { snapshot: ReviewsSession }) {
     {
       id: "rating",
       header: "Số sao",
-      cell: (review) => <span aria-label={`${review.rating} trên 5 sao`}>{review.rating} / 5 ★</span>,
+      cell: (review) => (
+        <span className="whitespace-nowrap font-medium" aria-label={`${review.rating} trên 5 sao`}>
+          <span aria-hidden="true" className="text-amber-500">★</span> {review.rating}/5
+        </span>
+      ),
     },
     {
       id: "content",
       header: "Đánh giá / trả lời",
       align: "left",
       cell: (review) => (
-        <div className="max-w-sm space-y-3 whitespace-pre-wrap wrap-anywhere">
+        <div className="max-w-sm space-y-3 text-sm whitespace-pre-wrap wrap-anywhere">
           <p>{review.reviewText || "Không có nội dung chữ."}</p>
           {review.adminReply && (
-            <div className="border-l-2 border-primary pl-3">
+            <div className="rounded-lg border-l-2 border-primary bg-muted/40 p-3">
               <p className="text-xs font-semibold text-muted-foreground">Cửa hàng trả lời</p>
               <p className="mt-1">{review.adminReply}</p>
             </div>
@@ -90,9 +99,12 @@ function AdminReviewsContent({ snapshot }: { snapshot: ReviewsSession }) {
       id: "hidden",
       header: "Hiển thị",
       cell: (review) => (
-        <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium">
-          {review.hidden ? "Đang ẩn" : "Đang hiện"}
-        </span>
+        <CompactStatusBadge
+          caption="Hiển thị đánh giá"
+          label={review.hidden ? "Đang ẩn" : "Đang hiện"}
+          tone={review.hidden ? "pending" : "success"}
+          icon={review.hidden ? EyeOff : CircleCheck}
+        />
       ),
     },
     {
@@ -114,11 +126,11 @@ function AdminReviewsContent({ snapshot }: { snapshot: ReviewsSession }) {
         };
 
         return (
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
             <ReviewReplyForm {...props} />
             <ReviewVisibilityAction {...props} />
             {props.blocked && (
-              <p className="max-w-48 text-xs text-destructive">Đã khóa gửi. Hãy đối chiếu kết quả máy chủ.</p>
+              <p className="w-full max-w-48 text-xs text-destructive">Đã khóa gửi. Hãy đối chiếu kết quả máy chủ.</p>
             )}
           </div>
         );
@@ -127,36 +139,29 @@ function AdminReviewsContent({ snapshot }: { snapshot: ReviewsSession }) {
   ];
 
   return (
-    <div className="space-y-6">
-      <AdminPageHeader title="Kiểm duyệt đánh giá" />
+    <section className="min-w-0 space-y-6">
+      <AdminPageHeader
+        title="Quản lý đánh giá"
+        description="Xem đánh giá theo sản phẩm và số sao, trả lời khách hàng hoặc điều chỉnh trạng thái hiển thị."
+      />
       <ReviewFiltersForm
         key={canonicalSearch}
         filters={filters}
         onApply={(productName, rating) => changeFilters({ productName, rating, page: 1 })}
+        onSizeChange={(size) => changeFilters({ size, page: 1 })}
       />
-      <label className="flex items-center gap-3 text-sm">
-        <span>Số dòng mỗi trang</span>
-        <select
-          value={filters.size}
-          onChange={(event) => changeFilters({ size: Number(event.target.value), page: 1 })}
-          className="rounded-lg border border-input bg-background p-2"
-        >
-          {REVIEW_PAGE_SIZES.map((size) => (
-            <option key={size} value={size}>{size}</option>
-          ))}
-        </select>
-      </label>
-      {notice && <p role="status" className="text-sm leading-6">{notice}</p>}
+      <div aria-busy={query.isFetching} className="space-y-4">
+      {notice && <p role="status" className="rounded-xl border border-border bg-card p-4 text-sm leading-6">{notice}</p>}
       {query.isPending && <p role="status">Đang tải đánh giá…</p>}
       {query.isError && (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="rounded-xl border border-destructive/30 p-4 text-sm text-destructive">
           {query.error.message} {query.data ? "Đang hiển thị dữ liệu cũ. " : ""}Nhấn F5 để tải lại trang.
         </p>
       )}
       {query.data && (
         <>
-          <p className="text-sm text-muted-foreground">
-            {query.data.totalItems} đánh giá • Trang {filters.page}
+          <p role="status" className="text-sm text-muted-foreground">
+            {query.data.totalItems} đánh giá{query.isFetching ? " · Đang cập nhật…" : ""}
           </p>
           <DataTable
             caption="Danh sách đánh giá sản phẩm"
@@ -170,18 +175,21 @@ function AdminReviewsContent({ snapshot }: { snapshot: ReviewsSession }) {
             totalPages={query.data.totalPages}
             isFetching={query.isFetching}
             onPageChange={(page) => changeFilters({ page })}
+            ariaLabel="Phân trang đánh giá"
           />
         </>
       )}
-    </div>
+      </div>
+    </section>
   );
 }
 
 function ReviewFiltersForm({
-  filters, onApply,
+  filters, onApply, onSizeChange,
 }: {
   filters: ReviewFilters;
   onApply: (productName: string, rating: number | null) => void;
+  onSizeChange: (size: number) => void;
 }) {
   const [productName, setProductName] = useState(filters.productName);
   const [rating, setRating] = useState(filters.rating === null ? "" : String(filters.rating));
@@ -194,24 +202,25 @@ function ReviewFiltersForm({
   return (
     <form
       onSubmit={submit}
-      className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4"
+      className="min-w-0"
     >
-      <label className="min-w-0 flex-1 space-y-2 text-sm">
-        <span className="block font-medium">Tên sản phẩm</span>
+      <FilterBar>
+      <label className="grid min-w-48 flex-1 gap-2 text-sm font-medium">
+        Tên sản phẩm
         <input
           type="search"
           value={productName}
           onChange={(event) => setProductName(event.target.value)}
           placeholder="Nhập tên sản phẩm…"
-          className="w-full rounded-lg border border-input bg-background p-2"
+          className={`${fieldClassName} w-full`}
         />
       </label>
-      <label className="space-y-2 text-sm">
-        <span className="block font-medium">Số sao</span>
+      <label className="grid gap-2 text-sm font-medium">
+        Số sao
         <select
           value={rating}
           onChange={(event) => setRating(event.target.value)}
-          className="rounded-lg border border-input bg-background p-2"
+          className={fieldClassName}
         >
           <option value="">Tất cả</option>
           {REVIEW_RATINGS.map((value) => (
@@ -219,10 +228,23 @@ function ReviewFiltersForm({
           ))}
         </select>
       </label>
-      <Button type="submit">Lọc đánh giá</Button>
+      <label className="grid gap-2 text-sm font-medium">
+        Số dòng
+        <select
+          value={filters.size}
+          onChange={(event) => onSizeChange(Number(event.target.value))}
+          className={fieldClassName}
+        >
+          {REVIEW_PAGE_SIZES.map((size) => (
+            <option key={size} value={size}>{size} / trang</option>
+          ))}
+        </select>
+      </label>
+      <Button type="submit" className="h-10">Lọc đánh giá</Button>
       <Button
         type="button"
         variant="outline"
+        className="h-10"
         onClick={() => {
           setProductName("");
           setRating("");
@@ -231,6 +253,7 @@ function ReviewFiltersForm({
       >
         Xóa bộ lọc
       </Button>
+      </FilterBar>
     </form>
   );
 }
