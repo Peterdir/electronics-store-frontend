@@ -21,17 +21,19 @@ function getLoginErrorMessage(error: Error): string {
         }
 
         if (
+            error.status === 401 ||
             error.status === 404 ||
-            (
-                error.status === 400 &&
-                error.message === "Invalid email or password."
-            )
+            (error.status === 400 && !error.isValidation)
         ) {
             return "Email hoặc mật khẩu không đúng."
         }
+
+        if (error.status === 0) {
+            return "Không thể kết nối máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại."
+        }
     }
 
-    return error.message || "Đăng nhập thất bại. Vui lòng thử lại."
+    return "Đăng nhập thất bại. Vui lòng thử lại sau."
 }
 
 export function LoginForm() {
