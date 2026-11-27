@@ -107,6 +107,7 @@ function CouponsContent({ snapshot }: { snapshot: CouponsSession }) {
 
 function CouponFiltersForm({ filters, onChange }: { filters: CouponFilters; onChange: (patch: Partial<CouponFilters>) => void }) {
   const [keyword, setKeyword] = useState(filters.keyword);
+  const fieldClassName = "h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-ring";
 
   function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -114,23 +115,39 @@ function CouponFiltersForm({ filters, onChange }: { filters: CouponFilters; onCh
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-wrap items-end gap-3 rounded-xl border border-border p-4">
-      <label className="space-y-2 text-sm">
+    <form onSubmit={submit} className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4">
+      <label className="grid min-w-48 flex-1 gap-2 text-sm font-medium">
         <span className="block">Tìm mã coupon</span>
-        <input value={keyword} onChange={(event) => setKeyword(event.target.value)} className="rounded-lg border border-input bg-background px-3 py-2" />
+        <input
+          type="search"
+          value={keyword}
+          onChange={(event) => setKeyword(event.target.value)}
+          placeholder="Mã coupon"
+          className={fieldClassName}
+        />
       </label>
-      <Button type="submit" variant="outline">Tìm kiếm</Button>
-      <label className="space-y-2 text-sm">
+      <Button type="submit" variant="outline" className="h-10">Tìm kiếm</Button>
+      <label className="grid gap-2 text-sm font-medium">
         <span className="block">Trạng thái hiệu lực</span>
-        <select value={filters.status} onChange={(event) => onChange({ status: event.target.value as CouponFilters["status"] })} className="rounded-lg border border-input bg-background px-3 py-2">
-          <option value="">Tất cả</option>
+        <select
+          value={filters.status}
+          onChange={(event) => onChange({ status: event.target.value as CouponFilters["status"] })}
+          className={fieldClassName}
+        >
+          <option value="">Tất cả trạng thái</option>
           {Object.entries(COUPON_STATUS_LABELS).map(([status, label]) => <option key={status} value={status}>{label}</option>)}
         </select>
       </label>
-      <label className="space-y-2 text-sm">
+      <label className="grid gap-2 text-sm font-medium">
         <span className="block">Số dòng</span>
-        <select value={filters.size} onChange={(event) => onChange({ size: Number(event.target.value) })} className="rounded-lg border border-input bg-background px-3 py-2">
-          {COUPON_PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
+        <select
+          value={filters.size}
+          onChange={(event) => onChange({ size: Number(event.target.value) })}
+          className={fieldClassName}
+        >
+          {COUPON_PAGE_SIZES.map((size) => (
+            <option key={size} value={size}>{size} / trang</option>
+          ))}
         </select>
       </label>
     </form>
