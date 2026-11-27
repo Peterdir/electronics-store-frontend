@@ -13,6 +13,7 @@
     "verify:reviews": "node --test scripts/verify-reviews.cjs",
     "verify:admin-reviews": "node --test scripts/verify-admin-reviews.cjs",
     "verify:admin-coupons": "node --test scripts/verify-admin-coupons.cjs",
+    "verify:admin-users": "node --test scripts/verify-admin-users.cjs",
     "verify:wishlist": "node --test scripts/verify-wishlist.cjs",
     "verify:returns": "node --test scripts/verify-returns.cjs",
     "gen:api": "openapi-typescript http://localhost:8080/v3/api-docs -o src/shared/types/openapi.d.ts",

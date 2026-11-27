@@ -15,6 +15,11 @@ export const adminNavigation: readonly AdminNavigationItem[] = [
         end: true,
     },
     {
+        to: "/admin/users",
+        label: "Người dùng",
+        permission: "user.view",
+    },
+    {
         to: "/admin/coupons",
         label: "Mã giảm giá",
         permission: "coupon.view",

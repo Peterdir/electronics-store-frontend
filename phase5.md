@@ -2,7 +2,7 @@
 
 > Ngày lập: **13/11/2026**. Đối chiếu frontend tại HEAD `87eaa75`; working tree sạch trước khi lập kế hoạch.
 > Nguồn: [frontend_master_plan.md](frontend_master_plan.md), [phase4.md](phase4.md), source frontend và source backend tham chiếu tại `../ecommerce-backend`.
-> **Trạng thái — 25/11/2026: E1–E9, phần sửa thông tin chung E10 và E11–E17 đã có code, chờ review và kiểm thử nghiệp vụ tích hợp có đăng nhập; E18–E22 chưa triển khai.** E10 không gửi variants; sửa metadata biến thể cũ vẫn phụ thuộc backend. E12b đã bổ sung bán lại biến thể và cải thiện thẻ; backend đổi trạng thái sản phẩm không còn ghi đè trạng thái biến thể. E13 lọc SKU/tên phía client vì backend keyword hiện chỉ tìm tên. E14 có ADD/DEDUCT, GET lịch sử và xử lý kết quả chưa xác định. E15 có list/drawer bằng chứng và xử lý A/M; E16 có lọc/phân trang đánh giá, trả lời A/M/S và ẩn/hiện A/M; E17 có danh sách, tạo/sửa/toggle coupon, giờ VN/UTC và 13/13 test mock; chưa thử ghi có đăng nhập trên backend thật. Contract được đối chiếu source; E9 đã kiểm tra GET public 200/admin chưa đăng nhập 401 trên backend dev, chưa xác nhận POST tạo thật. Xem bàn giao cuối tài liệu.
+> **Trạng thái — 27/11/2026: E1–E9, phần sửa thông tin chung E10 và E11–E18 đã có code, chờ review và kiểm thử nghiệp vụ tích hợp có đăng nhập; E19–E22 chưa triển khai.** E10 không gửi variants; sửa metadata biến thể cũ vẫn phụ thuộc backend. E12b đã bổ sung bán lại biến thể và cải thiện thẻ; backend đổi trạng thái sản phẩm không còn ghi đè trạng thái biến thể. E13 lọc SKU/tên phía client vì backend keyword hiện chỉ tìm tên. E14 có ADD/DEDUCT, GET lịch sử và xử lý kết quả chưa xác định. E15 có list/drawer bằng chứng và xử lý A/M; E16 có lọc/phân trang đánh giá, trả lời A/M/S và ẩn/hiện A/M; E17 có danh sách, tạo/sửa/toggle coupon, giờ VN/UTC và 13/13 test mock; chưa thử ghi có đăng nhập trên backend thật. Contract được đối chiếu source; E9 đã kiểm tra GET public 200/admin chưa đăng nhập 401 trên backend dev, chưa xác nhận POST tạo thật. Xem bàn giao cuối tài liệu.
 > **Cách học bắt buộc: khi bắt đầu mỗi nhiệm vụ, sinh mã hướng dẫn theo từng bước và từng file để người dùng tự học, tự gõ code; cuối nhiệm vụ có nội dung commit.** Không tự triển khai source khi người dùng chỉ yêu cầu hướng dẫn.
 
 ## 1. Mục tiêu và điểm bắt đầu
@@ -212,7 +212,7 @@ Invalidation chỉ tác động QueryClient đang chạy; không hứa tự cậ
 | E15 | Xem và xử lý yêu cầu trả hàng | E3–E4, E14; D12 hoặc dữ liệu return dev | Đã code; 10/10 kiểm tra mock đạt, chờ review và tích hợp có đăng nhập |
 | E16 | Kiểm duyệt và trả lời đánh giá | E2; D9 hoặc dữ liệu review dev | Đã code; 14/14 kiểm tra mock đạt, chờ review và tích hợp có đăng nhập |
 | E17 | Coupon và khoảng hiệu lực | E1; checkout hiện có để hồi quy | Đã code; 13/13 test mock E17 và 24/24 checkout đạt; chờ browser/backend có đăng nhập và checkout tích hợp |
-| E18 | Danh sách/chi tiết và quản lý người dùng | E1 | Chưa bắt đầu |
+| E18 | Danh sách/chi tiết và quản lý người dùng | E1 | Đã code; 12/12 test mock đạt; chờ browser/backend có đăng nhập, kiểm tra JWT cũ và review |
 | E19 | Dashboard và bộ lọc thời gian | E4, E14; dữ liệu thống kê dev | Chưa bắt đầu |
 | E20 | Xem trước báo cáo doanh thu | E19 để dùng lại bộ lọc ngày | Chưa bắt đầu |
 | E21 | Tải CSV có xác thực | E20 | Chưa bắt đầu |
@@ -700,6 +700,16 @@ Kiểm thử nghiệp vụ thật còn cần làm: chạy frontend/backend, đă
 **Kiểm tra/hoàn thành:** A/M/S/CUSTOMER, M thao tác lên role khác, URL trực tiếp, user không tồn tại, phiên của tài khoản bị khóa/đổi role đang mở ở trình duyệt khác. Ghi rõ backend chưa thấy chặn tự sửa và cần kiểm tra quyền có hiệu lực với JWT cũ ra sao. Bài tập: phân biệt quyền “xem users” và quyền “thay status của user này”.
 
 **Commit cuối nhiệm vụ:** `feat(admin-users): manage account status and roles`
+
+**Bàn giao triển khai — 26/11/2026:**
+
+- Đã tạo `/admin/users` và `/admin/users/:id`: tìm họ tên/email, phân trang server, URL lưu keyword/page/size, chuẩn hóa URL lỗi và trang vượt giới hạn; detail reload được trực tiếp. Menu đứng sau Trang quản trị; list/detail đều có RequireRole A/M, query kiểm tra phiên/quyền riêng, redirect whitelist giữ query/hash. STAFF/CUSTOMER không được gọi GET qua các hook này.
+- Đối chiếu lại AdminUserController, UserServiceImpl, UserAdminResponse, UserRepository và SecurityConfig: GET list nhận keyword/page/size (không sort); DTO gồm id/fullName/email/phone/role/status; ID JSON dạng string. PUT status/role dùng query param, không JSON body, trả text. Tái sử dụng normalizePage, DataTable, Pagination, session và Dialog.
+- ADMIN đổi role và khóa/mở các tài khoản khác; MANAGER chỉ khóa/mở CUSTOMER. UI và mutation cùng kiểm tra actor/target. Chặn tự sửa, không gửi status PENDING, chỉ hiển thị Chờ xác thực. PENDING không có nút khóa/mở hoặc phê duyệt. Đổi role luôn qua hộp thoại chọn role mới và xác nhận email/ID; không ghi response người dùng đích vào session hiện tại.
+- Khóa ghi theo ID giữa hai action, chặn nhấp đúp bằng ref, mutation không retry/không pause để replay khi reconnect. Thành công phân biệt với GET sau ghi lỗi; refetch list/detail đang active, cache còn lại stale. Timeout/403/409/5xx khóa ghi trong lần mở trang; GET sau timeout không tự mở khóa. 400 giữ form, 404 bỏ phần chi tiết/thao tác, phiên đổi hoặc token hết hạn chặn response muộn.
+- Source backend chưa chặn tự khóa/tự đổi role. SecurityConfig lấy quyền từ claim role, validator kiểm tra thời gian/blacklist; đường xác thực đã đọc chưa tra lại status/role DB và UserServiceImpl không thu hồi JWT khi sửa. Đây là phát hiện từ source, **chưa kiểm thử token cũ thực tế**. Backend cần bổ sung bảo vệ tự sửa/thu hồi hoặc kiểm tra phiên hiện hành. Không sửa backend trong E18; frontend không bảo đảm khóa tài khoản sẽ thu hồi JWT đã phát hành.
+- File mới: `users/{types,filters,policy,schemas,api,queries}.ts`, `users/components/{UserActionDialog,UserStatusAction,UserRoleDialog}.tsx`, `users/pages/{AdminUsersPage,AdminUserDetailPage}.tsx`, `scripts/verify-admin-users.cjs`. Tích hợp: router.tsx, navigation.ts, permissions.ts, redirect.ts, package.json và phase5.md. Giải thích từng file và cú pháp được trình bày trực tiếp trong chat bằng code fences TS/TSX; không tạo guide riêng.
+- Kiểm tra: `verify:admin-users` **12/12** đạt bằng mock HTTP, query/mutation và submit handler thật; build gồm typecheck, lint toàn repo và git diff --check đạt. Build còn cảnh báo chunk storefront/HeroScene lớn có từ trước. Chưa thử browser/focus/keyboard/mobile và request có đăng nhập trên backend thật. Cần thử A/M/S/CUSTOMER/guest, M gọi trực tiếp lên non-CUSTOMER, ID không tồn tại, 403/404/timeout và tài khoản đích đang mở phiên ở trình duyệt khác. Không commit/push; commit đề xuất như trên.
 
 ### E19 — Dashboard và thống kê theo khoảng ngày
 

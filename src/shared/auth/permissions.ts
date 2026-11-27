@@ -8,6 +8,7 @@ export const PERMISSIONS = {
     "report.view": [Role.ADMIN, Role.MANAGER],
     "user.view": [Role.ADMIN, Role.MANAGER],
     "user.changeRole": [Role.ADMIN],
+    "user.changeStatus": [Role.ADMIN, Role.MANAGER],
     "category.manage": [Role.ADMIN, Role.MANAGER],
     "brand.manage": [Role.ADMIN, Role.MANAGER],
     "product.write": [Role.ADMIN, Role.MANAGER, Role.STAFF],
