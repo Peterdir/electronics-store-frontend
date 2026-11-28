@@ -16,4 +16,12 @@ jobs:
       - run: npm ci --legacy-peer-deps
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm run test:coverage
       - run: npm run build
+      - name: Upload Frontend Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage-report
+          path: coverage/
+          retention-days: 14

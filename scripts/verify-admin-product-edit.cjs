@@ -351,7 +351,7 @@ test("Deep link edit giữ ID/query/hash cho A/M/S, từ chối CUSTOMER và ID 
     const target = "/admin/products/9007199254740993/edit?from=list#specification";
     for (const role of ["ADMIN", "MANAGER", "STAFF"]) assert.equal(getLoginDestination(role, target), target);
     assert.equal(getLoginDestination("CUSTOMER", target), "/");
-    assert.equal(getLoginDestination("ADMIN", "/admin/products/0/edit"), "/admin");
+    assert.equal(getLoginDestination("ADMIN", "/admin/products/0/edit"), "/admin/dashboard");
   } finally {
     global.window = previousWindow;
   }

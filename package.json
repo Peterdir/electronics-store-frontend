@@ -18,6 +18,13 @@
     "verify:admin-reports": "node --test scripts/verify-admin-reports.cjs",
     "verify:wishlist": "node --test scripts/verify-wishlist.cjs",
     "verify:returns": "node --test scripts/verify-returns.cjs",
+    "verify:admin-orders": "node --test scripts/verify-admin-orders.cjs",
+    "verify:admin-brands": "node --test scripts/verify-admin-brands.cjs",
+    "verify:admin-categories": "node --test scripts/verify-admin-categories.cjs",
+    "verify:address": "node --test scripts/verify-address.cjs",
+    "verify:auth-core": "node --test scripts/verify-auth-core.cjs",
+    "test": "node --test scripts/verify-*.cjs",
+    "test:coverage": "node scripts/run-coverage.cjs",
     "gen:api": "openapi-typescript http://localhost:8080/v3/api-docs -o src/shared/types/openapi.d.ts",
     "lint": "eslint .",
     "preview": "vite preview"
